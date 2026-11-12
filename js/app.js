@@ -2,7 +2,7 @@ import { createStore } from './store.js';
 import { leagueId } from '../firebase-config.js';
 import {
   FIS_POINTS, DEFAULT_BONUS, TEAM, TEAM_SIZE, buildWeekends, isLocked, snakeOrder, teams, canPick,
-  lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
+  lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings, countsForLeague,
 } from './scoring.js';
 import {
   esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -83,6 +83,8 @@ function owner(pid, extra = '') {
   return `<span class="owner"><span class="sw" style="background:${p.color}"></span>${esc(p.name)}${extra}</span>`;
 }
 const raceLabel = (r) => `${r.category === 'QUA' ? 'Kwalifikacje' : 'Konkurs'} ${r.gender === 'W' ? 'kobiet' : 'mężczyzn'}`;
+const CHAMP = 'Mistrzostwa Świata';
+const champTag = (cls = '') => `<span class="tag champ ${cls}">${icon('star')}${CHAMP}</span>`;
 const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
 
 function weekendStatus(w) {
@@ -352,8 +354,8 @@ function nextWeekendHero() {
     return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Sezon ${seasonLabel(calendar.season)} zakończony</div>
       <div class="big">🏆 Mistrz ligi: ${esc(champ?.name ?? '—')}</div><p>${champ ? `${calc.totals[champ.id]} pkt po ${weekends.length} weekendach.` : ''}</p></div>`;
   }
-  return `<div class="hero">${MOUNTAINS}
-    <div class="eyebrow">${st === 'live' ? 'Trwa weekend' : st === 'past' ? 'Sezon zakończony' : `Następny weekend · ${inDays(d)}`}</div>
+  return `<div class="hero ${w.champ ? 'champ' : ''}">${MOUNTAINS}
+    <div class="eyebrow">${w.champ ? `${CHAMP} · ` : ''}${st === 'live' ? 'Trwa weekend' : `Następny weekend · ${inDays(d)}`}</div>
     <div class="big">${esc(w.name)}</div>
     <p style="margin-bottom:.4rem">${range(w.start, w.end)} · ${w.races.filter((r) => r.category === 'WC').length} ${pl(w.races.filter((r) => r.category === 'WC').length, 'konkurs', 'konkursy', 'konkursów')}</p>
     ${st !== 'past' ? cta : ''}</div>`;
@@ -401,7 +403,7 @@ function ranking() {
     <tbody>${played.slice().reverse().map((w) => {
       const vals = ps.map((p) => calc.byWeekend[w.id][p.id]);
       const max = Math.max(...vals);
-      return `<tr><td><a href="#kalendarz" data-week="${w.id}"><b>${w.no}.</b> ${esc(w.name)}</a> <span class="muted xs">${range(w.start, w.end)}</span></td>
+      return `<tr><td><a href="#kalendarz" data-week="${w.id}"><b>${w.no}.</b> ${esc(w.name)}</a>${w.champ ? ' <span class="tag champ sm">MŚ</span>' : ''} <span class="muted xs">${range(w.start, w.end)}</span></td>
         ${vals.map((v) => `<td class="num ${v === max && v > 0 ? 'best' : ''}">${v}</td>`).join('')}</tr>`;
     }).join('')}
     <tr><td><b>Razem</b></td>${ps.map((p) => `<td class="pts">${calc.totals[p.id]}</td>`).join('')}</tr>
@@ -570,8 +572,8 @@ function druzyny() {
   const st = weekendStatus(w);
   const order = [...state.participants].sort((a, b) => (a.id === me()?.id ? -1 : b.id === me()?.id ? 1 : calc.totals[b.id] - calc.totals[a.id]));
   return head + `
-    <div class="weeks" id="weeks">${weekends.map((x) => `<button data-action="weekend" data-v="${x.id}" class="${x.id === w.id ? 'on' : ''}">
-      <span class="d">${x.no}. · ${range(x.start, x.end)}${weekendStatus(x) === 'live' ? ' · trwa' : ''}</span><span class="n">${esc(x.name)}</span></button>`).join('')}</div>
+    <div class="weeks" id="weeks">${weekends.map((x) => `<button data-action="weekend" data-v="${x.id}" class="${x.id === w.id ? 'on' : ''} ${x.champ ? 'champ' : ''}">
+      <span class="d">${x.no}. · ${range(x.start, x.end)}${x.champ ? ' · MŚ' : ''}${weekendStatus(x) === 'live' ? ' · trwa' : ''}</span><span class="n">${esc(x.name)}</span></button>`).join('')}</div>
     <div class="row" style="margin:.5rem 0 1rem">
       ${locked ? `<span class="tag ${st === 'live' ? 'warn live' : ''}">${icon('lock')}${st === 'live' ? 'Weekend trwa — składy zablokowane' : 'Składy zablokowane'}</span>`
         : `<span class="tag good">${icon('unlock')}Zmiany do ${lockLabel(w)}</span>`}
@@ -637,11 +639,12 @@ function kalendarz() {
     const d = new Date(w.start + 'T12:00:00');
     const wpts = ps.map((p) => calc.byWeekend[w.id][p.id]);
     const wmax = Math.max(0, ...wpts);
-    return `<div class="card wk ${st === 'live' ? 'live' : w === cur && st === 'next' ? 'next' : ''}" id="w-${w.id}">
+    return `<div class="card wk ${w.champ ? 'champ' : ''} ${st === 'live' ? 'live' : w === cur && st === 'next' ? 'next' : ''}" id="w-${w.id}">
       <div class="date"><div class="dd">${d.getDate()}${w.end !== w.start ? `<span style="font-size:.7em">–${new Date(w.end + 'T12:00:00').getDate()}</span>` : ''}</div>
         <div class="mm">${d.toLocaleDateString('pl-PL', { month: 'short' }).replace('.', '')}</div><div class="no">#${w.no}</div></div>
       <div class="body">
         <div class="wh">${w.events.map((e) => `<span class="row nowrap" style="gap:.4rem">${flag(e.nation)}<span class="t">${esc(e.place)}</span></span>`).join('<span class="muted">·</span>')}
+          ${w.champ ? champTag() : ''}
           ${st === 'live' ? '<span class="tag warn live">trwa</span>' : st === 'past' ? '<span class="tag">zakończony</span>' : w === cur ? `<span class="tag acc">${inDays(daysTo(w.start))}</span>` : ''}
           <span class="spacer"></span>
           ${hasRes && ps.length ? `<div class="chips">${ps.map((p, i) => `<span class="chip ${wpts[i] === wmax && wmax > 0 ? 'top' : ''}">${avatar(p, 'sm')}<b>${wpts[i]}</b></span>`).join('')}</div>` : ''}
@@ -653,7 +656,7 @@ function kalendarz() {
           return `<${tag} class="race" ${res ? `href="#race/${r.id}"` : ''}>
             <span class="when">${fmtDow(r.date)}${r.time ? ` · ${r.time}` : ''}</span>
             <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
-              <span class="l">${raceLabel(r)}</span><span class="h">${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}</span>
+              <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
               ${win ? `<span class="win">· ${flag(win.nation)}${esc(prettyName(win.name).last)}</span>` : ''}</span>
             <span class="chips">${res && ps.length ? ps.map((p) => {
               const v = calc.byRace[r.id]?.[p.id]?.total || 0;
@@ -686,14 +689,15 @@ function raceView(id) {
   const m = me();
 
   return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a>
-    <div class="hero race-hero">${MOUNTAINS}
-      <div class="eyebrow">Weekend ${w.no} · ${race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'}</div>
+    <div class="hero race-hero ${race.champ ? 'champ' : ''}">${MOUNTAINS}
+      <div class="eyebrow">Weekend ${w.no} · ${race.champ ? `${CHAMP} ${calendar.season}${race.category === 'QUA' ? ' · kwalifikacje' : ''}` : race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'}</div>
       <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
       <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${race.time}` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
         ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
         <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
     </div>
-    ${ps.length ? `<div class="section grid">${ps.map((p) => {
+    ${!countsForLeague(race, state.settings) ? `<div class="warnline" style="margin-top:1rem">${icon('info')}Mistrzostwa Świata nie liczą się do punktacji ligi (ustawienie admina).</div>` : ''}
+    ${ps.length && countsForLeague(race, state.settings) ? `<div class="section grid">${ps.map((p) => {
       const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [] };
       return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(p.name)}</div><span class="spacer"></span>
           <div class="tot"><div class="v">+${e.total}</div><div class="l">pkt</div></div></div>
@@ -773,7 +777,7 @@ function puchar() {
 function zawodnicy() {
   const raw = {};
   for (const w of weekends) for (const r of w.races) {
-    if (!results[r.id]) continue;
+    if (!results[r.id] || !countsForLeague(r, state.settings)) continue;
     for (const [id, p] of racePoints(r, results[r.id], state.settings, state.hillRecords[r.id] || [])) raw[id] = (raw[id] || 0) + p.total;
   }
   const q = ui.q.toLowerCase();
@@ -852,6 +856,7 @@ function adminView() {
           <label class="field"><span>Najdłuższy skok</span><input id="bL" type="number" value="${bonus.longest}"></label>
           <label class="field"><span>Rekord skoczni</span><input id="bR" type="number" value="${bonus.record}"></label>
         </div>
+        <label class="check" style="margin-bottom:1rem"><input type="checkbox" id="countChamps" ${s.countChamps !== false ? 'checked' : ''}>Mistrzostwa Świata liczą się do punktacji ligi (tak samo jak konkursy PŚ, z kapitanem i bonusami)</label>
         <div class="row"><button class="primary" data-action="saveScoring">${icon('check')}Zapisz</button><button class="ghost" data-action="resetScoring">Przywróć domyślne</button></div>
       </div>
       <div class="card">
@@ -1063,9 +1068,10 @@ const actions = {
   saveScoring: () => {
     const placePoints = document.getElementById('placePts').value.split(/[,\s;]+/).filter(Boolean).map(Number).filter((n) => !Number.isNaN(n));
     const bonus = { quali: +document.getElementById('bQ').value, longest: +document.getElementById('bL').value, record: +document.getElementById('bR').value };
-    save((s) => { s.settings = { ...s.settings, placePoints, bonus }; return s; }, 'Punktacja zapisana');
+    const countChamps = document.getElementById('countChamps').checked;
+    save((s) => { s.settings = { ...s.settings, placePoints, bonus, countChamps }; return s; }, 'Punktacja zapisana');
   },
-  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; return s; }, 'Przywrócono domyślną punktację'),
+  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; delete s.settings.countChamps; return s; }, 'Przywrócono domyślną punktację'),
   renameLeague: async () => {
     const v = await modal({ title: 'Nazwa ligi', fields: [{ name: 'n', label: 'Nazwa', value: state.setup.leagueName, attrs: 'maxlength="40" required' }], ok: 'Zapisz' });
     if (v) save((s) => { s.setup.leagueName = v.n.trim(); return s; });

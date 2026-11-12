@@ -60,7 +60,8 @@ export function buildWeekends(events) {
   weekends.forEach((w, i) => {
     w.no = i + 1;
     w.name = w.events.map((e) => e.place).join(' / ');
-    w.races = w.events.flatMap((e) => e.races.map((r) => ({ ...r, place: e.place, nation: e.nation, eventId: e.id })))
+    w.champ = w.events.some((e) => e.championship);
+    w.races = w.events.flatMap((e) => e.races.map((r) => ({ ...r, place: e.place, nation: e.nation, eventId: e.id, champ: !!e.championship })))
       // bez godziny (przed zawodami) kwalifikacje danego dnia idą przed konkursem
       .sort((a, b) => (a.date + (a.time || '') + (a.category === 'QUA' ? 0 : 1))
         .localeCompare(b.date + (b.time || '') + (b.category === 'QUA' ? 0 : 1)));
@@ -133,6 +134,9 @@ export function validLineup(starters, athletesById) {
 
 // ---------------------------------------------------------------- całość
 
+// Mistrzostwa Świata liczą się do ligi, chyba że admin to wyłączy.
+export const countsForLeague = (race, settings) => !race.champ || settings.countChamps !== false;
+
 // Punkty wszystkich uczestników we wszystkich konkursach.
 // Zwraca { byRace: {raceId: {pid: {total, athletes: [{id, pts, captain}]}}}, byWeekend, totals, athleteTotals }
 export function computeAll(state, weekends, results, athletesById) {
@@ -153,7 +157,7 @@ export function computeAll(state, weekends, results, athletesById) {
     }
     for (const race of w.races) {
       const res = results[race.id];
-      if (!res) continue;
+      if (!res || !countsForLeague(race, settings)) continue;
       const pts = racePoints(race, res, settings, state.hillRecords?.[race.id] || []);
       byRace[race.id] = {};
       for (const p of state.participants || []) {

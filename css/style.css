@@ -444,3 +444,21 @@ a.race:hover { background: var(--card-2); color: var(--text); }
 .spinner { width: 34px; height: 34px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto .8rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .banner { background: var(--warn-soft); color: var(--warn); font-size: .85rem; font-weight: 600; text-align: center; padding: .45rem 16px; }
+
+/* ============================================================ Mistrzostwa Świata */
+:root { --champ-1: #b8860b; --champ-2: #f2c94c; --champ-soft: #fff6dc; --champ-ink: #8a6100; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --champ-soft: #33290c; --champ-ink: #f2c94c; }
+}
+.tag.champ { background: linear-gradient(90deg, var(--champ-1), var(--champ-2)); color: #2b1d00; border-color: transparent; }
+.tag.champ svg { width: 12px; height: 12px; fill: currentColor; }
+.tag.sm { font-size: .64rem; padding: .05rem .4rem; vertical-align: 1px; }
+.champ-ink { color: var(--champ-ink); font-weight: 800; }
+.wk.champ { border: 2px solid var(--champ-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--champ-2) 18%, transparent), var(--shadow); }
+.wk.champ .date { background: linear-gradient(160deg, var(--champ-1), var(--champ-2)); color: #2b1d00; border-color: transparent; }
+.wk.champ .date .mm, .wk.champ .date .no { color: #3d2a00; }
+.wk.champ .body { background: linear-gradient(90deg, var(--champ-soft), transparent 70%); }
+.hero.champ { background: linear-gradient(120deg, #4a3200, var(--champ-1) 55%, var(--champ-2)); }
+.weeks button.champ { border-color: var(--champ-2); background: var(--champ-soft); }
+.weeks button.champ .d { color: var(--champ-ink); }
+.weeks button.champ.on { box-shadow: 0 0 0 2px var(--champ-2); }

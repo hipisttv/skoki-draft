@@ -182,30 +182,50 @@ def parse_event(h, season):
     return races
 
 
+def calendar_url(season, category):
+    return (f"{BASE}/ski-jumping/calendar-results.html?eventselection=&place=&sectorcode=JP"
+            f"&seasoncode={season}&categorycode={category}&disciplinecode=&gendercode=&racedate=&racecodex="
+            f"&nationcode=&seasonmonth=X-{season}&saveselection=-1&seasonselection=")
+
+
+def split_by_gap(ev, races, gap=2):
+    """Mistrzostwa trwają ~2 tygodnie – dzielimy je na części (weekendy) po przerwie w startach."""
+    parts = [[races[0]]]
+    for r in races[1:]:
+        prev = dt.date.fromisoformat(parts[-1][-1]["date"])
+        if (dt.date.fromisoformat(r["date"]) - prev).days > gap:
+            parts.append([])
+        parts[-1].append(r)
+    if len(parts) == 1:
+        return [{**ev, "races": races}]
+    return [{**ev, "id": f"{ev['id']}-{i + 1}", "start": p[0]["date"], "end": p[-1]["date"], "races": p}
+            for i, p in enumerate(parts)]
+
+
 def build_calendar(season):
-    url = (f"{BASE}/ski-jumping/calendar-results.html?eventselection=&place=&sectorcode=JP"
-           f"&seasoncode={season}&categorycode=WC&disciplinecode=&gendercode=&racedate=&racecodex="
-           f"&nationcode=&seasonmonth=X-{season}&saveselection=-1&seasonselection=")
     # cykle (Turniej Czterech Skoczni, Two Nights Tour…) mają kraj "FIS" i zawierają tylko
     # klasyfikacje łączne, które nie są osobnymi konkursami
-    events = [e for e in parse_calendar(fetch(url), season) if e["nation"] != "FIS"]
-    # Cykle (Turniej Czterech Skoczni, Two Nights Tour…) zawierają te same konkursy co zawody,
-    # z których się składają. Najpierw krótsze zawody, a każdy konkurs przypisany tylko raz.
+    events = [e for e in parse_calendar(fetch(calendar_url(season, "WC")), season) if e["nation"] != "FIS"]
+    # Mistrzostwa Świata (WSC) – w kalendarzu wyróżnione
+    for e in parse_calendar(fetch(calendar_url(season, "WSC")), season):
+        events.append({**e, "championship": True})
+    # Najpierw krótsze zawody, a każdy konkurs przypisany tylko raz.
     events.sort(key=lambda e: (dt.date.fromisoformat(e["end"]) - dt.date.fromisoformat(e["start"]), e["start"]))
     seen = set()
     out = []
     for ev in events:
         eh = fetch(f"{BASE}/general/event-details.html?sectorcode=JP&eventid={ev['id']}&seasoncode={season}")
-        # punktowane: konkursy indywidualne PŚ + kwalifikacje do nich
+        # punktowane: konkursy indywidualne PŚ / MŚ + kwalifikacje do nich (bez drużynówek, duetów, mikstów)
         races = [r for r in parse_event(eh, season)
-                 if r["category"] in ("WC", "QUA") and not r["team"] and r["gender"] in ("M", "W") and r["id"] not in seen]
+                 if r["category"] in ("WC", "WSC", "QUA") and not r["team"] and r["gender"] in ("M", "W") and r["id"] not in seen]
         if not races:
             continue
         seen.update(r["id"] for r in races)
-        ev["races"] = races
         ev["cancelled"] = all(r["cancelled"] for r in races)
-        out.append(ev)
-        print(f"  {ev['start']} {ev['place']}: {len(races)} konkursów{' (odwołane)' if ev['cancelled'] else ''}")
+        parts = split_by_gap(ev, races) if ev.get("championship") else [{**ev, "races": races}]
+        out.extend(parts)
+        for p in parts:
+            print(f"  {p['start']} {p['place']}{' (MŚ)' if p.get('championship') else ''}: {len(p['races'])} konkursów{' (odwołane)' if p['cancelled'] else ''}")
     out.sort(key=lambda e: e["start"])
     return out
 

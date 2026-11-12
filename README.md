@@ -74,6 +74,8 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
 - Weekend = zawody PŚ mężczyzn i kobiet, których terminy się pokrywają (np. Ruka + Hinzenbach).
 - Skład i kapitana można zmieniać do północy przed pierwszym dniem weekendu (pierwsze kwalifikacje), potem są zablokowane.
 - Punktowane i pokazywane w kalendarzu są tylko konkursy indywidualne PŚ i kwalifikacje do nich – bez drużynówek, duetów i mikstów.
+- **Mistrzostwa Świata (Falun 2027)** są w kalendarzu wyróżnione na złoto i domyślnie liczą się do ligi tak samo jak PŚ
+  (z kapitanem i bonusami). Admin może to wyłączyć w Panelu admina → Punktacja. MŚ trwają dwa weekendy, więc są dwiema rundami z osobnym kapitanem.
 - **Rekord skoczni** nie jest oznaczany w danych FIS, więc zaznacza się go ręcznie w widoku konkursu
   (przycisk „Oznacz rekord skoczni”) – dopiero gdy rekord zostanie oficjalnie uznany.
 

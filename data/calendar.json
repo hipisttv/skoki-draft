@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-12T14:31:58+00:00",
+ "updated": "2026-11-12T14:35:07+00:00",
  "events": [
   {
    "id": "63024",
@@ -8,6 +8,7 @@
    "nation": "NOR",
    "start": "2026-11-20",
    "end": "2026-11-22",
+   "cancelled": false,
    "races": [
     {
      "id": "7796",
@@ -97,8 +98,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63025",
@@ -106,6 +106,7 @@
    "nation": "FIN",
    "start": "2026-11-28",
    "end": "2026-11-29",
+   "cancelled": false,
    "races": [
     {
      "id": "7801",
@@ -140,8 +141,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63029",
@@ -149,6 +149,7 @@
    "nation": "AUT",
    "start": "2026-11-28",
    "end": "2026-11-29",
+   "cancelled": false,
    "races": [
     {
      "id": "7818",
@@ -183,8 +184,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63026",
@@ -192,6 +192,7 @@
    "nation": "POL",
    "start": "2026-12-04",
    "end": "2026-12-06",
+   "cancelled": false,
    "races": [
     {
      "id": "7821",
@@ -281,8 +282,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63027",
@@ -290,6 +290,7 @@
    "nation": "GER",
    "start": "2026-12-11",
    "end": "2026-12-13",
+   "cancelled": false,
    "races": [
     {
      "id": "7809",
@@ -357,8 +358,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63028",
@@ -366,6 +366,7 @@
    "nation": "SUI",
    "start": "2026-12-18",
    "end": "2026-12-20",
+   "cancelled": false,
    "races": [
     {
      "id": "7812",
@@ -433,8 +434,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63030",
@@ -442,6 +442,7 @@
    "nation": "GER",
    "start": "2026-12-28",
    "end": "2026-12-29",
+   "cancelled": false,
    "races": [
     {
      "id": "7827",
@@ -487,8 +488,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63031",
@@ -496,6 +496,7 @@
    "nation": "GER",
    "start": "2026-12-31",
    "end": "2027-01-01",
+   "cancelled": false,
    "races": [
     {
      "id": "7831",
@@ -541,8 +542,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63032",
@@ -550,6 +550,7 @@
    "nation": "AUT",
    "start": "2027-01-02",
    "end": "2027-01-03",
+   "cancelled": false,
    "races": [
     {
      "id": "7836",
@@ -595,8 +596,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63033",
@@ -604,6 +604,7 @@
    "nation": "AUT",
    "start": "2027-01-05",
    "end": "2027-01-06",
+   "cancelled": false,
    "races": [
     {
      "id": "7840",
@@ -649,8 +650,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63034",
@@ -658,6 +658,7 @@
    "nation": "SLO",
    "start": "2027-01-09",
    "end": "2027-01-10",
+   "cancelled": false,
    "races": [
     {
      "id": "7844",
@@ -703,8 +704,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63035",
@@ -712,6 +712,7 @@
    "nation": "CHN",
    "start": "2027-01-15",
    "end": "2027-01-16",
+   "cancelled": false,
    "races": [
     {
      "id": "7848",
@@ -757,8 +758,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63037",
@@ -766,6 +766,7 @@
    "nation": "POL",
    "start": "2027-01-15",
    "end": "2027-01-17",
+   "cancelled": false,
    "races": [
     {
      "id": "7856",
@@ -789,8 +790,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63036",
@@ -798,6 +798,7 @@
    "nation": "JPN",
    "start": "2027-01-19",
    "end": "2027-01-20",
+   "cancelled": false,
    "races": [
     {
      "id": "7852",
@@ -832,8 +833,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63038",
@@ -841,6 +841,7 @@
    "nation": "JPN",
    "start": "2027-01-22",
    "end": "2027-01-24",
+   "cancelled": false,
    "races": [
     {
      "id": "7859",
@@ -908,8 +909,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63039",
@@ -917,6 +917,7 @@
    "nation": "GER",
    "start": "2027-01-29",
    "end": "2027-01-31",
+   "cancelled": false,
    "races": [
     {
      "id": "7866",
@@ -984,8 +985,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63040",
@@ -993,6 +993,7 @@
    "nation": "USA",
    "start": "2027-02-05",
    "end": "2027-02-07",
+   "cancelled": false,
    "races": [
     {
      "id": "7871",
@@ -1038,8 +1039,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63041",
@@ -1047,6 +1047,7 @@
    "nation": "FIN",
    "start": "2027-02-11",
    "end": "2027-02-14",
+   "cancelled": false,
    "races": [
     {
      "id": "7877",
@@ -1103,8 +1104,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63043",
@@ -1112,6 +1112,7 @@
    "nation": "NOR",
    "start": "2027-02-18",
    "end": "2027-02-21",
+   "cancelled": false,
    "races": [
     {
      "id": "7886",
@@ -1157,8 +1158,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63042",
@@ -1166,6 +1166,7 @@
    "nation": "AUT",
    "start": "2027-02-20",
    "end": "2027-02-21",
+   "cancelled": false,
    "races": [
     {
      "id": "7883",
@@ -1200,8 +1201,117 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
+  },
+  {
+   "id": "63108-1",
+   "place": "Falun",
+   "nation": "SWE",
+   "start": "2027-02-26",
+   "end": "2027-02-28",
+   "championship": true,
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7920",
+     "date": "2027-02-26",
+     "time": null,
+     "codex": "0064",
+     "discipline": "Individual Normal Hill",
+     "category": "WSC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7921",
+     "date": "2027-02-26",
+     "time": null,
+     "codex": "0065",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7923",
+     "date": "2027-02-28",
+     "time": null,
+     "codex": "0067",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7924",
+     "date": "2027-02-28",
+     "time": null,
+     "codex": "0068",
+     "discipline": "Individual Normal Hill",
+     "category": "WSC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63108-2",
+   "place": "Falun",
+   "nation": "SWE",
+   "start": "2027-03-05",
+   "end": "2027-03-06",
+   "championship": true,
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7927",
+     "date": "2027-03-05",
+     "time": null,
+     "codex": "0071",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7928",
+     "date": "2027-03-05",
+     "time": null,
+     "codex": "0072",
+     "discipline": "Individual Large Hill",
+     "category": "WSC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7929",
+     "date": "2027-03-06",
+     "time": null,
+     "codex": "0073",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7930",
+     "date": "2027-03-06",
+     "time": null,
+     "codex": "0074",
+     "discipline": "Individual Large Hill",
+     "category": "WSC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
   },
   {
    "id": "63044",
@@ -1209,6 +1319,7 @@
    "nation": "NOR",
    "start": "2027-03-13",
    "end": "2027-03-14",
+   "cancelled": false,
    "races": [
     {
      "id": "7893",
@@ -1276,8 +1387,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   },
   {
    "id": "63045",
@@ -1285,6 +1395,7 @@
    "nation": "SLO",
    "start": "2027-03-18",
    "end": "2027-03-21",
+   "cancelled": false,
    "races": [
     {
      "id": "7896",
@@ -1330,8 +1441,7 @@
      "team": false,
      "cancelled": false
     }
-   ],
-   "cancelled": false
+   ]
   }
  ]
 }
