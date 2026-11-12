@@ -176,3 +176,24 @@ export function computeAll(state, weekends, results, athletesById) {
   }
   return { byRace, byWeekend, totals, athleteTotals, teams: tm };
 }
+
+// Klasyfikacja generalna PŚ bieżącego sezonu liczona z wyników (punkty FIS za miejsca 1–30).
+export function wcStandings(weekends, results, gender) {
+  const pts = {};
+  const info = {};
+  let races = 0;
+  for (const w of weekends) {
+    for (const r of w.races) {
+      if (r.category !== 'WC' || r.gender !== gender || !results[r.id]) continue;
+      races++;
+      for (const x of results[r.id].results) {
+        info[x.id] = { id: x.id, name: x.name, nation: x.nation };
+        if (x.rank && x.rank <= FIS_POINTS.length) pts[x.id] = (pts[x.id] || 0) + FIS_POINTS[x.rank - 1];
+      }
+    }
+  }
+  const rows = Object.entries(pts).map(([id, points]) => ({ ...info[id], points }))
+    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+  rows.forEach((r, i) => { r.rank = i > 0 && rows[i - 1].points === r.points ? rows[i - 1].rank : i + 1; });
+  return { rows, races };
+}

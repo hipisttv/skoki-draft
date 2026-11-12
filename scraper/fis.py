@@ -114,27 +114,43 @@ def build_athletes(season):
 
 # ---------------------------------------------------------------- kalendarz
 
+def parse_dates(t):
+    """'20-22 Nov 2026', '28 Dec- 06 Jan 2026', '5 Jan 2026' -> (start, end)."""
+    t = re.sub(r"\s+", " ", t).strip()
+    m = re.fullmatch(r"(\d+) (\w{3}) ?- ?(\d+) (\w{3}) (\d{4})", t)
+    if m:
+        d1, m1, d2, m2, y = m.groups()
+        y = int(y)
+        start = dt.date(y - 1 if MONTHS[m1] > MONTHS[m2] else y, MONTHS[m1], int(d1))
+        return start, dt.date(y, MONTHS[m2], int(d2))
+    m = re.fullmatch(r"(\d+)(?: ?- ?(\d+))? (\w{3}) (\d{4})", t)
+    if m:
+        d1, d2, mon, y = m.groups()
+        return dt.date(int(y), MONTHS[mon], int(d1)), dt.date(int(y), MONTHS[mon], int(d2 or d1))
+    return None
+
+
 def parse_calendar(h, season):
     events = []
     for row in re.split(r'<div class="table-row', h)[1:]:
         eid = re.search(r'id="(\d+)"', row)
-        dates = re.search(r'target="_self">(\d+)(?:-(\d+))? (\w{3})(?: - (\d+) (\w{3}))? (\d{4})</a>', row)
+        dates = None
+        # zawody na przełomie miesięcy mają w dacie <br>: "31 Dec-<br>01 Jan 2027"
+        for cand in re.findall(r'target="_self">((?:[^<]|<br\s*/?>)*?\d{4})\s*</a>', row):
+            dates = parse_dates(re.sub(r"<br\s*/?>", " ", cand))
+            if dates:
+                break
         if not eid or not dates:
             continue
-        place = re.search(r'clip-xs">\s*(.*?)\s*<', row, re.S)
+        place = (re.search(r'clip-xs">\s*(.*?)\s*<', row, re.S)
+                 or re.search(r'font_md_large[^"]*">\s*(.*?)\s*<', row, re.S))
         nation = re.search(r'country__name-short">(\w+)<', row)
-        d1, d2, m1, d3, m2, year = dates.groups()
-        y = int(year)
-        start = dt.date(y if not d3 or MONTHS[m1] <= MONTHS[m2] else y - 1, MONTHS[m1], int(d1))
-        end_day = int(d3 or d2 or d1)
-        end = dt.date(y, MONTHS[m2 or m1], end_day)
         events.append({
             "id": eid.group(1),
             "place": html.unescape(place.group(1)).strip() if place else "?",
             "nation": nation.group(1) if nation else "",
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-            "cancelled": 'title="Cancelled"' in row,
+            "start": dates[0].isoformat(),
+            "end": dates[1].isoformat(),
         })
     return events
 
@@ -159,7 +175,7 @@ def parse_event(h, season):
             "discipline": disc,
             "category": cat,
             "gender": gender,
-            "team": "Team" in disc or "Mixed" in disc or "Super" in disc,
+            "team": bool(re.search(r"Team|Mixed|Super|Duo|Duet|Pair", disc)),
             "cancelled": 'title="Cancelled"' in row,
         })
     races.sort(key=lambda r: (r["date"], r["codex"]))
@@ -170,14 +186,28 @@ def build_calendar(season):
     url = (f"{BASE}/ski-jumping/calendar-results.html?eventselection=&place=&sectorcode=JP"
            f"&seasoncode={season}&categorycode=WC&disciplinecode=&gendercode=&racedate=&racecodex="
            f"&nationcode=&seasonmonth=X-{season}&saveselection=-1&seasonselection=")
-    events = parse_calendar(fetch(url), season)
+    # cykle (Turniej Czterech Skoczni, Two Nights Tour…) mają kraj "FIS" i zawierają tylko
+    # klasyfikacje łączne, które nie są osobnymi konkursami
+    events = [e for e in parse_calendar(fetch(url), season) if e["nation"] != "FIS"]
+    # Cykle (Turniej Czterech Skoczni, Two Nights Tour…) zawierają te same konkursy co zawody,
+    # z których się składają. Najpierw krótsze zawody, a każdy konkurs przypisany tylko raz.
+    events.sort(key=lambda e: (dt.date.fromisoformat(e["end"]) - dt.date.fromisoformat(e["start"]), e["start"]))
+    seen = set()
+    out = []
     for ev in events:
         eh = fetch(f"{BASE}/general/event-details.html?sectorcode=JP&eventid={ev['id']}&seasoncode={season}")
         # punktowane: konkursy indywidualne PŚ + kwalifikacje do nich
-        ev["races"] = [r for r in parse_event(eh, season)
-                       if r["category"] in ("WC", "QUA") and not r["team"] and r["gender"] in ("M", "W")]
-        print(f"  {ev['start']} {ev['place']}: {len(ev['races'])} konkursów")
-    return events
+        races = [r for r in parse_event(eh, season)
+                 if r["category"] in ("WC", "QUA") and not r["team"] and r["gender"] in ("M", "W") and r["id"] not in seen]
+        if not races:
+            continue
+        seen.update(r["id"] for r in races)
+        ev["races"] = races
+        ev["cancelled"] = all(r["cancelled"] for r in races)
+        out.append(ev)
+        print(f"  {ev['start']} {ev['place']}: {len(races)} konkursów{' (odwołane)' if ev['cancelled'] else ''}")
+    out.sort(key=lambda e: e["start"])
+    return out
 
 
 # ---------------------------------------------------------------- wyniki
@@ -272,6 +302,17 @@ def main():
     save({"season": args.season, "updated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
           "events": events}, os.path.join(out, "calendar.json"))
 
+    # wszystkie wyniki w jednym pliku – strona wczytuje jeden plik zamiast kilkuset
+    bundle = {}
+    for ev in events:
+        for race in ev["races"]:
+            path = os.path.join(out, "results", f"{race['id']}.json")
+            if race.get("hasResults") and os.path.exists(path):
+                with open(path, encoding="utf-8") as f:
+                    bundle[race["id"]] = json.load(f)
+    with open(os.path.join(out, "results.json"), "w", encoding="utf-8") as f:
+        json.dump(bundle, f, ensure_ascii=False, separators=(",", ":"))
+
     # zawodnicy spoza listy, którzy wystartowali w tym sezonie
     with open(athletes_path, encoding="utf-8") as f:
         adata = json.load(f)
@@ -292,6 +333,22 @@ def main():
     if added:
         print(f"  dopisano {added} nowych zawodników")
         save(adata, athletes_path)
+
+    # końcowa klasyfikacja zeszłego sezonu; bieżącą aplikacja liczy sama z wyników
+    # (dla nierozpoczętego sezonu FIS zwraca tu inne dane niż zera)
+    print("Klasyfikacja PŚ zeszłego sezonu...")
+    stand = {"season": args.season, "updated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
+    for key, season in (("previous", args.season - 1),):
+        stand[key] = {}
+        for gender in ("M", "W"):
+            try:
+                rows = standings(season, gender)
+            except Exception as e:  # noqa: BLE001
+                print(f"  brak klasyfikacji {season} {gender}: {e}", file=sys.stderr)
+                rows = []
+            stand[key][gender] = rows
+            print(f"  {season} {gender}: {len(rows)}")
+    save(stand, os.path.join(out, "standings.json"))
     print("Gotowe.")
 
 

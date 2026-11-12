@@ -1,0 +1,552 @@
+{
+ "raceId": "7508",
+ "date": "2026-01-01",
+ "final": true,
+ "fetched": "2026-11-12T14:26:35+00:00",
+ "results": [
+  {
+   "id": "186516",
+   "name": "PREVC Domen",
+   "nation": "SLO",
+   "rank": 1,
+   "jumps": [],
+   "total": 1195.6
+  },
+  {
+   "id": "197640",
+   "name": "HOERL Jan",
+   "nation": "AUT",
+   "rank": 2,
+   "jumps": [],
+   "total": 1153.3
+  },
+  {
+   "id": "229566",
+   "name": "EMBACHER Stephan",
+   "nation": "AUT",
+   "rank": 3,
+   "jumps": [],
+   "total": 1150.6
+  },
+  {
+   "id": "194909",
+   "name": "NIKAIDO Ren",
+   "nation": "JPN",
+   "rank": 4,
+   "jumps": [],
+   "total": 1123.5
+  },
+  {
+   "id": "155620",
+   "name": "KOBAYASHI Ryoyu",
+   "nation": "JPN",
+   "rank": 5,
+   "jumps": [],
+   "total": 1123.1
+  },
+  {
+   "id": "166436",
+   "name": "HOFFMANN Felix",
+   "nation": "GER",
+   "rank": 6,
+   "jumps": [],
+   "total": 1120.3
+  },
+  {
+   "id": "196759",
+   "name": "TSCHOFENIG Daniel",
+   "nation": "AUT",
+   "rank": 7,
+   "jumps": [],
+   "total": 1115.8
+  },
+  {
+   "id": "196090",
+   "name": "RAIMUND Philipp",
+   "nation": "GER",
+   "rank": 8,
+   "jumps": [],
+   "total": 1089.6
+  },
+  {
+   "id": "162711",
+   "name": "LANISEK Anze",
+   "nation": "SLO",
+   "rank": 9,
+   "jumps": [],
+   "total": 1074.5
+  },
+  {
+   "id": "17013",
+   "name": "FETTNER Manuel",
+   "nation": "AUT",
+   "rank": 10,
+   "jumps": [],
+   "total": 1056.5
+  },
+  {
+   "id": "128286",
+   "name": "KRAFT Stefan",
+   "nation": "AUT",
+   "rank": 11,
+   "jumps": [],
+   "total": 1053.5
+  },
+  {
+   "id": "239625",
+   "name": "TOMASIAK Kacper",
+   "nation": "POL",
+   "rank": 12,
+   "jumps": [],
+   "total": 1052.1
+  },
+  {
+   "id": "147549",
+   "name": "FORFANG Johann Andre",
+   "nation": "NOR",
+   "rank": 13,
+   "jumps": [],
+   "total": 1025.4
+  },
+  {
+   "id": "111930",
+   "name": "ZOGRAFSKI Vladimir",
+   "nation": "BUL",
+   "rank": 14,
+   "jumps": [],
+   "total": 1022.9
+  },
+  {
+   "id": "196784",
+   "name": "SCHUSTER Jonas",
+   "nation": "AUT",
+   "rank": 15,
+   "jumps": [],
+   "total": 1019.5
+  },
+  {
+   "id": "209633",
+   "name": "ORTNER Maximilian",
+   "nation": "AUT",
+   "rank": 16,
+   "jumps": [],
+   "total": 1018.5
+  },
+  {
+   "id": "182595",
+   "name": "HAUSWIRTH Sandro",
+   "nation": "SUI",
+   "rank": 17,
+   "jumps": [],
+   "total": 994.6
+  },
+  {
+   "id": "219184",
+   "name": "SUNDAL Kristoffer Eriksen",
+   "nation": "NOR",
+   "rank": 18,
+   "jumps": [],
+   "total": 890.4
+  },
+  {
+   "id": "73228",
+   "name": "STOCH Kamil",
+   "nation": "POL",
+   "rank": 19,
+   "jumps": [],
+   "total": 880.3
+  },
+  {
+   "id": "160506",
+   "name": "NAKAMURA Naoki",
+   "nation": "JPN",
+   "rank": 20,
+   "jumps": [],
+   "total": 871.5
+  },
+  {
+   "id": "124118",
+   "name": "DESCHWANDEN Gregor",
+   "nation": "SUI",
+   "rank": 21,
+   "jumps": [],
+   "total": 846.7
+  },
+  {
+   "id": "212387",
+   "name": "FOUBERT Valentin",
+   "nation": "FRA",
+   "rank": 22,
+   "jumps": [],
+   "total": 840.5
+  },
+  {
+   "id": "99976",
+   "name": "PASCHKE Pius",
+   "nation": "GER",
+   "rank": 23,
+   "jumps": [],
+   "total": 838.4
+  },
+  {
+   "id": "201761",
+   "name": "OBLAK Rok",
+   "nation": "SLO",
+   "rank": 24,
+   "jumps": [],
+   "total": 819.5
+  },
+  {
+   "id": "118113",
+   "name": "KOT Maciej",
+   "nation": "POL",
+   "rank": 25,
+   "jumps": [],
+   "total": 733.4
+  },
+  {
+   "id": "104161",
+   "name": "KOUDELKA Roman",
+   "nation": "CZE",
+   "rank": 26,
+   "jumps": [],
+   "total": 705.7
+  },
+  {
+   "id": "185562",
+   "name": "PEDERSEN Robin",
+   "nation": "NOR",
+   "rank": 27,
+   "jumps": [],
+   "total": 699.7
+  },
+  {
+   "id": "253455",
+   "name": "LANGMO Isak Andreas",
+   "nation": "NOR",
+   "rank": 28,
+   "jumps": [],
+   "total": 694.1
+  },
+  {
+   "id": "182547",
+   "name": "AALTO Antti",
+   "nation": "FIN",
+   "rank": 29,
+   "jumps": [],
+   "total": 684.5
+  },
+  {
+   "id": "180709",
+   "name": "GRANERUD Halvor Egner",
+   "nation": "NOR",
+   "rank": 30,
+   "jumps": [],
+   "total": 645.0
+  },
+  {
+   "id": "261496",
+   "name": "COLBY Jason",
+   "nation": "USA",
+   "rank": 31,
+   "jumps": [],
+   "total": 629.7
+  },
+  {
+   "id": "239926",
+   "name": "MIZERNYKH Ilya",
+   "nation": "KAZ",
+   "rank": 32,
+   "jumps": [],
+   "total": 603.8
+  },
+  {
+   "id": "174872",
+   "name": "LINDVIK Marius",
+   "nation": "NOR",
+   "rank": 33,
+   "jumps": [],
+   "total": 496.3
+  },
+  {
+   "id": "149215",
+   "name": "SATO Yukiya",
+   "nation": "JPN",
+   "rank": 34,
+   "jumps": [],
+   "total": 467.3
+  },
+  {
+   "id": "182407",
+   "name": "WASEK Pawel",
+   "nation": "POL",
+   "rank": 35,
+   "jumps": [],
+   "total": 453.6
+  },
+  {
+   "id": "174244",
+   "name": "WELLINGER Andreas",
+   "nation": "GER",
+   "rank": 36,
+   "jumps": [],
+   "total": 437.3
+  },
+  {
+   "id": "196315",
+   "name": "NOUSIAINEN Eetu",
+   "nation": "FIN",
+   "rank": 37,
+   "jumps": [],
+   "total": 425.9
+  },
+  {
+   "id": "173399",
+   "name": "BICKNER Kevin",
+   "nation": "USA",
+   "rank": 38,
+   "jumps": [],
+   "total": 396.4
+  },
+  {
+   "id": "128447",
+   "name": "AIGNER Clemens",
+   "nation": "AUT",
+   "rank": 39,
+   "jumps": [],
+   "total": 383.9
+  },
+  {
+   "id": "117102",
+   "name": "NAITO Tomofumi",
+   "nation": "JPN",
+   "rank": 40,
+   "jumps": [],
+   "total": 371.4
+  },
+  {
+   "id": "153777",
+   "name": "PEIER Killian",
+   "nation": "SUI",
+   "rank": 41,
+   "jumps": [],
+   "total": 343.9
+  },
+  {
+   "id": "175089",
+   "name": "INSAM Alex",
+   "nation": "ITA",
+   "rank": 42,
+   "jumps": [],
+   "total": 337.9
+  },
+  {
+   "id": "111251",
+   "name": "KUBACKI Dawid",
+   "nation": "POL",
+   "rank": 43,
+   "jumps": [],
+   "total": 335.2
+  },
+  {
+   "id": "229337",
+   "name": "TRUNZ Felix",
+   "nation": "SUI",
+   "rank": 44,
+   "jumps": [],
+   "total": 335.1
+  },
+  {
+   "id": "128621",
+   "name": "GEIGER Karl",
+   "nation": "GER",
+   "rank": 45,
+   "jumps": [],
+   "total": 323.7
+  },
+  {
+   "id": "213180",
+   "name": "VASSILYEV Danil",
+   "nation": "KAZ",
+   "rank": 46,
+   "jumps": [],
+   "total": 304.8
+  },
+  {
+   "id": "78803",
+   "name": "BOYD-CLOWES Mackenzie",
+   "nation": "CAN",
+   "rank": 47,
+   "jumps": [],
+   "total": 296.5
+  },
+  {
+   "id": "181027",
+   "name": "AIGRO Artti",
+   "nation": "EST",
+   "rank": 48,
+   "jumps": [],
+   "total": 252.2
+  },
+  {
+   "id": "212601",
+   "name": "OESTVOLD Benjamin",
+   "nation": "NOR",
+   "rank": 49,
+   "jumps": [],
+   "total": 252.0
+  },
+  {
+   "id": "973",
+   "name": "AMMANN Simon",
+   "nation": "SUI",
+   "rank": 50,
+   "jumps": [],
+   "total": 232.3
+  },
+  {
+   "id": "180889",
+   "name": "KYTOSAHO Niko",
+   "nation": "FIN",
+   "rank": 51,
+   "jumps": [],
+   "total": 222.6
+  },
+  {
+   "id": "174348",
+   "name": "LEITNER Clemens",
+   "nation": "AUT",
+   "rank": 52,
+   "jumps": [],
+   "total": 220.4
+  },
+  {
+   "id": "222511",
+   "name": "BACHLINGER Niklas",
+   "nation": "AUT",
+   "rank": 53,
+   "jumps": [],
+   "total": 216.2
+  },
+  {
+   "id": "195981",
+   "name": "BRESADOLA Giovanni",
+   "nation": "ITA",
+   "rank": 54,
+   "jumps": [],
+   "total": 213.2
+  },
+  {
+   "id": "126003",
+   "name": "KOBAYASHI Junshiro",
+   "nation": "JPN",
+   "rank": 55,
+   "jumps": [],
+   "total": 212.3
+  },
+  {
+   "id": "223050",
+   "name": "KOBAYASHI Sakutaro",
+   "nation": "JPN",
+   "rank": 56,
+   "jumps": [],
+   "total": 211.8
+  },
+  {
+   "id": "190011",
+   "name": "MARUSIAK Yevhen",
+   "nation": "UKR",
+   "rank": 57,
+   "jumps": [],
+   "total": 210.7
+  },
+  {
+   "id": "201766",
+   "name": "MOGEL Zak",
+   "nation": "SLO",
+   "rank": 58,
+   "jumps": [],
+   "total": 209.3
+  },
+  {
+   "id": "239973",
+   "name": "PALOSAARI Vilho",
+   "nation": "FIN",
+   "rank": 59,
+   "jumps": [],
+   "total": 198.0
+  },
+  {
+   "id": "73232",
+   "name": "ZYLA Piotr",
+   "nation": "POL",
+   "rank": 60,
+   "jumps": [],
+   "total": 118.8
+  },
+  {
+   "id": "188723",
+   "name": "ROTH Luca",
+   "nation": "GER",
+   "rank": 61,
+   "jumps": [],
+   "total": 107.2
+  },
+  {
+   "id": "204078",
+   "name": "MASLE Rok",
+   "nation": "SLO",
+   "rank": 62,
+   "jumps": [],
+   "total": 104.6
+  },
+  {
+   "id": "238368",
+   "name": "VAGUL Kaimar",
+   "nation": "EST",
+   "rank": 63,
+   "jumps": [],
+   "total": 104.6
+  },
+  {
+   "id": "218366",
+   "name": "CHERVET Jules",
+   "nation": "FRA",
+   "rank": 64,
+   "jumps": [],
+   "total": 102.6
+  },
+  {
+   "id": "221813",
+   "name": "BAYER Ben",
+   "nation": "GER",
+   "rank": 65,
+   "jumps": [],
+   "total": 101.3
+  },
+  {
+   "id": "274243",
+   "name": "FRANTZ Tate",
+   "nation": "USA",
+   "rank": 66,
+   "jumps": [],
+   "total": 96.1
+  },
+  {
+   "id": "189105",
+   "name": "SCHMID Constantin",
+   "nation": "GER",
+   "rank": 67,
+   "jumps": [],
+   "total": 94.6
+  },
+  {
+   "id": "229759",
+   "name": "KESSELI Juri",
+   "nation": "SUI",
+   "rank": 68,
+   "jumps": [],
+   "total": 94.1
+  }
+ ]
+}

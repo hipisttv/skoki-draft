@@ -42,9 +42,26 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 4. Strona będzie pod adresem `https://<twoj-login>.github.io/<nazwa-repo>/`.
 
 ### 3. Liga
-1. Wejdź na stronę → **Ustawienia** → dodaj uczestników → **Losuj kolejność**.
-2. Każdy wybiera u góry „Jestem: …” i robicie **Draft** (na żywo, każdy na swoim telefonie/komputerze).
-3. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (🧢) i ewentualnie wstawia rezerwowego.
+1. **Admin otwiera ligę:** pierwsza osoba, która wejdzie na stronę, podaje nazwę ligi i **hasło administratora**.
+   Do tego czasu nikt inny nie może się zapisać.
+2. Admin klika u góry swoje imię → **Dołącz jako gracz** (jeśli też gra) i wysyła znajomym link.
+3. **Gracze się zapisują:** każdy wpisuje imię i wymyśla PIN (4–8 cyfr) – PIN-em loguje się potem na telefonie i komputerze.
+4. Admin w **Panelu admina** ustawia kolejność (albo **Losuj**) i klika **Rozpocznij draft** – zapisy się zamykają.
+5. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
+6. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
+
+Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
+
+## Co jest w aplikacji
+
+- **Ranking** – tabela ligi, wykres przebiegu sezonu, punkty w każdym weekendzie, najlepsi zawodnicy, statystyki kapitanów.
+- **Drużyny** – składy wszystkich graczy na wybrany weekend, kapitanowie, punkty; edycja własnego składu.
+- **Kalendarz** – wszystkie weekendy PŚ; po kliknięciu konkursu: pełne wyniki z odległościami, kto ma którego zawodnika,
+  punkty każdej drużyny i rozbicie na miejsce / bonusy / kapitana.
+- **Puchar Świata** – klasyfikacja generalna mężczyzn i kobiet (bieżąca liczona z wyników FIS, zeszłoroczna z FIS) z informacją, kto ma zawodnika.
+- **Draft** – tablica draftu na żywo i lista zawodników z filtrami.
+- **Zawodnicy** – ile punktów ligi zdobywa każdy skoczek, także wolni.
+- **Panel admina** – gracze, kolejność i start draftu, cofanie wyborów, punktacja, kopia zapasowa.
 
 ## Zasady zaimplementowane w aplikacji
 
@@ -56,7 +73,7 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 - Kapitan ×2 za wszystko w danym weekendzie. Punktują tylko zawodnicy ze składu (rezerwowi nie).
 - Weekend = zawody PŚ mężczyzn i kobiet, których terminy się pokrywają (np. Ruka + Hinzenbach).
 - Skład i kapitana można zmieniać do północy przed pierwszym dniem weekendu (pierwsze kwalifikacje), potem są zablokowane.
-- Punktowane są konkursy indywidualne PŚ i kwalifikacje do nich (bez drużynówek i mikstów).
+- Punktowane i pokazywane w kalendarzu są tylko konkursy indywidualne PŚ i kwalifikacje do nich – bez drużynówek, duetów i mikstów.
 - **Rekord skoczni** nie jest oznaczany w danych FIS, więc zaznacza się go ręcznie w widoku konkursu
   (przycisk „Oznacz rekord skoczni”) – dopiero gdy rekord zostanie oficjalnie uznany.
 

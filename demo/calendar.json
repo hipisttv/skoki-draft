@@ -1,6 +1,6 @@
 {
  "season": 2026,
- "updated": "2026-11-12T04:36:36+00:00",
+ "updated": "2026-11-12T14:29:03+00:00",
  "events": [
   {
    "id": "58076",
@@ -8,7 +8,6 @@
    "nation": "NOR",
    "start": "2025-11-20",
    "end": "2025-11-23",
-   "cancelled": false,
    "races": [
     {
      "id": "7458",
@@ -106,7 +105,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58077",
@@ -114,7 +114,6 @@
    "nation": "SWE",
    "start": "2025-11-24",
    "end": "2025-11-30",
-   "cancelled": false,
    "races": [
     {
      "id": "7467",
@@ -211,7 +210,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58078",
@@ -219,7 +219,6 @@
    "nation": "FIN",
    "start": "2025-11-28",
    "end": "2025-11-30",
-   "cancelled": false,
    "races": [
     {
      "id": "7475",
@@ -267,7 +266,8 @@
      "team": false,
      "cancelled": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58079",
@@ -275,7 +275,6 @@
    "nation": "POL",
    "start": "2025-12-03",
    "end": "2025-12-07",
-   "cancelled": false,
    "races": [
     {
      "id": "7479",
@@ -373,15 +372,15 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58080",
-   "place": "?",
+   "place": "Lake Placid",
    "nation": "USA",
    "start": "2025-12-12",
    "end": "2025-12-14",
-   "cancelled": true,
    "races": [
     {
      "id": "7487",
@@ -427,7 +426,8 @@
      "team": false,
      "cancelled": true
     }
-   ]
+   ],
+   "cancelled": true
   },
   {
    "id": "58645",
@@ -435,7 +435,6 @@
    "nation": "GER",
    "start": "2025-12-12",
    "end": "2025-12-14",
-   "cancelled": false,
    "races": [
     {
      "id": "7623",
@@ -533,7 +532,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58081",
@@ -541,7 +541,6 @@
    "nation": "SUI",
    "start": "2025-12-19",
    "end": "2025-12-21",
-   "cancelled": false,
    "races": [
     {
      "id": "7493",
@@ -639,7 +638,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58086",
@@ -647,7 +647,6 @@
    "nation": "GER",
    "start": "2025-12-28",
    "end": "2025-12-29",
-   "cancelled": false,
    "races": [
     {
      "id": "7500",
@@ -673,7 +672,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58108",
@@ -681,7 +681,6 @@
    "nation": "GER",
    "start": "2025-12-30",
    "end": "2025-12-31",
-   "cancelled": false,
    "races": [
     {
      "id": "7528",
@@ -707,7 +706,42 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
+  },
+  {
+   "id": "58088",
+   "place": "Garmisch-Partenkirchen",
+   "nation": "GER",
+   "start": "2025-12-31",
+   "end": "2026-01-01",
+   "races": [
+    {
+     "id": "7502",
+     "date": "2025-12-31",
+     "time": "16:00",
+     "codex": "3105",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7503",
+     "date": "2026-01-01",
+     "time": "14:00",
+     "codex": "3106",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    }
+   ],
+   "cancelled": false
   },
   {
    "id": "58109",
@@ -715,7 +749,6 @@
    "nation": "GER",
    "start": "2026-01-01",
    "end": "2026-01-01",
-   "cancelled": false,
    "races": [
     {
      "id": "7530",
@@ -741,7 +774,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58093",
@@ -749,7 +783,6 @@
    "nation": "AUT",
    "start": "2026-01-03",
    "end": "2026-01-04",
-   "cancelled": false,
    "races": [
     {
      "id": "7504",
@@ -775,7 +808,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58098",
@@ -783,7 +817,6 @@
    "nation": "AUT",
    "start": "2026-01-05",
    "end": "2026-01-06",
-   "cancelled": false,
    "races": [
     {
      "id": "7506",
@@ -809,7 +842,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58113",
@@ -817,7 +851,6 @@
    "nation": "AUT",
    "start": "2026-01-05",
    "end": "2026-01-06",
-   "cancelled": false,
    "races": [
     {
      "id": "7532",
@@ -867,7 +900,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58117",
@@ -875,7 +909,6 @@
    "nation": "SLO",
    "start": "2026-01-09",
    "end": "2026-01-11",
-   "cancelled": false,
    "races": [
     {
      "id": "7536",
@@ -925,7 +958,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58104",
@@ -933,7 +967,6 @@
    "nation": "POL",
    "start": "2026-01-10",
    "end": "2026-01-11",
-   "cancelled": false,
    "races": [
     {
      "id": "7509",
@@ -959,7 +992,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58121",
@@ -967,7 +1001,6 @@
    "nation": "CHN",
    "start": "2026-01-13",
    "end": "2026-01-18",
-   "cancelled": false,
    "races": [
     {
      "id": "7721",
@@ -1016,7 +1049,8 @@
      "team": false,
      "cancelled": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58105",
@@ -1024,7 +1058,6 @@
    "nation": "JPN",
    "start": "2026-01-16",
    "end": "2026-01-18",
-   "cancelled": false,
    "races": [
     {
      "id": "7512",
@@ -1074,7 +1107,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58123",
@@ -1082,7 +1116,6 @@
    "nation": "JPN",
    "start": "2026-01-19",
    "end": "2026-01-21",
-   "cancelled": false,
    "races": [
     {
      "id": "7540",
@@ -1132,7 +1165,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58126",
@@ -1140,7 +1174,6 @@
    "nation": "JPN",
    "start": "2026-01-23",
    "end": "2026-01-25",
-   "cancelled": false,
    "races": [
     {
      "id": "7544",
@@ -1190,7 +1223,206 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
+  },
+  {
+   "id": "58107",
+   "place": "Willingen",
+   "nation": "GER",
+   "start": "2026-01-30",
+   "end": "2026-02-01",
+   "races": [
+    {
+     "id": "7520",
+     "date": "2026-01-31",
+     "time": "11:45",
+     "codex": "3123",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7522",
+     "date": "2026-01-31",
+     "time": "13:15",
+     "codex": "3125",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7523",
+     "date": "2026-01-31",
+     "time": "16:00",
+     "codex": "3126",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7525",
+     "date": "2026-02-01",
+     "time": "11:45",
+     "codex": "3128",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7526",
+     "date": "2026-02-01",
+     "time": "13:15",
+     "codex": "3129",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7527",
+     "date": "2026-02-01",
+     "time": "16:00",
+     "codex": "3130",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    }
+   ],
+   "cancelled": false
+  },
+  {
+   "id": "58132",
+   "place": "Kulm",
+   "nation": "AUT",
+   "start": "2026-02-27",
+   "end": "2026-03-01",
+   "races": [
+    {
+     "id": "7552",
+     "date": "2026-02-27",
+     "time": "13:30",
+     "codex": "3155",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7553",
+     "date": "2026-02-28",
+     "time": "13:30",
+     "codex": "3156",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7554",
+     "date": "2026-03-01",
+     "time": "12:00",
+     "codex": "3157",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7555",
+     "date": "2026-03-01",
+     "time": "13:30",
+     "codex": "3158",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    }
+   ],
+   "cancelled": false
+  },
+  {
+   "id": "58129",
+   "place": "Hinzenbach",
+   "nation": "AUT",
+   "start": "2026-02-28",
+   "end": "2026-03-01",
+   "races": [
+    {
+     "id": "7550",
+     "date": "2026-02-28",
+     "time": null,
+     "codex": "3153",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7551",
+     "date": "2026-02-28",
+     "time": "15:20",
+     "codex": "3154",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7548",
+     "date": "2026-03-01",
+     "time": null,
+     "codex": "3151",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    },
+    {
+     "id": "7549",
+     "date": "2026-03-01",
+     "time": "15:20",
+     "codex": "3152",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "hasResults": true
+    }
+   ],
+   "cancelled": false
   },
   {
    "id": "58134",
@@ -1198,7 +1430,6 @@
    "nation": "FIN",
    "start": "2026-03-05",
    "end": "2026-03-08",
-   "cancelled": false,
    "races": [
     {
      "id": "7556",
@@ -1284,7 +1515,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58135",
@@ -1292,7 +1524,6 @@
    "nation": "NOR",
    "start": "2026-03-13",
    "end": "2026-03-15",
-   "cancelled": false,
    "races": [
     {
      "id": "7564",
@@ -1390,7 +1621,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58136",
@@ -1398,7 +1630,6 @@
    "nation": "NOR",
    "start": "2026-03-20",
    "end": "2026-03-22",
-   "cancelled": false,
    "races": [
     {
      "id": "7572",
@@ -1494,7 +1725,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   },
   {
    "id": "58137",
@@ -1502,7 +1734,6 @@
    "nation": "SLO",
    "start": "2026-03-26",
    "end": "2026-03-29",
-   "cancelled": false,
    "races": [
     {
      "id": "7578",
@@ -1552,7 +1783,8 @@
      "cancelled": false,
      "hasResults": true
     }
-   ]
+   ],
+   "cancelled": false
   }
  ]
 }

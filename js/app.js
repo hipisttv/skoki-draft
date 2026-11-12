@@ -1,53 +1,90 @@
 import { createStore } from './store.js';
+import { leagueId } from '../firebase-config.js';
 import {
   FIS_POINTS, DEFAULT_BONUS, TEAM, TEAM_SIZE, buildWeekends, isLocked, snakeOrder, teams, canPick,
-  lineupFor, validLineup, computeAll, racePoints, longestJump,
+  lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
 } from './scoring.js';
+import {
+  esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
+} from './ui.js';
 
-// ---------------------------------------------------------------- stan
+// ================================================================ stan
 
 const params = new URLSearchParams(location.search);
 const DATA = params.get('data') || 'data';
-const app = document.getElementById('app');
+const root = document.getElementById('root');
 
-let state = null;      // wspólny stan ligi
+let state = null;        // wspólny stan ligi (Firebase / localStorage)
 let store = null;
-let athletes = [];     // z data/athletes.json
-let athSeason = 0;     // sezon, dla którego zbudowano listę (ranking = sezon wcześniejszy)
+let athletes = [];       // data/athletes.json
+let athSeason = 0;       // sezon, dla którego zbudowano listę (ranking = sezon wcześniejszy)
 let byId = {};
 let calendar = null;
+let standings = null;    // data/standings.json (końcowa klasyfikacja zeszłego sezonu)
 let weekends = [];
-let results = {};      // raceId -> wyniki
-let calc = null;       // wynik computeAll
-const ui = {           // stan widoku, tylko lokalnie
-  gender: 'ALL', q: '', hideTaken: false, weekend: null, editRecord: false,
+let results = {};        // raceId -> wyniki
+let calc = null;
+let lastPicks = null;
+
+const ui = {
+  authMode: null, gender: 'ALL', q: '', hideTaken: true, weekend: null, editRecord: false,
+  wcGender: 'M', wcSeason: 'current', menu: false,
 };
 
 const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignoruj */ } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* tryb prywatny */ } },
 };
-let me = LS.get('skoki-me', null);
-let admin = LS.get('skoki-admin', false);
+const SESSION_KEY = `skoki-session-${leagueId || 'main'}${DATA === 'data' ? '' : '-' + DATA}`;
+let session = LS.get(SESSION_KEY, {});   // { pid, pinHash, adminHash }
 
-// ---------------------------------------------------------------- pomocnicze
+// ================================================================ pomocnicze
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtDay = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
 const fmtDow = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' });
-const range = (a, b) => (a === b ? fmtDay(a) : `${fmtDay(a)} – ${fmtDay(b)}`);
-const pname = (pid) => state.participants.find((p) => p.id === pid)?.name ?? '?';
-const aname = (id) => {
-  const a = byId[id];
-  if (!a) return id;
-  const [last, ...first] = a.name.split(' ');
-  return `${first.join(' ')} ${last.charAt(0) + last.slice(1).toLowerCase()}`.trim();
+const fmtLong = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
+const range = (a, b) => {
+  if (a === b) return fmtDay(a);
+  const da = new Date(a + 'T12:00:00'); const db = new Date(b + 'T12:00:00');
+  return da.getMonth() === db.getMonth() ? `${da.getDate()}–${fmtDay(b)}` : `${fmtDay(a)} – ${fmtDay(b)}`;
 };
-const gtag = (g) => (g === 'W' ? '<span class="tag w">K</span>' : '<span class="tag">M</span>');
-const raceLabel = (r) => `${r.category === 'QUA' ? 'Kwalifikacje' : 'Konkurs'} ${r.gender === 'W' ? 'kobiet' : 'mężczyzn'}`;
-const hillShort = (d) => (d.match(/Flying/) ? 'mamucia' : d.match(/Normal/) ? 'normalna' : 'duża');
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const daysTo = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5);
+const inDays = (n) => (n === 0 ? 'dziś' : n === 1 ? 'jutro' : `za ${n} dni`);
+const pl = (n, one, few, many) => {
+  const m10 = n % 10; const m100 = n % 100;
+  if (n === 1) return one;
+  return m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? few : many;
+};
+const seasonLabel = (s) => `${s - 1}/${String(s).slice(2)}`;
+
+const P = (pid) => state.participants.find((p) => p.id === pid);
+const pname = (pid) => P(pid)?.name ?? '?';
+const me = () => (session.pid && P(session.pid)?.pinHash === session.pinHash ? P(session.pid) : null);
+const isAdmin = () => !!state.setup && session.adminHash === state.setup.adminHash;
+const phase = () => (!state.draftStarted ? 'signup' : state.picks.length < state.draftOrder.length * TEAM_SIZE ? 'draft' : 'season');
+
+const prettyName = (full) => {
+  const parts = String(full || '').split(' ');
+  const last = parts.filter((x) => x === x.toUpperCase() && /[A-ZÀ-Ž]/.test(x));
+  const first = parts.filter((x) => !last.includes(x));
+  return { first: first.join(' '), last: last.map((x) => x.charAt(0) + x.slice(1).toLowerCase()).join(' ') || full };
+};
+const athInfo = (id, fallback) => byId[id] || fallback || { id, name: id, nation: '' };
+function ath(id, { fallback, short = false, gender = true } = {}) {
+  const a = athInfo(id, fallback);
+  const n = prettyName(a.name);
+  const g = gender && a.gender ? `<span class="g ${a.gender === 'W' ? 'w' : ''}">${a.gender === 'W' ? 'K' : 'M'}</span>` : '';
+  return `<span class="ath">${g}${flag(a.nation)}<span class="nm">${short ? '' : esc(n.first) + ' '}<b>${esc(n.last)}</b></span></span>`;
+}
 const ownerOf = (aid) => Object.entries(calc.teams).find(([, ids]) => ids.includes(aid))?.[0];
-const today = () => new Date().toISOString().slice(0, 10);
+function owner(pid, extra = '') {
+  const p = P(pid);
+  if (!p) return '<span class="muted xs">wolny</span>';
+  return `<span class="owner"><span class="sw" style="background:${p.color}"></span>${esc(p.name)}${extra}</span>`;
+}
+const raceLabel = (r) => `${r.category === 'QUA' ? 'Kwalifikacje' : 'Konkurs'} ${r.gender === 'W' ? 'kobiet' : 'mężczyzn'}`;
+const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
 
 function weekendStatus(w) {
   const t = today();
@@ -55,16 +92,25 @@ function weekendStatus(w) {
   if (t >= w.start) return 'live';
   return 'next';
 }
+const currentWeekend = () => weekends.find((w) => weekendStatus(w) !== 'past') || weekends[weekends.length - 1];
+const lockLabel = (w) => {
+  const d = new Date(w.start + 'T00:00:00'); d.setMinutes(-1);
+  return d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
 
-function currentWeekend() {
-  return weekends.find((w) => weekendStatus(w) !== 'past') || weekends[weekends.length - 1];
+async function save(fn, okMsg) {
+  try {
+    await store.update(fn);
+    if (okMsg) toast(okMsg, 'ok');
+    return true;
+  } catch (e) {
+    toast(e.message || String(e), 'err');
+    return false;
+  }
 }
+const fail = (msg) => { throw new Error(msg); };
 
-async function save(fn) {
-  try { await store.update(fn); } catch (e) { alert('Nie udało się zapisać: ' + e.message); }
-}
-
-// ---------------------------------------------------------------- start
+// ================================================================ start
 
 async function loadData() {
   const get = async (p) => {
@@ -72,181 +118,476 @@ async function loadData() {
     if (!r.ok) throw new Error(`${p}: ${r.status}`);
     return r.json();
   };
-  const [a, c] = await Promise.all([get('athletes.json'), get('calendar.json')]);
+  const [a, c, s] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null)]);
   athletes = a.athletes;
   athSeason = a.season;
   byId = Object.fromEntries(athletes.map((x, i) => [x.id, { ...x, idx: i + 1 }]));
   calendar = c;
+  standings = s;
   weekends = buildWeekends(c.events.filter((e) => !e.cancelled));
   const races = weekends.flatMap((w) => w.races).filter((r) => r.hasResults);
-  const loaded = await Promise.all(races.map((r) => get(`results/${r.id}.json`).catch(() => null)));
-  races.forEach((r, i) => { if (loaded[i]) results[r.id] = loaded[i]; });
+  const bundle = await get('results.json').catch(() => ({}));
+  const missing = races.filter((r) => !bundle[r.id]);
+  const loaded = await Promise.all(missing.map((r) => get(`results/${r.id}.json`).catch(() => null)));
+  missing.forEach((r, i) => { if (loaded[i]) bundle[r.id] = loaded[i]; });
+  for (const r of races) if (bundle[r.id]) results[r.id] = bundle[r.id];
 }
 
 async function init() {
   try {
     await loadData();
   } catch (e) {
-    app.innerHTML = `<div class="card">Nie udało się wczytać danych FIS (${esc(e.message)}). Uruchom <code>python scraper/fis.py</code>.</div>`;
+    root.innerHTML = `<div class="wrap"><div class="card empty">${icon('info')}<b>Nie udało się wczytać danych FIS</b>${esc(e.message)}</div></div>`;
     return;
   }
-  store = await createStore((s) => { state = s; render(); });
-  document.getElementById('banner').innerHTML = store.mode === 'local'
-    ? '<div class="banner"><div>Tryb testowy: dane ligi zapisują się tylko w tej przeglądarce. Żeby grać razem, podłącz Firebase (instrukcja w README).</div></div>'
-    : '';
-  document.getElementById('foot').textContent =
-    `Sezon ${calendar.season - 1}/${String(calendar.season).slice(2)} · wyniki FIS zaktualizowane ${new Date(calendar.updated).toLocaleString('pl-PL')}`;
-  window.addEventListener('hashchange', render);
-  document.getElementById('me').addEventListener('change', (e) => { me = e.target.value || null; LS.set('skoki-me', me); render(); });
+  store = await createStore((s) => {
+    if (lastPicks !== null && s.picks.length > lastPicks && s.picks.length) {
+      const i = s.picks.length - 1;
+      const pid = snakeOrder(s.draftOrder)[i]?.pid;
+      const p = s.participants.find((x) => x.id === pid);
+      const n = prettyName(athInfo(s.picks[i]).name);
+      if (pid !== session.pid) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
+    }
+    lastPicks = s.picks.length;
+    state = s;
+    render();
+  });
+  window.addEventListener('hashchange', () => { ui.menu = false; ui.editRecord = false; render(true); });
 }
 
-// ---------------------------------------------------------------- render
+// ================================================================ render
 
-const views = { ranking, druzyny, kalendarz, race: raceView, draft, zawodnicy, ustawienia };
+const NAV = [
+  ['ranking', 'Ranking', 'trophy'],
+  ['druzyny', 'Drużyny', 'team'],
+  ['kalendarz', 'Kalendarz', 'calendar'],
+  ['puchar', 'Puchar Świata', 'globe'],
+  ['draft', 'Draft', 'draft'],
+  ['zawodnicy', 'Zawodnicy', 'list'],
+  ['admin', 'Admin', 'settings'],
+];
 
-function render() {
+function render(scrollTop = false) {
   if (!state) return;
   calc = computeAll(state, weekends, results, byId);
+  const kept = keepInputs();
+  if (!state.setup) { root.innerHTML = screenCreate(); restoreInputs(kept); return; }
+  if (!me() && !isAdmin()) { root.innerHTML = screenAuth(); restoreInputs(kept); return; }
+
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  document.querySelectorAll('#nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === view || (view === 'race' && a.dataset.view === 'kalendarz')));
-  const sel = document.getElementById('me');
-  sel.innerHTML = '<option value="">— wybierz —</option>' +
-    state.participants.map((p) => `<option value="${p.id}" ${p.id === me ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
-  const scrollY = window.scrollY;
-  app.innerHTML = (views[view] || ranking)(arg);
-  window.scrollTo(0, scrollY);
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, admin: adminView, wiecej };
+  const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
+  const active = view === 'race' ? 'kalendarz' : views[view] ? view : 'ranking';
+  const y = window.scrollY;
+  const focusId = document.activeElement?.id;
+  const sel = focusId && document.activeElement.selectionStart;
+
+  const weeksScroll = document.getElementById('weeks')?.scrollLeft;
+  root.innerHTML = shell(active, fn(arg));
+  restoreInputs(kept);
+  const weeks = document.getElementById('weeks');
+  if (weeks) {
+    const on = weeks.querySelector('.on');
+    weeks.scrollLeft = weeksScroll ?? (on ? on.offsetLeft - weeks.clientWidth / 2 + on.clientWidth / 2 : 0);
+  }
+  if (!scrollTop) window.scrollTo(0, y); else window.scrollTo(0, 0);
+  if (focusId) {
+    const el = document.getElementById(focusId);
+    if (el) { el.focus(); try { el.setSelectionRange(sel, sel); } catch { /* nie input tekstowy */ } }
+  }
 }
 
-function needSetup() {
-  return `<div class="card"><h3>Najpierw ustawcie ligę</h3><p>Dodajcie uczestników i kolejność draftu w zakładce <a href="#ustawienia">Ustawienia</a>.</p></div>`;
+// Wartości wpisane przez użytkownika (a jeszcze nie zapisane) przeżywają odświeżenie widoku,
+// np. gdy w tym czasie ktoś inny dołączy do ligi.
+function keepInputs() {
+  const out = [];
+  for (const el of root.querySelectorAll('input:not([type=checkbox]):not([type=file]), textarea, form select')) {
+    const key = el.id || el.name;
+    const dirty = el.tagName === 'SELECT' ? el.closest('form[data-form]') : el.value !== el.defaultValue;
+    if (key && dirty && !el.dataset.action) out.push([key, el.value, el === document.activeElement]);
+  }
+  return out;
+}
+function restoreInputs(kept) {
+  for (const [key, value, focused] of kept) {
+    const el = document.getElementById(key) || root.querySelector(`[name="${key}"]`);
+    if (!el) continue;
+    el.value = value;
+    if (focused) el.focus();
+  }
 }
 
-// ---------------------------------------------------------------- ranking
+function shell(active, content) {
+  const m = me();
+  const ph = phase();
+  const myTurn = ph === 'draft' && m && snakeOrder(state.draftOrder)[state.picks.length]?.pid === m.id;
+  const nav = NAV.filter(([k]) => k !== 'admin' || isAdmin());
+  const dot = (k) => (k === 'draft' && (myTurn || (ph === 'draft' && !m)) ? '<span class="dot"></span>' : '');
+  const fifth = ph === 'draft' ? ['draft', 'Draft', 'draft'] : ['wiecej', 'Więcej', 'menu'];
+  const tabs = [NAV[0], NAV[1], NAV[2], ['puchar', 'PŚ', 'globe'], fifth];
+  const who = m || { name: 'Admin', color: '#64748b' };
+
+  return `
+  <header class="top"><div class="top__inner">
+    <a class="brand" href="#ranking">${LOGO}<span>Draft Skoków<small>${esc(state.setup.leagueName)} · sezon ${seasonLabel(calendar.season)}</small></span></a>
+    <nav class="nav">${nav.map(([k, l, i]) => `<a href="#${k}" class="${active === k ? 'active' : ''}">${icon(i)}${l}${dot(k)}</a>`).join('')}</nav>
+    <span class="spacer-top"></span>
+    <button class="userchip" data-action="menu">${avatar(who, 'sm')}<span>${esc(who.name)}</span>${isAdmin() ? '<span class="badge-admin">ADMIN</span>' : ''}</button>
+  </div>
+  ${ui.menu ? userMenu() : ''}
+  </header>
+  ${store.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
+  <main class="wrap">${content}</main>
+  <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
+  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
+}
+
+function userMenu() {
+  const m = me();
+  return `<div class="menu">
+    <div class="who"><b>${esc(m?.name || 'Administrator')}</b><div class="muted xs">${m ? (isAdmin() ? 'gracz · administrator' : 'gracz') : 'tylko administrator'}</div></div>
+    <hr>
+    ${m ? `<button data-action="changePin">${icon('key')}Zmień PIN</button>` : `<button data-action="joinAsAdmin">${icon('plus')}Dołącz jako gracz</button>`}
+    ${isAdmin() ? `<a href="#admin">${icon('settings')}Panel admina</a><button data-action="adminOff">${icon('lock')}Wyjdź z trybu admina</button>`
+      : `<button data-action="adminOn">${icon('unlock')}Tryb administratora</button>`}
+    <hr>
+    <button data-action="logout">${icon('logout')}Wyloguj</button>
+  </div>`;
+}
+
+// ================================================================ ekrany startowe
+
+function authFrame(inner) {
+  return `<div class="auth">${MOUNTAINS}<div class="auth-card">
+    <div class="auth-logo">${LOGO_DARK}<div><div class="t">Draft Skoków</div><div class="s">${state.setup ? esc(state.setup.leagueName) + ' · ' : ''}sezon ${seasonLabel(calendar.season)}</div></div></div>
+    ${inner}
+  </div></div>`;
+}
+
+function screenCreate() {
+  return authFrame(`
+    <h2>Otwórz ligę</h2>
+    <p class="lead">Jesteś tu pierwszy. Administrator zakłada ligę i ustawia hasło — potem pozostali gracze mogą się zapisać.</p>
+    <form data-form="create" autocomplete="off">
+      <label class="field"><span>Nazwa ligi</span><input name="league" maxlength="40" placeholder="np. Liga u Krystiana" required></label>
+      <label class="field"><span>Hasło administratora</span><input name="pass" type="password" minlength="4" required autocomplete="new-password"></label>
+      <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="4" required autocomplete="new-password"></label>
+      <div class="formerr"></div>
+      <button class="primary block" type="submit">${icon('unlock')}Otwórz ligę</button>
+    </form>`);
+}
+
+function screenAuth() {
+  const open = phase() === 'signup';
+  const mode = ui.authMode || (open ? 'join' : 'login');
+  const players = state.participants;
+  const tabs = !open ? '' : `<div class="seg tabs">
+    ${open ? `<button type="button" data-action="authMode" data-v="join" class="${mode === 'join' ? 'on' : ''}">Dołącz</button>` : ''}
+    <button type="button" data-action="authMode" data-v="login" class="${mode === 'login' ? 'on' : ''}" ${!players.length ? 'disabled' : ''}>Zaloguj się</button>
+  </div>`;
+  let body = '';
+  if (mode === 'admin') {
+    body = `<h2>Administrator</h2><p class="lead">Podaj hasło administratora ligi.</p>
+      <form data-form="adminLogin" autocomplete="off">
+        <label class="field"><span>Hasło</span><input name="pass" type="password" required></label>
+        <div class="formerr"></div>
+        <button class="primary block" type="submit">${icon('unlock')}Wejdź</button>
+      </form>`;
+  } else if (mode === 'join') {
+    body = `${tabs}<p class="lead">Wpisz swoje imię i wymyśl PIN — będzie potrzebny, żeby zalogować się na innym urządzeniu.</p>
+      <form data-form="join" autocomplete="off">
+        <label class="field"><span>Imię / ksywka</span><input name="name" maxlength="20" required></label>
+        <div class="grid-2" style="gap:.75rem">
+          <label class="field"><span>PIN (4–8 cyfr)</span><input name="pin" class="pinput" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" type="password" required autocomplete="new-password"></label>
+          <label class="field"><span>Powtórz PIN</span><input name="pin2" class="pinput" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" type="password" required autocomplete="new-password"></label>
+        </div>
+        <div class="formerr"></div>
+        <button class="primary block" type="submit">${icon('plus')}Dołącz do ligi</button>
+      </form>`;
+  } else {
+    body = `${tabs}${!open ? '<p class="lead">Draft już wystartował — zapisy są zamknięte. Zaloguj się na swoje konto.</p>' : ''}
+      <form data-form="login" autocomplete="off">
+        <label class="field"><span>Kim jesteś?</span><select name="pid" required>${players.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label>
+        <label class="field"><span>PIN</span><input name="pin" class="pinput" inputmode="numeric" maxlength="8" type="password" required></label>
+        <div class="formerr"></div>
+        <button class="primary block" type="submit">Zaloguj</button>
+      </form>`;
+  }
+  return authFrame(`${body}
+    ${players.length ? `<div class="af" style="text-align:left"><div class="muted xs" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">W lidze (${players.length})</div>
+      <div class="joined">${players.map((p) => `<span class="chip">${avatar(p, 'sm')}${esc(p.name)}</span>`).join('')}</div></div>` : ''}
+    <div class="af">${mode === 'admin' ? '<button data-action="authMode" data-v="">← Wróć</button>' : '<button data-action="authMode" data-v="admin">Jestem administratorem</button>'}</div>`);
+}
+
+// ================================================================ ranking
+
+function nextWeekendHero() {
+  const w = currentWeekend();
+  if (!w) return '';
+  const st = weekendStatus(w);
+  const m = me();
+  const ph = phase();
+  let cta = '';
+  if (ph === 'signup') {
+    return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Zapisy trwają</div><div class="big">Czekamy na graczy</div>
+      <p>W lidze: ${state.participants.map((p) => esc(p.name)).join(', ') || 'nikt jeszcze'}. ${isAdmin() ? 'Gdy wszyscy dołączą, rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}</p>
+      ${isAdmin() ? '<div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#admin">Panel admina</a></div>' : ''}</div>`;
+  }
+  if (ph === 'draft') {
+    const cur = snakeOrder(state.draftOrder)[state.picks.length];
+    return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Draft na żywo</div><div class="big">${cur.pid === m?.id ? 'Twoja kolej!' : `Wybiera ${esc(pname(cur.pid))}`}</div>
+      <p>Wybór ${state.picks.length + 1} z ${state.draftOrder.length * TEAM_SIZE}.</p>
+      <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#draft">Przejdź do draftu</a></div></div>`;
+  }
+  if (m) {
+    const l = lineupFor(state, weekends, w.id, m.id, calc.teams[m.id] || [], byId);
+    const capName = l.captain ? prettyName(athInfo(l.captain).name) : null;
+    cta = st === 'next'
+      ? `<p>${capName ? `Twój kapitan: <b>${esc(capName.first)} ${esc(capName.last)}</b>.` : '<b>Nie masz jeszcze kapitana na ten weekend!</b>'} Zmiany do ${lockLabel(w)}.</p>
+         <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#druzyny" data-week="${w.id}">${icon('team')}Ustaw skład i kapitana</a></div>`
+      : `<p>Składy zablokowane. ${capName ? `Twój kapitan: <b>${esc(capName.first)} ${esc(capName.last)}</b>.` : ''}</p>`;
+  }
+  const d = daysTo(w.start);
+  if (st === 'past') {
+    const champ = [...state.participants].sort((a, b) => calc.totals[b.id] - calc.totals[a.id])[0];
+    return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Sezon ${seasonLabel(calendar.season)} zakończony</div>
+      <div class="big">🏆 Mistrz ligi: ${esc(champ?.name ?? '—')}</div><p>${champ ? `${calc.totals[champ.id]} pkt po ${weekends.length} weekendach.` : ''}</p></div>`;
+  }
+  return `<div class="hero">${MOUNTAINS}
+    <div class="eyebrow">${st === 'live' ? 'Trwa weekend' : st === 'past' ? 'Sezon zakończony' : `Następny weekend · ${inDays(d)}`}</div>
+    <div class="big">${esc(w.name)}</div>
+    <p style="margin-bottom:.4rem">${range(w.start, w.end)} · ${w.races.filter((r) => r.category === 'WC').length} ${pl(w.races.filter((r) => r.category === 'WC').length, 'konkurs', 'konkursy', 'konkursów')}</p>
+    ${st !== 'past' ? cta : ''}</div>`;
+}
 
 function ranking() {
-  if (!state.participants.length) return needSetup();
   const ps = [...state.participants].sort((a, b) => calc.totals[b.id] - calc.totals[a.id]);
   const played = weekends.filter((w) => w.races.some((r) => results[r.id]));
+  const top = ps.length ? calc.totals[ps[0].id] : 0;
   const best = Object.entries(calc.athleteTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  return `
-    <h1>Ranking</h1>
-    <p class="muted">${played.length} z ${weekends.length} weekendów z wynikami</p>
-    <div class="podium">
-      ${ps.map((p, i) => `<div class="card ${i === 0 ? 'first' : ''}"><div class="pos">${i + 1}</div>
-        <div><div><b>${esc(p.name)}</b></div><div class="pts">${calc.totals[p.id]}</div><div class="muted small">pkt</div></div></div>`).join('')}
-    </div>
-    <h2>Punkty w weekendach</h2>
-    ${played.length ? `<div class="tablewrap"><table>
-      <thead><tr><th>Weekend</th>${ps.map((p) => `<th class="num">${esc(p.name)}</th>`).join('')}</tr></thead>
-      <tbody>${played.map((w) => {
-        const vals = ps.map((p) => calc.byWeekend[w.id][p.id]);
-        const max = Math.max(...vals);
-        return `<tr><td><a href="#kalendarz" data-w="${w.id}">${w.no}. ${esc(w.name)}</a> <span class="muted small">${range(w.start, w.end)}</span></td>
-          ${vals.map((v) => `<td class="num">${v === max && v > 0 ? `<b>${v}</b>` : v}</td>`).join('')}</tr>`;
-      }).join('')}</tbody></table></div>` : '<p class="muted">Jeszcze nie rozegrano żadnego konkursu.</p>'}
-    ${best.length ? `<h2>Najlepsi zawodnicy w zabawie</h2>
-    <div class="tablewrap"><table><thead><tr><th>Zawodnik</th><th>Drużyna</th><th class="num">Pkt</th></tr></thead>
-    <tbody>${best.map(([id, v]) => `<tr><td>${gtag(byId[id]?.gender)} ${esc(aname(id))} <span class="muted small">${esc(byId[id]?.nation)}</span></td><td>${esc(pname(ownerOf(id)))}</td><td class="num"><b>${v}</b></td></tr>`).join('')}</tbody></table></div>` : ''}
-  `;
+
+  let html = `<div class="page-head"><div><h1>Ranking ligi</h1><div class="sub">${played.length} z ${weekends.length} weekendów rozegranych</div></div></div>
+    ${nextWeekendHero()}`;
+
+  if (!ps.length) return html;
+  if (!played.length) {
+    return html + `<div class="section"><div class="row"><h2>Gracze</h2></div><div class="podium">${ps.map((p) => `<div class="pcard">${avatar(p, 'lg')}
+      <div class="who"><div class="nm">${esc(p.name)}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div>
+      <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników</div></div>
+      <div class="bar" style="background:${p.color};width:100%"></div></div>`).join('')}</div></div>
+      <div class="section card empty">${icon('snow')}<b>Sezon jeszcze nie wystartował</b>
+      Punkty pojawią się po pierwszym konkursie${weekends[0] ? ` — ${esc(weekends[0].name)}, ${fmtLong(weekends[0].races[0]?.date || weekends[0].start)}` : ''}.</div>`;
+  }
+  html += `<div class="section"><div class="podium">${ps.map((p, i) => {
+    const pos = i > 0 && calc.totals[ps[i - 1].id] === calc.totals[p.id] ? '=' : i + 1;
+    return `<div class="pcard p${i + 1}">
+      <div class="pos">${pos}</div>${avatar(p, 'lg')}
+      <div class="who"><div class="nm">${esc(p.name)}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div>
+        <div class="pts">${calc.totals[p.id]}<small>pkt</small></div>
+        <div class="gap">${i === 0 ? (top ? 'lider' : '&nbsp;') : `−${top - calc.totals[p.id]} do lidera`}</div></div>
+      <div class="bar" style="background:${p.color};width:${top ? (calc.totals[p.id] / top) * 100 : 0}%"></div>
+    </div>`;
+  }).join('')}</div></div>`;
+
+
+  // wykres narastająco
+  html += `<div class="section card"><div class="row" style="margin-bottom:.6rem"><h2>Przebieg sezonu</h2><span class="spacer"></span>
+    <div class="legend">${ps.map((p) => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('')}</div></div>
+    ${chart(ps, played)}</div>`;
+
+  // tabela weekendów
+  html += `<div class="section"><div class="row"><h2>Punkty w weekendach</h2></div>
+    <div class="card pad0"><div class="tablewrap"><table>
+    <thead><tr><th>Weekend</th>${ps.map((p) => `<th class="num">${avatar(p, 'sm')}</th>`).join('')}</tr></thead>
+    <tbody>${played.slice().reverse().map((w) => {
+      const vals = ps.map((p) => calc.byWeekend[w.id][p.id]);
+      const max = Math.max(...vals);
+      return `<tr><td><a href="#kalendarz" data-week="${w.id}"><b>${w.no}.</b> ${esc(w.name)}</a> <span class="muted xs">${range(w.start, w.end)}</span></td>
+        ${vals.map((v) => `<td class="num ${v === max && v > 0 ? 'best' : ''}">${v}</td>`).join('')}</tr>`;
+    }).join('')}
+    <tr><td><b>Razem</b></td>${ps.map((p) => `<td class="pts">${calc.totals[p.id]}</td>`).join('')}</tr>
+    </tbody></table></div></div></div>`;
+
+  // statystyki
+  const capPts = {}; const bonusCnt = {};
+  for (const p of ps) { capPts[p.id] = 0; bonusCnt[p.id] = 0; }
+  for (const byP of Object.values(calc.byRace)) {
+    for (const [pid, e] of Object.entries(byP)) {
+      for (const a of e.athletes) {
+        if (a.captain) capPts[pid] += a.pts / 2;
+        bonusCnt[pid] += (a.base.quali ? 1 : 0) + (a.base.longest ? 1 : 0) + (a.base.record ? 1 : 0);
+      }
+    }
+  }
+  const wins = {}; for (const p of ps) wins[p.id] = 0;
+  for (const w of played) {
+    const max = Math.max(...ps.map((p) => calc.byWeekend[w.id][p.id]));
+    if (max > 0) ps.filter((p) => calc.byWeekend[w.id][p.id] === max).forEach((p) => { wins[p.id]++; });
+  }
+  html += `<div class="section grid-2">
+    <div class="card pad0"><div class="card-head"><h3>Najlepsi zawodnicy w lidze</h3></div><div class="tablewrap"><table><tbody>
+      ${best.map(([id, v], i) => `<tr><td class="rank muted">${i + 1}</td><td>${ath(id)}</td><td>${owner(ownerOf(id))}</td><td class="pts">${v}</td></tr>`).join('') || '<tr><td class="muted">—</td></tr>'}
+    </tbody></table></div></div>
+    <div class="card pad0"><div class="card-head"><h3>Statystyki</h3></div><div class="tablewrap"><table>
+      <thead><tr><th></th><th class="num">Wygrane weekendy</th><th class="num">Pkt od kapitanów</th><th class="num">Bonusy</th></tr></thead><tbody>
+      ${ps.map((p) => `<tr><td>${owner(p.id)}</td><td class="num">${wins[p.id]}</td><td class="num">+${capPts[p.id]}</td><td class="num">${bonusCnt[p.id]}</td></tr>`).join('')}
+    </tbody></table></div></div>
+  </div>`;
+  return html;
 }
 
-// ---------------------------------------------------------------- draft
-
-function draftInfo() {
-  const seq = snakeOrder(state.draftOrder);
-  const n = state.picks.length;
-  return { seq, n, cur: seq[n], done: seq.length > 0 && n >= seq.length };
+function chart(ps, played) {
+  const W = 800; const H = 260; const L = 44; const R = 70; const T = 14; const B = 30;
+  const series = ps.map((p) => {
+    let s = 0;
+    return [0, ...played.map((w) => (s += calc.byWeekend[w.id][p.id]))];
+  });
+  const max = Math.max(10, ...series.flat());
+  const nice = Math.pow(10, Math.floor(Math.log10(max)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * nice).find((s) => max / s <= 5) || nice * 10;
+  const ymax = Math.ceil(max / step) * step;
+  const n = played.length;
+  const x = (i) => L + (n ? (i / n) * (W - L - R) : 0);
+  const y = (v) => T + (1 - v / ymax) * (H - T - B);
+  const ticks = []; for (let v = 0; v <= ymax; v += step) ticks.push(v);
+  const labels = played.map((w, i) => ({ i: i + 1, w })).filter((_, i) => n <= 12 || i % Math.ceil(n / 12) === 0 || i === n - 1);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Punkty narastająco">
+    <g class="grid">${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join('')}</g>
+    ${labels.map(({ i, w }) => `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${w.no}</text>`).join('')}
+    ${series.map((s, k) => `<polyline fill="none" stroke="${ps[k].color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${s.map((v, i) => `${x(i)},${y(v)}`).join(' ')}"/>
+      <circle cx="${x(n)}" cy="${y(s[n])}" r="4.5" fill="${ps[k].color}"/>
+      <text x="${x(n) + 9}" y="${y(s[n]) + 4}" style="fill:${ps[k].color};font-weight:800">${s[n]}</text>`).join('')}
+  </svg>`;
 }
+
+// ================================================================ draft
 
 function draft() {
-  if (state.participants.length < 2 || state.draftOrder.length !== state.participants.length) return needSetup();
-  const { seq, n, cur, done } = draftInfo();
-  const P = state.draftOrder.length;
-  const taken = new Map(state.picks.map((aid, i) => [aid, seq[i]]));
-  const myTurn = cur && (cur.pid === me || admin);
-  const myTeam = cur ? calc.teams[cur.pid] : [];
+  const ph = phase();
+  const m = me();
+  if (ph === 'signup') {
+    return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Snake draft · ${TEAM_SIZE} zawodników na gracza (${TEAM.men} M + ${TEAM.women} K + ${TEAM.reserves} rezerwowych)</div></div></div>
+      <div class="card empty">${icon('clock')}<b>Draft jeszcze się nie zaczął</b>
+      ${state.participants.length} ${pl(state.participants.length, 'gracz', 'graczy', 'graczy')} w lidze. ${isAdmin() ? 'Ustaw kolejność i rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}
+      ${isAdmin() ? '<div style="margin-top:1rem"><a class="btn primary" href="#admin">Panel admina</a></div>' : ''}</div>
+      ${athleteTable(false)}`;
+  }
+  const seq = snakeOrder(state.draftOrder);
+  const n = state.picks.length;
+  const cur = seq[n];
+  const done = ph === 'season';
+  const Pn = state.draftOrder.length;
 
-  const list = athletes.filter((a) =>
-    (ui.gender === 'ALL' || a.gender === ui.gender) &&
-    (!ui.hideTaken || !taken.has(a.id)) &&
-    (!ui.q || (a.name + ' ' + a.nation).toLowerCase().includes(ui.q.toLowerCase())));
+  let hero = '';
+  if (done) {
+    hero = `<div class="hero">${MOUNTAINS}<div class="eyebrow">Draft zakończony</div><div class="big">Drużyny gotowe!</div>
+      <p>Teraz przed każdym weekendem wybierajcie kapitana.</p><div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#druzyny">Zobacz drużyny</a></div></div>`;
+  } else {
+    const p = P(cur.pid);
+    const t = calc.teams[cur.pid] || [];
+    const men = t.filter((id) => byId[id]?.gender === 'M').length;
+    const wom = t.filter((id) => byId[id]?.gender === 'W').length;
+    const mine = cur.pid === m?.id;
+    hero = `<div class="hero"><div class="clock">${avatar(p, 'xl')}
+      <div class="who"><div class="eyebrow">Wybór ${n + 1} z ${seq.length} · runda ${cur.round}</div>
+        <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(p.name)}`}</div>
+        <div class="needs"><span class="need ${men >= TEAM.men ? 'done' : ''}">Mężczyźni ${Math.min(men, TEAM.men)}/${TEAM.men}</span>
+          <span class="need ${wom >= TEAM.women ? 'done' : ''}">Kobieta ${Math.min(wom, TEAM.women)}/${TEAM.women}</span>
+          <span class="need">Rezerwa ${Math.max(0, t.length - Math.min(men, TEAM.men) - Math.min(wom, TEAM.women))}/${TEAM.reserves}</span></div></div>
+      ${n > 0 && (isAdmin() || seq[n - 1].pid === m?.id) ? `<button class="btn sm" data-action="undo" style="position:relative;z-index:1">${icon('undo')}Cofnij ostatni</button>` : ''}
+    </div></div>`;
+  }
 
   const cells = [];
   for (let r = 0; r < TEAM_SIZE; r++) {
-    for (let c = 0; c < P; c++) {
-      const i = r * P + c;
+    for (let c = 0; c < Pn; c++) {
+      const i = r * Pn + c;
       const s = seq[i];
       const col = state.draftOrder.indexOf(s.pid);
       const aid = state.picks[i];
-      cells.push(`<div class="cell ${i === n ? 'now' : ''}" style="grid-column:${col + 1};grid-row:${r + 2}">
-        <div class="r">#${i + 1} · runda ${r + 1}</div>${aid ? `${gtag(byId[aid]?.gender)} ${esc(aname(aid))}` : ''}</div>`);
+      cells.push(`<div class="cell ${i === n ? 'now' : ''} ${!aid && i !== n ? 'empty-c' : ''}" style="grid-column:${col + 1};grid-row:${r + 2}">
+        <span class="r">${r + 1}.${col + 1} · #${i + 1}</span>${aid ? ath(aid) : i === n ? '<span class="xs" style="color:var(--accent);font-weight:700">wybiera…</span>' : ''}</div>`);
     }
   }
-
-  return `
-    <h1>Draft</h1>
-    <p class="muted">Snake draft: ${state.draftOrder.map(pname).map(esc).join(' → ')} → i z powrotem. Każdy wybiera ${TEAM_SIZE} zawodników (${TEAM.men} M + ${TEAM.women} K + ${TEAM.reserves} rezerwowych dowolnej płci).</p>
-    <div class="card row">
-      ${done ? '<div class="onclock">✅ Draft zakończony! Zobacz <a href="#druzyny">drużyny</a>.</div>'
-        : `<div class="onclock">Wybór #${n + 1} (runda ${cur.round}) — wybiera <b>${esc(pname(cur.pid))}</b>
-           ${cur.pid === me ? ' — <b>Twoja kolej!</b>' : ''}</div>`}
-      <span class="spacer"></span>
-      ${n > 0 && (admin || seq[n - 1].pid === me) ? '<button data-action="undo" class="sm">↶ Cofnij ostatni wybór</button>' : ''}
-    </div>
-    ${!me && !done ? '<p class="muted small">Wybierz u góry, kim jesteś, żeby móc wybierać zawodników.</p>' : ''}
-    <h2>Tablica draftu</h2>
-    <div class="board" style="grid-template-columns:repeat(${P}, minmax(110px, 1fr))">
-      ${state.draftOrder.map((pid, c) => `<div class="head" style="grid-column:${c + 1};grid-row:1">${esc(pname(pid))}</div>`).join('')}
+  return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Kolejność: ${state.draftOrder.map((pid) => esc(pname(pid))).join(' → ')} → i z powrotem</div></div></div>
+    ${hero}
+    <div class="section"><div class="row"><h2>Tablica</h2></div>
+    <div class="boardwrap"><div class="board" style="grid-template-columns:repeat(${Pn}, minmax(150px, 1fr))">
+      ${state.draftOrder.map((pid, c) => `<div class="head" style="grid-column:${c + 1};grid-row:1">${avatar(P(pid), 'sm')}<span>${esc(pname(pid))}</span></div>`).join('')}
       ${cells.join('')}
+    </div></div></div>
+    ${done ? '' : athleteTable(true)}`;
+}
+
+function athleteTable(picking) {
+  const seq = snakeOrder(state.draftOrder);
+  const cur = seq[state.picks.length];
+  const taken = new Map(state.picks.map((aid, i) => [aid, seq[i]?.pid]));
+  const myTurn = picking && cur && (cur.pid === me()?.id || isAdmin());
+  const team = cur ? calc.teams[cur.pid] || [] : [];
+  const q = ui.q.toLowerCase();
+  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
+    (!ui.hideTaken || !taken.has(a.id)) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)));
+  return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="spacer"></span>
+      ${picking && cur && !myTurn ? `<span class="tag">czekasz na swoją kolej</span>` : ''}
+      ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))}</span>` : ''}</div>
+    <div class="row" style="margin-bottom:.8rem">
+      ${genderSeg()}
+      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label>
+      ${picking ? `<label class="check small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}>ukryj wybranych</label>` : ''}
     </div>
-    <h2>Zawodnicy</h2>
-    <div class="row" style="margin-bottom:.6rem">
-      <div class="seg">${[['ALL', 'Wszyscy'], ['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) =>
-        `<button data-action="gender" data-v="${k}" class="${ui.gender === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-      <input id="q" placeholder="Szukaj zawodnika / kraju" value="${esc(ui.q)}">
-      <label class="small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}> ukryj wybranych</label>
-    </div>
-    <div class="tablewrap"><table>
-      <thead><tr><th class="num">#</th><th>Zawodnik</th><th>Kraj</th><th class="num">PŚ ${athSeason - 2}/${String(athSeason - 1).slice(2)}</th><th class="num">Miejsce</th><th class="num">LGP ${athSeason - 1}</th><th></th></tr></thead>
+    <div class="card pad0"><div class="tablewrap"><table>
+      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce</th><th class="num hide-sm">LGP ${athSeason - 1}</th><th></th></tr></thead>
       <tbody>${list.map((a) => {
         const t = taken.get(a.id);
-        const ok = !t && myTurn && !done && canPick(myTeam, a.gender, byId);
+        const ok = !t && myTurn && canPick(team, a.gender, byId);
         return `<tr class="${t ? 'dim' : ''}">
           <td class="num muted">${byId[a.id].idx}</td>
-          <td>${gtag(a.gender)} <b>${esc(a.name)}</b></td>
-          <td>${esc(a.nation)}</td>
-          <td class="num">${a.wc || '–'}</td>
-          <td class="num">${a.wcRank || '–'}</td>
-          <td class="num">${a.gp || '–'}</td>
-          <td>${t ? `<span class="tag acc">${esc(pname(t.pid))}</span>` : `<button class="sm primary" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled'}>Wybierz</button>`}</td>
+          <td>${ath(a.id)}</td>
+          <td class="pts">${a.wc || '<span class="muted">–</span>'}</td>
+          <td class="num hide-sm">${a.wcRank ? `${a.wcRank}.` : '<span class="muted">–</span>'}</td>
+          <td class="num hide-sm">${a.gp || '<span class="muted">–</span>'}</td>
+          <td class="num">${t ? owner(t) : picking ? `<button class="sm ${ok ? 'primary' : ''}" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled'}>Wybierz</button>` : ''}</td>
         </tr>`;
-      }).join('')}</tbody></table></div>
-  `;
+      }).join('') || '<tr><td colspan="6" class="empty">Brak zawodników dla tego filtra</td></tr>'}</tbody></table></div></div></div>`;
 }
 
-// ---------------------------------------------------------------- drużyny
+const genderSeg = () => `<div class="seg">${[['ALL', 'Wszyscy'], ['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) =>
+  `<button data-action="gender" data-v="${k}" class="${ui.gender === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+
+// ================================================================ drużyny
 
 function druzyny() {
-  if (!state.participants.length) return needSetup();
+  const ph = phase();
+  const head = `<div class="page-head"><div><h1>Drużyny</h1><div class="sub">Składy, kapitanowie i punkty w każdym weekendzie</div></div></div>`;
+  if (ph !== 'season') {
+    return head + `<div class="card empty">${icon('team')}<b>${ph === 'signup' ? 'Drużyny powstaną w drafcie' : 'Draft w toku'}</b>
+      ${ph === 'draft' ? `Wybrano ${state.picks.length} z ${state.draftOrder.length * TEAM_SIZE} zawodników. <div style="margin-top:1rem"><a class="btn primary" href="#draft">Przejdź do draftu</a></div>` : 'Gdy wszyscy dołączą, administrator rozpocznie draft.'}</div>
+      ${ph === 'draft' ? `<div class="grid section">${state.draftOrder.map((pid) => teamCard(P(pid), currentWeekend(), true)).join('')}</div>` : ''}`;
+  }
   const w = weekends.find((x) => x.id === ui.weekend) || currentWeekend();
-  if (!w) return '<p>Brak kalendarza.</p>';
   ui.weekend = w.id;
   const locked = isLocked(w);
-  return `
-    <h1>Drużyny</h1>
-    <div class="row">
-      <label>Weekend: <select data-action="weekend">${weekends.map((x) =>
-        `<option value="${x.id}" ${x.id === w.id ? 'selected' : ''}>${x.no}. ${esc(x.name)} (${range(x.start, x.end)})</option>`).join('')}</select></label>
-      ${locked ? '<span class="tag warn">🔒 składy i kapitanowie zablokowani</span>' : '<span class="tag good">można zmieniać skład i kapitana do północy przed pierwszym dniem</span>'}
+  const st = weekendStatus(w);
+  const order = [...state.participants].sort((a, b) => (a.id === me()?.id ? -1 : b.id === me()?.id ? 1 : calc.totals[b.id] - calc.totals[a.id]));
+  return head + `
+    <div class="weeks" id="weeks">${weekends.map((x) => `<button data-action="weekend" data-v="${x.id}" class="${x.id === w.id ? 'on' : ''}">
+      <span class="d">${x.no}. · ${range(x.start, x.end)}${weekendStatus(x) === 'live' ? ' · trwa' : ''}</span><span class="n">${esc(x.name)}</span></button>`).join('')}</div>
+    <div class="row" style="margin:.5rem 0 1rem">
+      ${locked ? `<span class="tag ${st === 'live' ? 'warn live' : ''}">${icon('lock')}${st === 'live' ? 'Weekend trwa — składy zablokowane' : 'Składy zablokowane'}</span>`
+        : `<span class="tag good">${icon('unlock')}Zmiany do ${lockLabel(w)}</span>`}
+      ${isAdmin() && locked ? '<span class="tag warn">admin może edytować</span>' : ''}
     </div>
-    <div class="grid" style="margin-top:1rem">${state.participants.map((p) => teamCard(p, w, locked)).join('')}</div>
-  `;
+    <div class="grid">${order.map((p) => teamCard(p, w, false)).join('')}</div>`;
 }
 
-function teamCard(p, w, locked) {
+function teamCard(p, w, drafting) {
+  if (!p) return '';
   const ids = calc.teams[p.id] || [];
-  const l = lineupFor(state, weekends, w.id, p.id, ids, byId);
-  const editable = (p.id === me || admin) && (!locked || admin) && ids.length === TEAM_SIZE;
+  const l = drafting ? { starters: ids, captain: null } : lineupFor(state, weekends, w.id, p.id, ids, byId);
+  const locked = isLocked(w);
+  const editable = !drafting && (p.id === me()?.id || isAdmin()) && (!locked || isAdmin()) && ids.length === TEAM_SIZE;
+  const hasRes = w.races.some((r) => results[r.id]);
   const wpts = {};
   for (const r of w.races) for (const a of calc.byRace[r.id]?.[p.id]?.athletes || []) wpts[a.id] = (wpts[a.id] || 0) + a.pts;
   const reserves = ids.filter((id) => !l.starters.includes(id));
@@ -256,67 +597,80 @@ function teamCard(p, w, locked) {
     const isCap = l.captain === id;
     let ctrl = '';
     if (editable && starter) {
-      ctrl = `<button class="sm" data-action="captain" data-p="${p.id}" data-id="${id}" title="Ustaw kapitana">${isCap ? '🧢' : 'K'}</button>`;
-    } else if (editable && !starter) {
-      const same = l.starters.filter((s) => byId[s]?.gender === a?.gender);
-      ctrl = `<select class="sm" data-action="swap" data-p="${p.id}" data-id="${id}"><option value="">wejdź za…</option>${same.map((s) => `<option value="${s}">${esc(aname(s))}</option>`).join('')}</select>`;
+      ctrl = `<button class="capbtn ${isCap ? 'on' : ''}" data-action="captain" data-p="${p.id}" data-id="${id}" title="${isCap ? 'Kapitan' : 'Ustaw jako kapitana'}">C</button>`;
+    } else if (isCap) {
+      ctrl = '<span class="cap" title="Kapitan — punkty ×2">C</span>';
     }
-    return `<div class="player">${gtag(a?.gender)}<span class="name">${isCap ? '<span class="cap">🧢</span> ' : ''}${esc(aname(id))} <span class="muted small">${esc(a?.nation)}</span></span>
-      ${wpts[id] ? `<span class="pts">${wpts[id]}</span>` : ''}${ctrl}</div>`;
+    if (editable && !starter) {
+      const same = l.starters.filter((s) => byId[s]?.gender === a?.gender);
+      ctrl = `<select class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw do składu"><option value="">⇄ za…</option>${same.map((s) => `<option value="${s}">${esc(prettyName(byId[s]?.name).last)}</option>`).join('')}</select>`;
+    }
+    const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
+    return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false })}
+      ${drafting ? '' : `<span class="pp ${v ? '' : 'z'}">${v}</span>`}${ctrl}</div>`;
   };
-
   const men = l.starters.filter((id) => byId[id]?.gender === 'M');
   const women = l.starters.filter((id) => byId[id]?.gender === 'W');
-  return `<div class="card">
-    <div class="row"><h3>${esc(p.name)}${p.id === me ? ' <span class="tag acc">Ty</span>' : ''}</h3><span class="spacer"></span>
-      <span><b>${calc.byWeekend[w.id]?.[p.id] || 0}</b> <span class="muted small">pkt w weekendzie</span></span></div>
-    ${ids.length < TEAM_SIZE ? `<p class="muted small">Drużyna niekompletna (${ids.length}/${TEAM_SIZE}) — dokończcie <a href="#draft">draft</a>.</p>` : ''}
-    ${!l.captain && ids.length ? `<p class="small" style="color:var(--warn)">Brak kapitana na ten weekend${editable ? ' — kliknij K przy zawodniku.' : '.'}</p>` : ''}
-    <div class="sect">Mężczyźni</div>${men.map((id) => line(id, true)).join('')}
-    <div class="sect">Kobieta</div>${women.map((id) => line(id, true)).join('')}
-    <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
-  </div>`;
+  const label = hasRes ? 'pkt w weekendzie' : 'pkt w sezonie';
+  return `<div class="card team">
+    <div class="team-head" style="--c:${p.color}">${avatar(p)}<div><div class="nm">${esc(p.name)}</div>
+      <div class="muted xs">${p.id === me()?.id ? 'Twoja drużyna' : `${ids.length}/${TEAM_SIZE} zawodników`}</div></div><span class="spacer"></span>
+      ${drafting ? '' : `<div class="tot"><div class="v">${hasRes ? calc.byWeekend[w.id]?.[p.id] || 0 : calc.totals[p.id]}</div><div class="l">${hasRes ? 'weekend' : 'sezon'}</div></div>`}</div>
+    <div class="team-body">
+      ${drafting ? (ids.map((id) => line(id, true)).join('') || '<div class="muted small" style="padding:.6rem 0">Jeszcze nikogo nie wybrano</div>') : `
+      <div class="sect">Mężczyźni<span class="spacer"></span></div>${men.map((id) => line(id, true)).join('')}
+      <div class="sect">Kobieta</div>${women.map((id) => line(id, true)).join('')}
+      <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
+      ${!l.captain ? `<div class="warnline">${icon('info')}Brak kapitana${editable ? ' — kliknij „C” przy zawodniku' : ' na ten weekend'}</div>` : ''}
+      <div class="muted xs" style="margin-top:.6rem;text-align:right">liczby = ${label}${l.inherited && editable ? ' · skład przeniesiony automatycznie' : ''}</div>`}
+    </div></div>`;
 }
 
-// ---------------------------------------------------------------- kalendarz
+// ================================================================ kalendarz
 
 function kalendarz() {
   const cur = currentWeekend();
-  return `
-    <h1>Kalendarz Pucharu Świata</h1>
-    <p class="muted">Kliknij konkurs, żeby zobaczyć wyniki i punkty w zabawie.</p>
-    ${weekends.map((w) => {
-      const st = weekendStatus(w);
-      const hasRes = w.races.some((r) => results[r.id]);
-      return `<div class="card weekend ${st}" id="w-${w.id}">
-        <div class="wh"><span class="title">${w.no}. ${esc(w.name)}</span><span class="muted">${range(w.start, w.end)}</span>
-          ${st === 'live' ? '<span class="tag warn">trwa</span>' : st === 'past' ? '<span class="tag">zakończony</span>' : w === cur ? '<span class="tag acc">najbliższy</span>' : ''}
+  const ps = state.participants;
+  return `<div class="page-head"><div><h1>Kalendarz</h1><div class="sub">Puchar Świata ${seasonLabel(calendar.season)} · ${weekends.length} weekendów · kliknij konkurs, by zobaczyć wyniki i punkty</div></div></div>
+  ${weekends.map((w) => {
+    const st = weekendStatus(w);
+    const hasRes = w.races.some((r) => results[r.id]);
+    const d = new Date(w.start + 'T12:00:00');
+    const wpts = ps.map((p) => calc.byWeekend[w.id][p.id]);
+    const wmax = Math.max(0, ...wpts);
+    return `<div class="card wk ${st === 'live' ? 'live' : w === cur && st === 'next' ? 'next' : ''}" id="w-${w.id}">
+      <div class="date"><div class="dd">${d.getDate()}${w.end !== w.start ? `<span style="font-size:.7em">–${new Date(w.end + 'T12:00:00').getDate()}</span>` : ''}</div>
+        <div class="mm">${d.toLocaleDateString('pl-PL', { month: 'short' }).replace('.', '')}</div><div class="no">#${w.no}</div></div>
+      <div class="body">
+        <div class="wh">${w.events.map((e) => `<span class="row nowrap" style="gap:.4rem">${flag(e.nation)}<span class="t">${esc(e.place)}</span></span>`).join('<span class="muted">·</span>')}
+          ${st === 'live' ? '<span class="tag warn live">trwa</span>' : st === 'past' ? '<span class="tag">zakończony</span>' : w === cur ? `<span class="tag acc">${inDays(daysTo(w.start))}</span>` : ''}
           <span class="spacer"></span>
-          ${hasRes && state.participants.length ? `<div class="chips">${state.participants.map((p) => `<span class="chip">${esc(p.name)} <b>${calc.byWeekend[w.id][p.id]}</b></span>`).join('')}</div>` : ''}
+          ${hasRes && ps.length ? `<div class="chips">${ps.map((p, i) => `<span class="chip ${wpts[i] === wmax && wmax > 0 ? 'top' : ''}">${avatar(p, 'sm')}<b>${wpts[i]}</b></span>`).join('')}</div>` : ''}
         </div>
-        ${w.races.map((r) => {
+        <div class="races">${w.races.map((r) => {
           const res = results[r.id];
           const win = res?.results.find((x) => x.rank === 1);
-          return `<div class="race">
-            <span class="muted small">${fmtDow(r.date)}${r.time ? ' ' + r.time : ''}</span>
-            <span>${gtag(r.gender)} ${res ? `<a href="#race/${r.id}">${raceLabel(r)}</a>` : raceLabel(r)} <span class="muted small">· ${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}</span>
-              ${win ? `<span class="small"> — 🥇 ${esc(aname(win.id) || win.name)}</span>` : ''}</span>
-            <span>${res && state.participants.length ? `<span class="chips">${state.participants.map((p) => {
+          const tag = res ? 'a' : 'div';
+          return `<${tag} class="race" ${res ? `href="#race/${r.id}"` : ''}>
+            <span class="when">${fmtDow(r.date)}${r.time ? ` · ${r.time}` : ''}</span>
+            <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
+              <span class="l">${raceLabel(r)}</span><span class="h">${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}</span>
+              ${win ? `<span class="win">· ${flag(win.nation)}${esc(prettyName(win.name).last)}</span>` : ''}</span>
+            <span class="chips">${res && ps.length ? ps.map((p) => {
               const v = calc.byRace[r.id]?.[p.id]?.total || 0;
-              return v ? `<span class="chip">${esc(p.name)} <b>+${v}</b></span>` : '';
-            }).join('')}</span>` : ''}</span>
-          </div>`;
-        }).join('')}
-      </div>`;
-    }).join('')}
-  `;
+              return v ? `<span class="chip">${avatar(p, 'sm')}<b>+${v}</b></span>` : '';
+            }).join('') : !res && st === 'past' ? '<span class="muted xs">brak wyników</span>' : ''}</span>
+          </${tag}>`;
+        }).join('')}</div>
+      </div></div>`;
+  }).join('')}`;
 }
 
 function raceView(id) {
   const w = weekends.find((x) => x.races.some((r) => r.id === id));
   const race = w?.races.find((r) => r.id === id);
   const res = results[id];
-  if (!race || !res) return '<p>Brak wyników tego konkursu. <a href="#kalendarz">Wróć do kalendarza</a></p>';
+  if (!race || !res) return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a><div class="card empty">${icon('calendar')}<b>Brak wyników</b>Ten konkurs jeszcze się nie odbył.</div>`;
   const pts = racePoints(race, res, state.settings, state.hillRecords[id] || []);
   const lj = race.category === 'WC' ? longestJump(res) : 0;
   const records = state.hillRecords[id] || [];
@@ -326,56 +680,96 @@ function raceView(id) {
     if (!pid) return '';
     const l = lineups[pid];
     const starter = l.starters.includes(aid);
-    return `<span class="tag ${starter ? 'acc' : ''}">${esc(pname(pid))}${l.captain === aid ? ' 🧢' : ''}${starter ? '' : ' (rez.)'}</span>`;
+    return owner(pid, `${l.captain === aid ? ' <span class="cap">C</span>' : ''}${starter ? '' : ' <span class="muted xs">(rez.)</span>'}`);
   };
   const sorted = [...res.results].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const ps = [...state.participants].sort((a, b) => (calc.byRace[id]?.[b.id]?.total || 0) - (calc.byRace[id]?.[a.id]?.total || 0));
+  const m = me();
 
-  return `
-    <p><a href="#kalendarz">← Kalendarz</a></p>
-    <h1>${raceLabel(race)} — ${esc(race.place)}</h1>
-    <p class="muted">${fmtDow(race.date)} · skocznia ${hillShort(race.discipline)} · weekend ${w.no}
-      ${lj ? ` · najdłuższy skok: <b>${lj} m</b>` : ''} · <a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener">oficjalne wyniki FIS ↗</a></p>
-    ${state.participants.length ? `<div class="grid">${state.participants.map((p) => {
+  return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a>
+    <div class="hero race-hero">${MOUNTAINS}
+      <div class="eyebrow">Weekend ${w.no} · ${race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'}</div>
+      <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
+      <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${race.time}` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
+        ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
+        <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
+    </div>
+    ${ps.length ? `<div class="section grid">${ps.map((p) => {
       const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [] };
-      return `<div class="card"><div class="row"><h3>${esc(p.name)}</h3><span class="spacer"></span><b>+${e.total}</b></div>
-        ${e.athletes.map((a) => `<div class="player"><span class="name">${a.captain ? '<span class="cap">🧢</span> ' : ''}${esc(aname(a.id))}</span>
-          <span class="muted small">${breakdown(a.base)}${a.captain ? ' ×2' : ''}</span><span class="pts">${a.pts}</span></div>`).join('') || '<div class="muted small">brak punktów</div>'}
-      </div>`;
+      return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(p.name)}</div><span class="spacer"></span>
+          <div class="tot"><div class="v">+${e.total}</div><div class="l">pkt</div></div></div>
+        <div class="team-body">${e.athletes.sort((a, b) => b.pts - a.pts).map((a) => `<div class="player">${ath(a.id, { gender: false })}
+          ${a.captain ? '<span class="cap">C</span>' : ''}<span class="pp">${a.pts}</span></div>
+          <div class="muted xs" style="margin:-.35rem 0 .3rem;text-align:right">${breakdown(a.base)}${a.captain ? ' · ×2 kapitan' : ''}</div>`).join('') || '<div class="muted small" style="padding:.6rem 0">Brak punktów w tym konkursie</div>'}</div></div>`;
     }).join('')}</div>` : ''}
-    <h2 class="row">Wyniki <span class="spacer"></span>
-      ${race.category === 'WC' ? `<button class="sm" data-action="editRecord">${ui.editRecord ? 'Gotowe' : 'Oznacz rekord skoczni'}</button>` : ''}</h2>
-    ${ui.editRecord ? '<p class="small muted">Zaznacz zawodnika, który ustanowił oficjalnie uznany rekord skoczni (+15 pkt). Zmiana zapisuje się od razu dla wszystkich.</p>' : ''}
-    <div class="tablewrap"><table>
-      <thead><tr><th class="num">Msc</th><th>Zawodnik</th><th>Kraj</th>${race.category === 'WC' ? '<th class="num">Skoki (m)</th>' : '<th class="num">Odl. (m)</th>'}<th class="num">Nota</th><th class="num">Pkt w zabawie</th><th>Drużyna</th>${ui.editRecord ? '<th>Rekord</th>' : ''}</tr></thead>
+    <div class="section"><div class="row"><h2>Wyniki</h2><span class="spacer"></span>
+      ${race.category === 'WC' ? `<button class="sm" data-action="editRecord">${icon(ui.editRecord ? 'check' : 'star')}${ui.editRecord ? 'Gotowe' : 'Rekord skoczni'}</button>` : ''}</div>
+    ${ui.editRecord ? `<div class="warnline" style="margin:0 0 .8rem">${icon('info')}Zaznacz zawodnika, który ustanowił oficjalnie uznany rekord skoczni (+${{ ...DEFAULT_BONUS, ...state.settings.bonus }.record} pkt). Zapisuje się od razu.</div>` : ''}
+    <div class="card pad0"><div class="tablewrap"><table>
+      <thead><tr><th class="num">Msc</th><th>Zawodnik</th><th class="num">${race.category === 'WC' ? 'Skoki' : 'Odl.'}</th><th class="num hide-sm">Nota</th><th class="num">Pkt ligi</th><th>Drużyna</th>${ui.editRecord ? '<th>Rekord</th>' : ''}</tr></thead>
       <tbody>${sorted.map((r) => {
         const p = pts.get(r.id);
-        return `<tr class="${ownerOf(r.id) === me && me ? 'mine' : ''}">
-          <td class="num">${r.rank ?? '<span class="muted">DSQ</span>'}</td>
-          <td><b>${esc(r.name)}</b></td><td>${esc(r.nation)}</td>
-          <td class="num">${r.jumps.map((j) => (j === lj ? `<span class="longest">${j}</span>` : j)).join(' / ')}</td>
-          <td class="num">${r.total ?? ''}</td>
-          <td class="num">${p?.total ? `<b>${p.total}</b> <span class="bonus">${bonusTags(p)}</span>` : ''}</td>
+        const mine = m && ownerOf(r.id) === m.id;
+        return `<tr class="${mine ? 'mine' : ''}">
+          <td class="rank">${r.rank ? (r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : r.rank) : '<span class="tag bad">DSQ</span>'}</td>
+          <td>${ath(r.id, { fallback: { ...r, gender: race.gender }, gender: false })}</td>
+          <td class="num">${r.jumps.map((j) => (j === lj ? `<span class="longest">${j}</span>` : j)).join('<span class="muted"> / </span>')}</td>
+          <td class="num hide-sm muted">${r.total ?? ''}</td>
+          <td class="pts">${p?.total ? `${p.total}${p.quali ? '<span class="bonus">Q</span>' : ''}${p.longest ? '<span class="bonus">NS</span>' : ''}${p.record ? '<span class="bonus">RS</span>' : ''}` : ''}</td>
           <td>${ownerInfo(r.id)}</td>
           ${ui.editRecord ? `<td><input type="checkbox" data-action="record" data-race="${id}" data-id="${r.id}" ${records.includes(r.id) ? 'checked' : ''}></td>` : ''}
         </tr>`;
-      }).join('')}</tbody></table></div>
-  `;
+      }).join('')}</tbody></table></div></div>
+    <p class="muted xs" style="margin-top:.6rem">Q — zwycięstwo w kwalifikacjach · NS — najdłuższy skok konkursu · RS — rekord skoczni · punkty bez mnożnika kapitana</p></div>`;
 }
 
 function breakdown(b) {
   const parts = [];
   if (b.place) parts.push(`miejsce ${b.place}`);
-  if (b.quali) parts.push(`wygrane kwal. ${b.quali}`);
-  if (b.longest) parts.push(`najdł. skok ${b.longest}`);
-  if (b.record) parts.push(`rekord ${b.record}`);
-  return parts.join(' + ');
+  if (b.quali) parts.push(`kwal. +${b.quali}`);
+  if (b.longest) parts.push(`najdł. skok +${b.longest}`);
+  if (b.record) parts.push(`rekord +${b.record}`);
+  return parts.join(' · ');
 }
 
-function bonusTags(p) {
-  return [p.quali && '🏁', p.longest && '📏', p.record && '⭐'].filter(Boolean).join(' ');
+// ================================================================ puchar świata
+
+function puchar() {
+  const g = ui.wcGender;
+  const prev = ui.wcSeason === 'previous';
+  let rows; let note = '';
+  if (prev) {
+    rows = standings?.previous?.[g] || [];
+    note = `Końcowa klasyfikacja sezonu ${seasonLabel(calendar.season - 1)} (FIS)`;
+  } else {
+    const s = wcStandings(weekends, results, g);
+    rows = s.rows;
+    note = `Po ${s.races} ${pl(s.races, 'konkursie', 'konkursach', 'konkursach')} · liczona z oficjalnych wyników FIS`;
+  }
+  const lead = rows[0]?.points || 0;
+  const m = me();
+  return `<div class="page-head"><div><h1>Puchar Świata</h1><div class="sub">Klasyfikacja generalna · ${note}</div></div></div>
+    <div class="row" style="margin-bottom:1rem">
+      <div class="seg">${[['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) => `<button data-action="wcGender" data-v="${k}" class="${g === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+      <div class="seg">${[['current', `Sezon ${seasonLabel(calendar.season)}`], ['previous', seasonLabel(calendar.season - 1)]].map(([k, l]) => `<button data-action="wcSeason" data-v="${k}" class="${ui.wcSeason === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    </div>
+    ${rows.length ? `<div class="card pad0"><div class="tablewrap"><table>
+      <thead><tr><th class="num">Msc</th><th>Zawodnik</th><th class="num">Pkt</th><th class="num hide-sm">Strata</th><th>W lidze</th></tr></thead>
+      <tbody>${rows.map((r) => {
+        const o = ownerOf(r.id);
+        return `<tr class="${m && o === m.id ? 'mine' : ''}">
+          <td class="rank">${r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : r.rank}</td>
+          <td>${ath(r.id, { fallback: { ...r, gender: g }, gender: false })}</td>
+          <td class="pts">${r.points}</td>
+          <td class="num hide-sm muted">${r.points === lead ? '' : `−${lead - r.points}`}</td>
+          <td>${o ? owner(o) : '<span class="muted xs">wolny</span>'}</td></tr>`;
+      }).join('')}</tbody></table></div></div>`
+      : `<div class="card empty">${icon('globe')}<b>Klasyfikacja ruszy po pierwszym konkursie</b>
+         ${weekends[0] ? `Start sezonu: ${esc(weekends[0].name)}, ${fmtLong(weekends[0].start)}.` : ''}
+         <div style="margin-top:1rem"><button data-action="wcSeason" data-v="previous">Pokaż sezon ${seasonLabel(calendar.season - 1)}</button></div></div>`}`;
 }
 
-// ---------------------------------------------------------------- zawodnicy
+// ================================================================ zawodnicy
 
 function zawodnicy() {
   const raw = {};
@@ -383,98 +777,222 @@ function zawodnicy() {
     if (!results[r.id]) continue;
     for (const [id, p] of racePoints(r, results[r.id], state.settings, state.hillRecords[r.id] || [])) raw[id] = (raw[id] || 0) + p.total;
   }
-  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
-    (!ui.q || (a.name + ' ' + a.nation).toLowerCase().includes(ui.q.toLowerCase())))
+  const q = ui.q.toLowerCase();
+  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)))
     .sort((a, b) => (raw[b.id] || 0) - (raw[a.id] || 0) || byId[a.id].idx - byId[b.id].idx);
-  return `
-    <h1>Zawodnicy</h1>
-    <p class="muted">„Pkt sezonu” to punkty, które zawodnik zdobyłby w zabawie (bez kapitana). „Dla drużyny” — punkty faktycznie zdobyte dla właściciela (tylko w składzie, z kapitanem).</p>
-    <div class="row" style="margin-bottom:.6rem">
-      <div class="seg">${[['ALL', 'Wszyscy'], ['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) =>
-        `<button data-action="gender" data-v="${k}" class="${ui.gender === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-      <input id="q" placeholder="Szukaj zawodnika / kraju" value="${esc(ui.q)}">
-    </div>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Zawodnik</th><th>Kraj</th><th class="num">Pkt sezonu</th><th class="num">Dla drużyny</th><th>Drużyna</th></tr></thead>
-      <tbody>${list.map((a) => `<tr><td>${gtag(a.gender)} <b>${esc(a.name)}</b></td><td>${esc(a.nation)}</td>
-        <td class="num">${raw[a.id] || 0}</td><td class="num">${calc.athleteTotals[a.id] || ''}</td>
-        <td>${ownerOf(a.id) ? `<span class="tag acc">${esc(pname(ownerOf(a.id)))}</span>` : '<span class="muted small">wolny</span>'}</td></tr>`).join('')}</tbody>
-    </table></div>
-  `;
+  return `<div class="page-head"><div><h1>Zawodnicy</h1><div class="sub">Ile punktów ligi zdobywa każdy skoczek — także ci, których nikt nie wybrał</div></div></div>
+    <div class="row" style="margin-bottom:.8rem">${genderSeg()}
+      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label></div>
+    <div class="card pad0"><div class="tablewrap"><table>
+      <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
+      <tbody>${list.map((a) => `<tr><td>${ath(a.id)}</td><td class="pts">${raw[a.id] || 0}</td>
+        <td class="num hide-sm">${calc.athleteTotals[a.id] || '<span class="muted">–</span>'}</td>
+        <td class="num hide-sm muted">${a.wc || '–'}</td><td>${owner(ownerOf(a.id))}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
 }
 
-// ---------------------------------------------------------------- ustawienia
+// ================================================================ więcej (telefon)
 
-function ustawienia() {
-  const started = state.picks.length > 0;
+function wiecej() {
+  const items = [['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
+  if (isAdmin()) items.push(['admin', 'Panel admina', 'settings']);
+  return `<div class="page-head"><h1>Więcej</h1></div>
+    <div class="card menu" style="position:static;box-shadow:none;min-width:0">
+      ${items.map(([k, l, i]) => `<a href="#${k}">${icon(i)}${l}</a>`).join('')}
+      <hr>
+      ${me() ? `<button data-action="changePin">${icon('key')}Zmień PIN</button>` : `<button data-action="joinAsAdmin">${icon('plus')}Dołącz jako gracz</button>`}
+      ${isAdmin() ? `<button data-action="adminOff">${icon('lock')}Wyjdź z trybu admina</button>` : `<button data-action="adminOn">${icon('unlock')}Tryb administratora</button>`}
+      <button data-action="logout">${icon('logout')}Wyloguj</button>
+    </div>`;
+}
+
+// ================================================================ admin
+
+function adminView() {
+  const ph = phase();
   const s = state.settings;
   const bonus = { ...DEFAULT_BONUS, ...(s.bonus || {}) };
-  return `
-    <h1>Ustawienia</h1>
+  const total = state.draftOrder.length * TEAM_SIZE;
+  return `<div class="page-head"><div><h1>Panel admina</h1><div class="sub">${esc(state.setup.leagueName)} · ${ph === 'signup' ? 'zapisy otwarte' : ph === 'draft' ? `draft w toku (${state.picks.length}/${total})` : 'sezon trwa'}</div></div></div>
+  <div class="grid-2">
     <div class="stack">
-    <div class="card">
-      <h3>Uczestnicy i kolejność draftu</h3>
-      ${state.draftOrder.map((pid, i) => `<div class="player"><b>${i + 1}.</b><span class="name">${esc(pname(pid))}</span>
-        ${started ? '' : `<button class="sm" data-action="up" data-i="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
-        <button class="sm" data-action="down" data-i="${i}" ${i === state.draftOrder.length - 1 ? 'disabled' : ''}>↓</button>
-        <button class="sm danger" data-action="removeP" data-id="${pid}">Usuń</button>`}</div>`).join('') || '<p class="muted">Brak uczestników.</p>'}
-      ${started ? '<p class="muted small">Draft już się rozpoczął — lista uczestników jest zablokowana.</p>' : `
-        <div class="row" style="margin-top:.75rem"><input id="newP" placeholder="Imię uczestnika"><button data-action="addP">Dodaj</button>
-        <button data-action="shuffle" ${state.draftOrder.length < 2 ? 'disabled' : ''}>🎲 Losuj kolejność</button></div>`}
-    </div>
-    <div class="card">
-      <h3>Punktacja</h3>
-      <p class="small muted">Punkty za miejsca 1, 2, 3… (domyślnie punktacja Pucharu Świata FIS). Bonusy dodawane są do punktów za miejsce; kapitan ×2.</p>
-      <textarea id="placePts">${(s.placePoints || FIS_POINTS).join(', ')}</textarea>
-      <div class="row" style="margin-top:.5rem">
-        <label>Zwycięstwo w kwalifikacjach <input id="bQ" type="number" value="${bonus.quali}" style="width:5rem"></label>
-        <label>Najdłuższy skok <input id="bL" type="number" value="${bonus.longest}" style="width:5rem"></label>
-        <label>Rekord skoczni <input id="bR" type="number" value="${bonus.record}" style="width:5rem"></label>
-        <button data-action="saveScoring">Zapisz punktację</button>
-        <button data-action="resetScoring" class="sm">Przywróć domyślne</button>
+      <div class="card">
+        <div class="row" style="margin-bottom:.6rem"><h3>Gracze i kolejność draftu</h3><span class="spacer"></span>
+          ${ph === 'signup' ? `<button class="sm" data-action="shuffle" ${state.draftOrder.length < 2 ? 'disabled' : ''}>${icon('shuffle')}Losuj</button>` : ''}</div>
+        ${state.draftOrder.map((pid, i) => {
+          const p = P(pid);
+          return `<div class="player"><b class="muted" style="width:1.2rem">${i + 1}.</b>${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(p.name)}</span></span>
+            ${p.id === session.pid ? '<span class="tag acc">Ty</span>' : ''}<span class="spacer"></span>
+            ${ph === 'signup' ? `<button class="icon ghost" data-action="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="W górę">▲</button>
+              <button class="icon ghost" data-action="down" data-i="${i}" ${i === state.draftOrder.length - 1 ? 'disabled' : ''} title="W dół">▼</button>` : ''}
+            <button class="icon ghost" data-action="resetPin" data-id="${p.id}" title="Ustaw nowy PIN">${icon('key')}</button>
+            ${ph === 'signup' ? `<button class="icon ghost danger" data-action="removeP" data-id="${p.id}" title="Usuń">${icon('trash')}</button>` : ''}
+          </div>`;
+        }).join('') || '<div class="muted small">Nikt jeszcze nie dołączył. Wyślij znajomym link do strony.</div>'}
+        <div class="row" style="margin-top:1rem">
+          <button class="sm" data-action="addP">${icon('plus')}Dodaj gracza</button>
+          ${!me() ? `<button class="sm" data-action="joinAsAdmin">${icon('user')}Dołącz sam jako gracz</button>` : ''}
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:.4rem">Draft</h3>
+        ${ph === 'signup' ? `<p class="muted small" style="margin-bottom:1rem">Rozpoczęcie draftu zamyka zapisy. Kolejność jak na liście powyżej (snake: 1→${state.draftOrder.length || 'N'}, potem z powrotem).</p>
+          <button class="primary" data-action="startDraft" ${state.draftOrder.length < 2 ? 'disabled' : ''}>${icon('play')}Rozpocznij draft</button>`
+        : `<p class="muted small" style="margin-bottom:1rem">${ph === 'draft' ? `Wybrano ${state.picks.length} z ${total}.` : 'Draft zakończony.'} Jako admin możesz wybierać za innych w zakładce Draft.</p>
+          <div class="row"><button data-action="undo" ${state.picks.length ? '' : 'disabled'}>${icon('undo')}Cofnij ostatni wybór</button>
+          <button class="danger" data-action="resetDraft">${icon('trash')}Zresetuj draft</button></div>`}
       </div>
     </div>
-    <div class="card">
-      <h3>Tryb administratora</h3>
-      <p class="small muted">Pozwala na tym urządzeniu wybierać za innych w drafcie, cofać wybory i zmieniać zablokowane składy (np. do poprawek).</p>
-      <label><input type="checkbox" data-action="admin" ${admin ? 'checked' : ''}> włącz tryb administratora</label>
+    <div class="stack">
+      <div class="card">
+        <h3 style="margin-bottom:.3rem">Punktacja</h3>
+        <p class="muted small" style="margin-bottom:.8rem">Punkty za miejsca 1, 2, 3… (domyślnie punktacja PŚ FIS). Zmiana przelicza cały sezon.</p>
+        <label class="field"><span>Punkty za miejsca</span><textarea id="placePts">${(s.placePoints || FIS_POINTS).join(', ')}</textarea></label>
+        <div class="grid-3" style="gap:.6rem">
+          <label class="field"><span>Wygrane kwalifikacje</span><input id="bQ" type="number" value="${bonus.quali}"></label>
+          <label class="field"><span>Najdłuższy skok</span><input id="bL" type="number" value="${bonus.longest}"></label>
+          <label class="field"><span>Rekord skoczni</span><input id="bR" type="number" value="${bonus.record}"></label>
+        </div>
+        <div class="row"><button class="primary" data-action="saveScoring">${icon('check')}Zapisz</button><button class="ghost" data-action="resetScoring">Przywróć domyślne</button></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:.8rem">Liga</h3>
+        <div class="row"><button data-action="renameLeague">Zmień nazwę</button><button data-action="changeAdminPass">${icon('key')}Zmień hasło admina</button></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:.3rem">Kopia zapasowa</h3>
+        <p class="muted small" style="margin-bottom:.8rem">Zapisz stan ligi (gracze, draft, składy) do pliku — na wszelki wypadek.</p>
+        <div class="row"><button data-action="export">${icon('download')}Pobierz</button>
+          <label class="btn">${icon('upload')}Wczytaj z pliku<input type="file" id="importFile" accept=".json" hidden></label>
+          <span class="spacer"></span><button class="danger" data-action="deleteLeague">${icon('trash')}Usuń ligę</button></div>
+      </div>
     </div>
-    <div class="card">
-      <h3>Kopia zapasowa</h3>
-      <div class="row"><button data-action="export">⬇ Pobierz stan ligi (JSON)</button>
-        <label class="btn">⬆ Wczytaj z pliku<input type="file" id="importFile" accept=".json" hidden></label>
-        <span class="spacer"></span>
-        <button class="danger" data-action="resetDraft" ${started ? '' : 'disabled'}>Zresetuj draft</button></div>
-    </div>
-    </div>
-  `;
+  </div>`;
 }
 
-// ---------------------------------------------------------------- akcje
+// ================================================================ akcje
 
-const uid = () => 'p' + Math.random().toString(36).slice(2, 8);
+function setSession(s) { session = s; LS.set(SESSION_KEY, s); }
+
+function newParticipant(s, name, pinHash) {
+  const n = name.trim();
+  if (!n) fail('Podaj imię');
+  if (s.participants.some((p) => p.name.toLowerCase() === n.toLowerCase())) fail('Ktoś o tym imieniu już jest w lidze');
+  const used = new Set(s.participants.map((p) => p.color));
+  const color = COLORS.find((c) => !used.has(c)) || COLORS[s.participants.length % COLORS.length];
+  const p = { id: 'p' + randomId(6), name: n, pinHash, color, joined: new Date().toISOString() };
+  s.participants.push(p);
+  s.draftOrder.push(p.id);
+  return p;
+}
+
+const forms = {
+  async create(f, err) {
+    if (f.pass !== f.pass2) return err('Hasła się różnią');
+    const salt = randomId(12);
+    const adminHash = await hash(salt, f.pass);
+    const ok = await save((s) => {
+      if (s.setup) fail('Liga została już otwarta');
+      s.setup = { leagueName: f.league.trim(), salt, adminHash, created: new Date().toISOString() };
+      return s;
+    });
+    if (ok) { setSession({ adminHash }); location.hash = '#admin'; render(); toast('Liga otwarta! Teraz dołącz jako gracz i wyślij link znajomym.', 'ok'); }
+  },
+  async join(f, err) {
+    if (!/^\d{4,8}$/.test(f.pin)) return err('PIN musi mieć 4–8 cyfr');
+    if (f.pin !== f.pin2) return err('PINy się różnią');
+    const pinHash = await hash(state.setup.salt, f.pin);
+    let created;
+    try {
+      await store.update((s) => {
+        if (s.draftStarted) fail('Draft już się zaczął — zapisy są zamknięte');
+        created = newParticipant(s, f.name, pinHash);
+        return s;
+      });
+    } catch (e) { return err(e.message); }
+    setSession({ ...session, pid: created.id, pinHash });
+    ui.authMode = null;
+    render();
+    toast(`Witaj w lidze, ${created.name}!`, 'ok');
+  },
+  async login(f, err) {
+    const p = P(f.pid);
+    const h = await hash(state.setup.salt, f.pin);
+    if (!p || p.pinHash !== h) return err('Zły PIN');
+    setSession({ ...session, pid: p.id, pinHash: h });
+    render();
+  },
+  async adminLogin(f, err) {
+    const h = await hash(state.setup.salt, f.pass);
+    if (h !== state.setup.adminHash) return err('Złe hasło');
+    setSession({ ...session, adminHash: h });
+    ui.authMode = null;
+    render();
+  },
+};
 
 const actions = {
+  menu: () => { ui.menu = !ui.menu; render(); },
+  authMode: (el) => { ui.authMode = el.dataset.v || null; render(); },
+  logout: async () => {
+    if (await confirmModal('Wylogować?', 'Do ponownego zalogowania potrzebny będzie PIN.', 'Wyloguj')) { setSession({}); ui.menu = false; location.hash = ''; render(); }
+  },
+  adminOff: () => { setSession({ ...session, adminHash: null }); ui.menu = false; if (!me()) location.hash = ''; render(); },
+  adminOn: async () => {
+    ui.menu = false; render();
+    const v = await modal({ title: 'Tryb administratora', fields: [{ name: 'pass', label: 'Hasło administratora', type: 'password' }], ok: 'Odblokuj' });
+    if (!v) return;
+    const h = await hash(state.setup.salt, v.pass);
+    if (h !== state.setup.adminHash) return toast('Złe hasło', 'err');
+    setSession({ ...session, adminHash: h }); render(); toast('Tryb administratora włączony', 'ok');
+  },
+  joinAsAdmin: async () => {
+    ui.menu = false; render();
+    const v = await modal({ title: 'Dołącz jako gracz', text: 'Wpisz imię i PIN (4–8 cyfr) — będziesz w lidze tak jak pozostali.', ok: 'Dołącz',
+      fields: [{ name: 'name', label: 'Imię', attrs: 'maxlength="20" required' }, { name: 'pin', label: 'PIN', type: 'password', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }] });
+    if (!v) return;
+    const pinHash = await hash(state.setup.salt, v.pin);
+    let created;
+    const ok = await save((s) => { if (s.draftStarted) fail('Draft już trwa — dodaj gracza przed draftem'); created = newParticipant(s, v.name, pinHash); return s; });
+    if (ok) { setSession({ ...session, pid: created.id, pinHash }); render(); toast(`Dołączono jako ${created.name}`, 'ok'); }
+  },
+  changePin: async () => {
+    ui.menu = false; render();
+    const v = await modal({ title: 'Zmień PIN', fields: [{ name: 'old', label: 'Obecny PIN', type: 'password', attrs: 'inputmode="numeric" required' },
+      { name: 'pin', label: 'Nowy PIN (4–8 cyfr)', type: 'password', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }], ok: 'Zapisz' });
+    if (!v) return;
+    const m = me();
+    if (await hash(state.setup.salt, v.old) !== m.pinHash) return toast('Zły obecny PIN', 'err');
+    const pinHash = await hash(state.setup.salt, v.pin);
+    if (await save((s) => { s.participants.find((p) => p.id === m.id).pinHash = pinHash; return s; }, 'PIN zmieniony')) setSession({ ...session, pinHash });
+  },
+
   gender: (el) => { ui.gender = el.dataset.v; render(); },
   hideTaken: (el) => { ui.hideTaken = el.checked; render(); },
-  weekend: (el) => { ui.weekend = el.value; render(); },
+  weekend: (el) => { ui.weekend = el.dataset.v; render(); },
+  wcGender: (el) => { ui.wcGender = el.dataset.v; render(); },
+  wcSeason: (el) => { ui.wcSeason = el.dataset.v; render(); },
   editRecord: () => { ui.editRecord = !ui.editRecord; render(); },
-  admin: (el) => { admin = el.checked; LS.set('skoki-admin', admin); render(); },
 
   pick: (el) => {
     const aid = el.dataset.id;
-    const { cur } = draftInfo();
+    const cur = snakeOrder(state.draftOrder)[state.picks.length];
     if (!cur) return;
+    const n = prettyName(athInfo(aid).name);
     save((s) => {
-      // ponowne sprawdzenie na świeżym stanie – ktoś mógł wybrać w międzyczasie
-      const seq = snakeOrder(s.draftOrder);
-      const c = seq[s.picks.length];
-      if (!c || c.pid !== cur.pid || s.picks.includes(aid)) throw new Error('stan draftu się zmienił, spróbuj ponownie');
+      const c = snakeOrder(s.draftOrder)[s.picks.length];
+      if (!c || c.pid !== cur.pid || s.picks.includes(aid)) fail('Stan draftu się zmienił — spróbuj ponownie');
       s.picks.push(aid);
       return s;
-    });
+    }, `Wybrano: ${n.first} ${n.last}`);
   },
-  undo: () => { if (confirm('Cofnąć ostatni wybór?')) save((s) => { s.picks.pop(); return s; }); },
+  undo: async () => {
+    if (!state.picks.length) return;
+    const last = prettyName(athInfo(state.picks[state.picks.length - 1]).name);
+    if (await confirmModal('Cofnąć ostatni wybór?', `${esc(last.first)} ${esc(last.last)} wróci na listę dostępnych.`, 'Cofnij')) {
+      save((s) => { s.picks.pop(); return s; });
+    }
+  },
 
   captain: (el) => {
     const { p, id } = el.dataset;
@@ -487,46 +1005,78 @@ const actions = {
     save((s) => setLineup(s, p, (l) => ({
       starters: l.starters.map((x) => (x === out ? id : x)),
       captain: l.captain === out ? null : l.captain,
-    })));
+    })), 'Skład zmieniony');
   },
   record: (el) => {
     const { race, id } = el.dataset;
+    const on = el.checked;
     save((s) => {
       const cur = new Set(s.hillRecords[race] || []);
-      el.checked ? cur.add(id) : cur.delete(id);
+      on ? cur.add(id) : cur.delete(id);
       s.hillRecords[race] = [...cur];
       return s;
     });
   },
 
-  addP: () => {
-    const inp = document.getElementById('newP');
-    const name = inp.value.trim();
-    if (!name) return;
-    save((s) => { const id = uid(); s.participants.push({ id, name }); s.draftOrder.push(id); return s; });
+  // admin
+  addP: async () => {
+    const v = await modal({ title: 'Dodaj gracza', text: 'Dla kogoś, kto nie może zapisać się sam. Przekaż mu PIN.', ok: 'Dodaj',
+      fields: [{ name: 'name', label: 'Imię', attrs: 'maxlength="20" required' }, { name: 'pin', label: 'PIN (4–8 cyfr)', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }] });
+    if (!v) return;
+    const pinHash = await hash(state.setup.salt, v.pin);
+    save((s) => { if (s.draftStarted) fail('Draft już trwa'); newParticipant(s, v.name, pinHash); return s; }, `Dodano: ${v.name}`);
   },
-  removeP: (el) => save((s) => {
-    s.participants = s.participants.filter((p) => p.id !== el.dataset.id);
-    s.draftOrder = s.draftOrder.filter((x) => x !== el.dataset.id);
-    return s;
-  }),
+  removeP: async (el) => {
+    const p = P(el.dataset.id);
+    if (!await confirmModal(`Usunąć ${esc(p.name)}?`, 'Gracz zniknie z ligi.', 'Usuń', true)) return;
+    save((s) => {
+      if (s.draftStarted) fail('Nie można usuwać graczy po starcie draftu');
+      s.participants = s.participants.filter((x) => x.id !== p.id);
+      s.draftOrder = s.draftOrder.filter((x) => x !== p.id);
+      return s;
+    });
+  },
+  resetPin: async (el) => {
+    const p = P(el.dataset.id);
+    const v = await modal({ title: `Nowy PIN dla ${p.name}`, fields: [{ name: 'pin', label: 'PIN (4–8 cyfr)', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }], ok: 'Ustaw' });
+    if (!v) return;
+    const pinHash = await hash(state.setup.salt, v.pin);
+    save((s) => { s.participants.find((x) => x.id === p.id).pinHash = pinHash; return s; }, 'PIN zmieniony');
+    if (p.id === session.pid) setSession({ ...session, pinHash });
+  },
   up: (el) => moveP(+el.dataset.i, -1),
   down: (el) => moveP(+el.dataset.i, 1),
   shuffle: () => save((s) => {
     const o = s.draftOrder;
     for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
     return s;
-  }),
+  }, 'Kolejność wylosowana'),
+  startDraft: async () => {
+    const names = state.draftOrder.map((pid) => esc(pname(pid))).join(' → ');
+    if (!await confirmModal('Rozpocząć draft?', `Kolejność: <b>${names}</b>.<br>Zapisy zostaną zamknięte.`, 'Start')) return;
+    if (await save((s) => { if (s.draftOrder.length < 2) fail('Potrzeba co najmniej 2 graczy'); s.draftStarted = true; s.picks = []; return s; }, 'Draft wystartował!')) location.hash = '#draft';
+  },
+  resetDraft: async () => {
+    if (await confirmModal('Zresetować draft?', 'Wszystkie wybory i składy zostaną usunięte, a zapisy otwarte ponownie. Tego nie da się cofnąć.', 'Resetuj', true)) {
+      save((s) => { s.picks = []; s.lineups = {}; s.draftStarted = false; return s; }, 'Draft zresetowany');
+    }
+  },
   saveScoring: () => {
     const placePoints = document.getElementById('placePts').value.split(/[,\s;]+/).filter(Boolean).map(Number).filter((n) => !Number.isNaN(n));
     const bonus = { quali: +document.getElementById('bQ').value, longest: +document.getElementById('bL').value, record: +document.getElementById('bR').value };
-    save((s) => { s.settings = { ...s.settings, placePoints, bonus }; return s; });
+    save((s) => { s.settings = { ...s.settings, placePoints, bonus }; return s; }, 'Punktacja zapisana');
   },
-  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; return s; }),
-  resetDraft: () => {
-    if (confirm('Na pewno zresetować draft? Wszystkie wybory i składy zostaną usunięte.')) {
-      save((s) => { s.picks = []; s.lineups = {}; return s; });
-    }
+  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; return s; }, 'Przywrócono domyślną punktację'),
+  renameLeague: async () => {
+    const v = await modal({ title: 'Nazwa ligi', fields: [{ name: 'n', label: 'Nazwa', value: state.setup.leagueName, attrs: 'maxlength="40" required' }], ok: 'Zapisz' });
+    if (v) save((s) => { s.setup.leagueName = v.n.trim(); return s; });
+  },
+  changeAdminPass: async () => {
+    const v = await modal({ title: 'Nowe hasło admina', fields: [{ name: 'p1', label: 'Nowe hasło', type: 'password', attrs: 'minlength="4" required' }, { name: 'p2', label: 'Powtórz', type: 'password', attrs: 'minlength="4" required' }], ok: 'Zmień' });
+    if (!v) return;
+    if (v.p1 !== v.p2) return toast('Hasła się różnią', 'err');
+    const h = await hash(state.setup.salt, v.p1);
+    if (await save((s) => { s.setup.adminHash = h; return s; }, 'Hasło zmienione')) setSession({ ...session, adminHash: h });
   },
   export: () => {
     const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });
@@ -534,6 +1084,12 @@ const actions = {
     a.href = URL.createObjectURL(blob);
     a.download = `skoki-draft-${today()}.json`;
     a.click();
+  },
+  deleteLeague: async () => {
+    if (!await confirmModal('Usunąć całą ligę?', 'Znikną gracze, draft, składy i hasło admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
+    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, hillRecords: {}, settings: {} }))) {
+      setSession({}); location.hash = ''; render();
+    }
   },
 };
 
@@ -543,48 +1099,61 @@ function moveP(i, d) {
 
 function setLineup(s, pid, fn) {
   const w = weekends.find((x) => x.id === ui.weekend);
-  if (!w) throw new Error('brak weekendu');
-  if (isLocked(w) && !admin) throw new Error('skład na ten weekend jest już zablokowany');
+  if (!w) fail('Brak weekendu');
+  if (isLocked(w) && !isAdmin()) fail('Skład na ten weekend jest już zablokowany');
   const ids = teams(s)[pid] || [];
   const cur = lineupFor(s, weekends, w.id, pid, ids, byId);
   const next = fn({ starters: cur.starters, captain: cur.captain });
-  if (!validLineup(next.starters, byId)) throw new Error(`skład musi mieć ${TEAM.men} mężczyzn i ${TEAM.women} kobietę`);
+  if (!validLineup(next.starters, byId)) fail(`Skład musi mieć ${TEAM.men} mężczyzn i ${TEAM.women} kobietę`);
   if (next.captain && !next.starters.includes(next.captain)) next.captain = null;
   s.lineups[w.id] = { ...(s.lineups[w.id] || {}), [pid]: next };
   return s;
 }
 
-app.addEventListener('click', (e) => {
+// ================================================================ zdarzenia
+
+root.addEventListener('click', (e) => {
+  const link = e.target.closest('a[data-week]');
+  if (link) {
+    ui.weekend = link.dataset.week;
+    const id = 'w-' + link.dataset.week;
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'center' }), 60);
+  }
   const el = e.target.closest('[data-action]');
+  if (ui.menu && !e.target.closest('.menu') && el?.dataset.action !== 'menu') { ui.menu = false; render(); }
   if (!el || el.tagName === 'SELECT' || el.type === 'checkbox') return;
   actions[el.dataset.action]?.(el);
 });
-app.addEventListener('change', (e) => {
+root.addEventListener('change', (e) => {
   const el = e.target.closest('[data-action]');
   if (el && (el.tagName === 'SELECT' || el.type === 'checkbox')) actions[el.dataset.action]?.(el);
   if (e.target.id === 'importFile' && e.target.files[0]) {
-    e.target.files[0].text().then((t) => {
+    e.target.files[0].text().then(async (t) => {
       const data = JSON.parse(t);
-      if (confirm('Zastąpić cały stan ligi danymi z pliku?')) save(() => data);
-    }).catch((err) => alert('Błędny plik: ' + err.message));
+      if (!data.setup || !Array.isArray(data.participants)) throw new Error('to nie jest kopia ligi');
+      if (await confirmModal('Wczytać kopię?', 'Cały obecny stan ligi zostanie zastąpiony danymi z pliku.', 'Wczytaj', true)) save(() => data, 'Kopia wczytana');
+    }).catch((err) => toast('Błędny plik: ' + err.message, 'err'));
   }
 });
-app.addEventListener('input', (e) => {
+root.addEventListener('input', (e) => {
   if (e.target.id !== 'q') return;
   ui.q = e.target.value;
-  const pos = e.target.selectionStart;
   render();
-  const q = document.getElementById('q');
-  q.focus();
-  q.setSelectionRange(pos, pos);
 });
-app.addEventListener('keydown', (e) => {
-  if (e.target.id === 'newP' && e.key === 'Enter') actions.addP();
+root.addEventListener('submit', async (e) => {
+  const form = e.target.closest('form[data-form]');
+  if (!form) return;
+  e.preventDefault();
+  const errBox = form.querySelector('.formerr');
+  const btn = form.querySelector('button[type=submit]');
+  errBox.textContent = '';
+  btn.disabled = true;
+  try {
+    await forms[form.dataset.form](Object.fromEntries(new FormData(form)), (m) => { errBox.textContent = m; });
+  } finally {
+    if (btn.isConnected) btn.disabled = false;
+  }
 });
-// link z rankingu do weekendu w kalendarzu
-app.addEventListener('click', (e) => {
-  const a = e.target.closest('a[data-w]');
-  if (a) setTimeout(() => document.getElementById('w-' + a.dataset.w)?.scrollIntoView({ block: 'start' }), 50);
-});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.menu) { ui.menu = false; render(); } });
 
 init();
