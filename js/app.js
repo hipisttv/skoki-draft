@@ -10,8 +10,7 @@ import {
 
 // ================================================================ stan
 
-const params = new URLSearchParams(location.search);
-const DATA = params.get('data') || 'data';
+const DATA = 'data';
 const root = document.getElementById('root');
 
 let state = null;        // wspólny stan ligi (Firebase / localStorage)
@@ -35,7 +34,7 @@ const LS = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* tryb prywatny */ } },
 };
-const SESSION_KEY = `skoki-session-${leagueId || 'main'}${DATA === 'data' ? '' : '-' + DATA}`;
+const SESSION_KEY = `skoki-session-${leagueId || 'main'}`;
 let session = LS.get(SESSION_KEY, {});   // { pid, pinHash, adminHash }
 
 // ================================================================ pomocnicze
@@ -744,7 +743,7 @@ function puchar() {
   } else {
     const s = wcStandings(weekends, results, g);
     rows = s.rows;
-    note = `Po ${s.races} ${pl(s.races, 'konkursie', 'konkursach', 'konkursach')} · liczona z oficjalnych wyników FIS`;
+    note = s.races ? `Po ${s.races} ${pl(s.races, 'konkursie', 'konkursach', 'konkursach')} · liczona z oficjalnych wyników FIS` : 'Sezon jeszcze się nie zaczął';
   }
   const lead = rows[0]?.points || 0;
   const m = me();

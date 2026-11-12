@@ -89,6 +89,3 @@ są dopisywani automatycznie.
 python scraper/fis.py            # pobierz dane bieżącego sezonu do data/
 python -m http.server 8080       # potem otwórz http://localhost:8080
 ```
-
-`http://localhost:8080/?data=demo` pokazuje aplikację na wynikach sezonu 2025/26 (folder `demo/`) – przydatne do
-przetestowania punktacji, zanim ruszy nowy sezon.
