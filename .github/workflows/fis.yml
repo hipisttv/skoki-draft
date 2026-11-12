@@ -1,0 +1,61 @@
+name: Wyniki FIS + strona
+
+on:
+  schedule:
+    # co 2 godziny (czas UTC); w weekendy częściej, co 30 min w godzinach konkursów
+    - cron: "15 */2 * * 1-4"
+    - cron: "*/30 8-22 * * 5,6,0"
+  workflow_dispatch:
+    inputs:
+      athletes:
+        description: "Odśwież też listę zawodników (tylko przed draftem!)"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: fis
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pobierz dane z FIS
+        if: github.event_name != 'push'
+        run: |
+          if [ "${{ inputs.athletes }}" = "true" ] || [ ! -f data/athletes.json ]; then
+            python scraper/fis.py
+          else
+            python scraper/fis.py --skip-athletes
+          fi
+
+      - name: Zapisz zmiany w repozytorium
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "fis-bot"
+          git config user.email "fis-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Wyniki FIS $(date -u +%Y-%m-%dT%H:%MZ)" && git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - uses: actions/deploy-pages@v4
+        id: deploy

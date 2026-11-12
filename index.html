@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Draft Skoków</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎿</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top__inner">
+      <a class="brand" href="#ranking">🎿 Draft Skoków</a>
+      <nav class="nav" id="nav">
+        <a href="#ranking" data-view="ranking">Ranking</a>
+        <a href="#druzyny" data-view="druzyny">Drużyny</a>
+        <a href="#kalendarz" data-view="kalendarz">Kalendarz</a>
+        <a href="#draft" data-view="draft">Draft</a>
+        <a href="#zawodnicy" data-view="zawodnicy">Zawodnicy</a>
+        <a href="#ustawienia" data-view="ustawienia">Ustawienia</a>
+      </nav>
+      <label class="me">Jestem:
+        <select id="me"></select>
+      </label>
+    </div>
+  </header>
+  <div id="banner"></div>
+  <main id="app" class="wrap"><p class="muted">Ładowanie danych FIS…</p></main>
+  <footer class="wrap foot muted" id="foot"></footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

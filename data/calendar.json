@@ -1,0 +1,1283 @@
+{
+ "season": 2027,
+ "updated": "2026-11-12T04:36:27+00:00",
+ "events": [
+  {
+   "id": "63024",
+   "place": "Lillehammer",
+   "nation": "NOR",
+   "start": "2026-11-20",
+   "end": "2026-11-22",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7796",
+     "date": "2026-11-20",
+     "time": null,
+     "codex": "0002",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7798",
+     "date": "2026-11-20",
+     "time": null,
+     "codex": "0004",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7795",
+     "date": "2026-11-21",
+     "time": null,
+     "codex": "0001",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7799",
+     "date": "2026-11-21",
+     "time": null,
+     "codex": "0005",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7797",
+     "date": "2026-11-22",
+     "time": null,
+     "codex": "0003",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7800",
+     "date": "2026-11-22",
+     "time": null,
+     "codex": "0006",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8010",
+     "date": "2026-11-22",
+     "time": null,
+     "codex": "0075",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8011",
+     "date": "2026-11-22",
+     "time": null,
+     "codex": "0076",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63025",
+   "place": "Ruka",
+   "nation": "FIN",
+   "start": "2026-11-28",
+   "end": "2026-11-29",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7801",
+     "date": "2026-11-28",
+     "time": null,
+     "codex": "0316",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7802",
+     "date": "2026-11-28",
+     "time": null,
+     "codex": "0317",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7803",
+     "date": "2026-11-29",
+     "time": null,
+     "codex": "0007",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63029",
+   "place": "Hinzenbach",
+   "nation": "AUT",
+   "start": "2026-11-28",
+   "end": "2026-11-29",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7818",
+     "date": "2026-11-28",
+     "time": null,
+     "codex": "0325",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7819",
+     "date": "2026-11-28",
+     "time": null,
+     "codex": "0326",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7820",
+     "date": "2026-11-29",
+     "time": null,
+     "codex": "0015",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63026",
+   "place": "Wisla",
+   "nation": "POL",
+   "start": "2026-12-04",
+   "end": "2026-12-06",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7821",
+     "date": "2026-12-04",
+     "time": null,
+     "codex": "0016",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7822",
+     "date": "2026-12-04",
+     "time": null,
+     "codex": "0017",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7804",
+     "date": "2026-12-04",
+     "time": null,
+     "codex": "0318",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7823",
+     "date": "2026-12-05",
+     "time": null,
+     "codex": "0018",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8014",
+     "date": "2026-12-05",
+     "time": null,
+     "codex": "0079",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7805",
+     "date": "2026-12-05",
+     "time": null,
+     "codex": "0319",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7806",
+     "date": "2026-12-06",
+     "time": null,
+     "codex": "0008",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8015",
+     "date": "2026-12-06",
+     "time": null,
+     "codex": "0080",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63027",
+   "place": "Titisee-Neustadt",
+   "nation": "GER",
+   "start": "2026-12-11",
+   "end": "2026-12-13",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7809",
+     "date": "2026-12-12",
+     "time": null,
+     "codex": "0009",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7810",
+     "date": "2026-12-12",
+     "time": null,
+     "codex": "0010",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7824",
+     "date": "2026-12-12",
+     "time": null,
+     "codex": "0019",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7825",
+     "date": "2026-12-12",
+     "time": null,
+     "codex": "0020",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7811",
+     "date": "2026-12-13",
+     "time": null,
+     "codex": "0011",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7826",
+     "date": "2026-12-13",
+     "time": null,
+     "codex": "0021",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63028",
+   "place": "Engelberg",
+   "nation": "SUI",
+   "start": "2026-12-18",
+   "end": "2026-12-20",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7812",
+     "date": "2026-12-18",
+     "time": null,
+     "codex": "0322",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7813",
+     "date": "2026-12-18",
+     "time": null,
+     "codex": "0323",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7815",
+     "date": "2026-12-19",
+     "time": null,
+     "codex": "0012",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7814",
+     "date": "2026-12-19",
+     "time": null,
+     "codex": "0324",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7816",
+     "date": "2026-12-20",
+     "time": null,
+     "codex": "0013",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7817",
+     "date": "2026-12-20",
+     "time": null,
+     "codex": "0014",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63030",
+   "place": "Oberstdorf",
+   "nation": "GER",
+   "start": "2026-12-28",
+   "end": "2026-12-29",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7827",
+     "date": "2026-12-28",
+     "time": null,
+     "codex": "0327",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7828",
+     "date": "2026-12-28",
+     "time": null,
+     "codex": "0328",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7829",
+     "date": "2026-12-28",
+     "time": null,
+     "codex": "0329",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7830",
+     "date": "2026-12-29",
+     "time": null,
+     "codex": "0022",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63032",
+   "place": "Innsbruck",
+   "nation": "AUT",
+   "start": "2027-01-02",
+   "end": "2027-01-03",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7836",
+     "date": "2027-01-02",
+     "time": null,
+     "codex": "0333",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7837",
+     "date": "2027-01-02",
+     "time": null,
+     "codex": "0334",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7838",
+     "date": "2027-01-02",
+     "time": null,
+     "codex": "0335",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7839",
+     "date": "2027-01-03",
+     "time": null,
+     "codex": "0025",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63033",
+   "place": "Bischofshofen",
+   "nation": "AUT",
+   "start": "2027-01-05",
+   "end": "2027-01-06",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7840",
+     "date": "2027-01-05",
+     "time": null,
+     "codex": "0336",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7841",
+     "date": "2027-01-05",
+     "time": null,
+     "codex": "0337",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7842",
+     "date": "2027-01-05",
+     "time": null,
+     "codex": "0338",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7843",
+     "date": "2027-01-06",
+     "time": null,
+     "codex": "0026",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63034",
+   "place": "Ljubno",
+   "nation": "SLO",
+   "start": "2027-01-09",
+   "end": "2027-01-10",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7844",
+     "date": "2027-01-09",
+     "time": null,
+     "codex": "0339",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7845",
+     "date": "2027-01-09",
+     "time": null,
+     "codex": "0340",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7846",
+     "date": "2027-01-10",
+     "time": null,
+     "codex": "0027",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7847",
+     "date": "2027-01-10",
+     "time": null,
+     "codex": "0028",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63035",
+   "place": "Zhangjiakou",
+   "nation": "CHN",
+   "start": "2027-01-15",
+   "end": "2027-01-16",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7848",
+     "date": "2027-01-15",
+     "time": null,
+     "codex": "0341",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7849",
+     "date": "2027-01-15",
+     "time": null,
+     "codex": "0342",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7850",
+     "date": "2027-01-16",
+     "time": null,
+     "codex": "0029",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7851",
+     "date": "2027-01-16",
+     "time": null,
+     "codex": "0030",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63037",
+   "place": "Zakopane",
+   "nation": "POL",
+   "start": "2027-01-15",
+   "end": "2027-01-17",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7856",
+     "date": "2027-01-15",
+     "time": null,
+     "codex": "0032",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7857",
+     "date": "2027-01-17",
+     "time": null,
+     "codex": "0033",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63036",
+   "place": "Zao",
+   "nation": "JPN",
+   "start": "2027-01-19",
+   "end": "2027-01-20",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7852",
+     "date": "2027-01-19",
+     "time": null,
+     "codex": "0343",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7853",
+     "date": "2027-01-19",
+     "time": null,
+     "codex": "0344",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7854",
+     "date": "2027-01-20",
+     "time": null,
+     "codex": "0031",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63038",
+   "place": "Sapporo",
+   "nation": "JPN",
+   "start": "2027-01-22",
+   "end": "2027-01-24",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7859",
+     "date": "2027-01-22",
+     "time": null,
+     "codex": "0034",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7860",
+     "date": "2027-01-22",
+     "time": null,
+     "codex": "0035",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7861",
+     "date": "2027-01-22",
+     "time": null,
+     "codex": "0036",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7862",
+     "date": "2027-01-23",
+     "time": null,
+     "codex": "0037",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7863",
+     "date": "2027-01-24",
+     "time": null,
+     "codex": "0038",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8043",
+     "date": "2027-01-24",
+     "time": null,
+     "codex": "0082",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63039",
+   "place": "Willingen",
+   "nation": "GER",
+   "start": "2027-01-29",
+   "end": "2027-01-31",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7866",
+     "date": "2027-01-29",
+     "time": null,
+     "codex": "0040",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7865",
+     "date": "2027-01-30",
+     "time": null,
+     "codex": "0039",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7867",
+     "date": "2027-01-30",
+     "time": null,
+     "codex": "0041",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7868",
+     "date": "2027-01-30",
+     "time": null,
+     "codex": "0042",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7869",
+     "date": "2027-01-31",
+     "time": null,
+     "codex": "0043",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7870",
+     "date": "2027-01-31",
+     "time": null,
+     "codex": "0044",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63040",
+   "place": "Lake Placid",
+   "nation": "USA",
+   "start": "2027-02-05",
+   "end": "2027-02-07",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7871",
+     "date": "2027-02-05",
+     "time": null,
+     "codex": "0348",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7873",
+     "date": "2027-02-05",
+     "time": null,
+     "codex": "0350",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7874",
+     "date": "2027-02-06",
+     "time": null,
+     "codex": "0045",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7872",
+     "date": "2027-02-06",
+     "time": null,
+     "codex": "0349",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63041",
+   "place": "Lahti",
+   "nation": "FIN",
+   "start": "2027-02-11",
+   "end": "2027-02-14",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7877",
+     "date": "2027-02-11",
+     "time": null,
+     "codex": "0351",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7878",
+     "date": "2027-02-11",
+     "time": null,
+     "codex": "0352",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7879",
+     "date": "2027-02-12",
+     "time": null,
+     "codex": "0048",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7880",
+     "date": "2027-02-14",
+     "time": null,
+     "codex": "0049",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7882",
+     "date": "2027-02-14",
+     "time": null,
+     "codex": "0051",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63043",
+   "place": "Vikersund",
+   "nation": "NOR",
+   "start": "2027-02-18",
+   "end": "2027-02-21",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7886",
+     "date": "2027-02-18",
+     "time": null,
+     "codex": "0355",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7887",
+     "date": "2027-02-19",
+     "time": null,
+     "codex": "0053",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7888",
+     "date": "2027-02-20",
+     "time": null,
+     "codex": "0054",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7889",
+     "date": "2027-02-21",
+     "time": null,
+     "codex": "0055",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63042",
+   "place": "Villach",
+   "nation": "AUT",
+   "start": "2027-02-20",
+   "end": "2027-02-21",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7883",
+     "date": "2027-02-20",
+     "time": null,
+     "codex": "0353",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7884",
+     "date": "2027-02-20",
+     "time": null,
+     "codex": "0354",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7885",
+     "date": "2027-02-21",
+     "time": null,
+     "codex": "0052",
+     "discipline": "Individual Normal Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63044",
+   "place": "Oslo",
+   "nation": "NOR",
+   "start": "2027-03-13",
+   "end": "2027-03-14",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7893",
+     "date": "2027-03-13",
+     "time": null,
+     "codex": "0056",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7890",
+     "date": "2027-03-13",
+     "time": null,
+     "codex": "0356",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7891",
+     "date": "2027-03-13",
+     "time": null,
+     "codex": "0357",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7892",
+     "date": "2027-03-13",
+     "time": null,
+     "codex": "0358",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7894",
+     "date": "2027-03-14",
+     "time": null,
+     "codex": "0057",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7895",
+     "date": "2027-03-14",
+     "time": null,
+     "codex": "0058",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  },
+  {
+   "id": "63045",
+   "place": "Planica",
+   "nation": "SLO",
+   "start": "2027-03-18",
+   "end": "2027-03-21",
+   "cancelled": false,
+   "races": [
+    {
+     "id": "7896",
+     "date": "2027-03-18",
+     "time": null,
+     "codex": "0359",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7897",
+     "date": "2027-03-19",
+     "time": null,
+     "codex": "0360",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7898",
+     "date": "2027-03-20",
+     "time": null,
+     "codex": "0059",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7900",
+     "date": "2027-03-21",
+     "time": null,
+     "codex": "0061",
+     "discipline": "Individual Flying Hill",
+     "category": "WC",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    }
+   ]
+  }
+ ]
+}

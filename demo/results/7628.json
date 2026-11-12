@@ -1,0 +1,479 @@
+{
+ "raceId": "7628",
+ "date": "2025-12-13",
+ "hillSize": null,
+ "final": true,
+ "fetched": "2026-11-12T04:35:11+00:00",
+ "results": [
+  {
+   "id": "174083",
+   "name": "MARUYAMA Nozomi",
+   "nation": "JPN",
+   "rank": 1,
+   "jumps": [
+    136.5
+   ],
+   "total": 141.8
+  },
+  {
+   "id": "222153",
+   "name": "PREVC Nika",
+   "nation": "SLO",
+   "rank": 2,
+   "jumps": [
+    135.0
+   ],
+   "total": 138.4
+  },
+  {
+   "id": "180411",
+   "name": "STROEM Anna Odine",
+   "nation": "NOR",
+   "rank": 3,
+   "jumps": [
+    127.5
+   ],
+   "total": 126.4
+  },
+  {
+   "id": "153102",
+   "name": "TAKANASHI Sara",
+   "nation": "JPN",
+   "rank": 4,
+   "jumps": [
+    130.5
+   ],
+   "total": 126.1
+  },
+  {
+   "id": "183861",
+   "name": "REISCH Agnes",
+   "nation": "GER",
+   "rank": 5,
+   "jumps": [
+    129.5
+   ],
+   "total": 125.3
+  },
+  {
+   "id": "189072",
+   "name": "EDER Lisa",
+   "nation": "AUT",
+   "rank": 6,
+   "jumps": [
+    126.0
+   ],
+   "total": 123.9
+  },
+  {
+   "id": "147756",
+   "name": "SCHMID Katharina",
+   "nation": "GER",
+   "rank": 7,
+   "jumps": [
+    125.0
+   ],
+   "total": 121.2
+  },
+  {
+   "id": "223150",
+   "name": "TRAASERUD Heidi Dyhre",
+   "nation": "NOR",
+   "rank": 8,
+   "jumps": [
+    128.0
+   ],
+   "total": 119.4
+  },
+  {
+   "id": "228988",
+   "name": "MIYAJIMA Ringo",
+   "nation": "JPN",
+   "rank": 9,
+   "jumps": [
+    129.5
+   ],
+   "total": 118.2
+  },
+  {
+   "id": "185807",
+   "name": "VODAN Nika",
+   "nation": "SLO",
+   "rank": 10,
+   "jumps": [
+    125.0
+   ],
+   "total": 117.0
+  },
+  {
+   "id": "203125",
+   "name": "STRATE Abigail",
+   "nation": "CAN",
+   "rank": 11,
+   "jumps": [
+    124.0
+   ],
+   "total": 115.7
+  },
+  {
+   "id": "212446",
+   "name": "MUEHLBACHER Julia",
+   "nation": "AUT",
+   "rank": 12,
+   "jumps": [
+    125.0
+   ],
+   "total": 109.5
+  },
+  {
+   "id": "159620",
+   "name": "SETO Yuka",
+   "nation": "JPN",
+   "rank": 13,
+   "jumps": [
+    123.5
+   ],
+   "total": 107.9
+  },
+  {
+   "id": "200266",
+   "name": "OPSETH Silje",
+   "nation": "NOR",
+   "rank": 14,
+   "jumps": [
+    121.5
+   ],
+   "total": 106.6
+  },
+  {
+   "id": "134975",
+   "name": "ITO Yuki",
+   "nation": "JPN",
+   "rank": 15,
+   "jumps": [
+    120.0
+   ],
+   "total": 106.5
+  },
+  {
+   "id": "208949",
+   "name": "JONES Paige",
+   "nation": "USA",
+   "rank": 16,
+   "jumps": [
+    121.5
+   ],
+   "total": 105.0
+  },
+  {
+   "id": "204067",
+   "name": "SIEFF Annika",
+   "nation": "ITA",
+   "rank": 17,
+   "jumps": [
+    120.5
+   ],
+   "total": 103.0
+  },
+  {
+   "id": "201394",
+   "name": "WESTMAN Frida",
+   "nation": "SWE",
+   "rank": 18,
+   "jumps": [
+    122.5
+   ],
+   "total": 101.1
+  },
+  {
+   "id": "270906",
+   "name": "MIDTSKOGEN Ingvild Synnoeve",
+   "nation": "NOR",
+   "rank": 19,
+   "jumps": [
+    121.0
+   ],
+   "total": 100.6
+  },
+  {
+   "id": "196441",
+   "name": "FREITAG Selina",
+   "nation": "GER",
+   "rank": 20,
+   "jumps": [
+    116.5
+   ],
+   "total": 100.4
+  },
+  {
+   "id": "227274",
+   "name": "KVANDAL Eirin Maria",
+   "nation": "NOR",
+   "rank": 21,
+   "jumps": [
+    117.5
+   ],
+   "total": 100.2
+  },
+  {
+   "id": "161100",
+   "name": "RAUTIONAHO Jenny",
+   "nation": "FIN",
+   "rank": 22,
+   "jumps": [
+    116.5
+   ],
+   "total": 98.2
+  },
+  {
+   "id": "254748",
+   "name": "KOVACIC Maja",
+   "nation": "SLO",
+   "rank": 23,
+   "jumps": [
+    118.5
+   ],
+   "total": 96.6
+  },
+  {
+   "id": "258828",
+   "name": "JOHNSON Josie",
+   "nation": "USA",
+   "rank": 24,
+   "jumps": [
+    117.5
+   ],
+   "total": 96.5
+  },
+  {
+   "id": "97562",
+   "name": "SEYFARTH Juliane",
+   "nation": "GER",
+   "rank": 25,
+   "jumps": [
+    119.0
+   ],
+   "total": 96.0
+  },
+  {
+   "id": "197320",
+   "name": "KOMAR Katra",
+   "nation": "SLO",
+   "rank": 26,
+   "jumps": [
+    116.5
+   ],
+   "total": 95.9
+  },
+  {
+   "id": "190207",
+   "name": "TWARDOSZ Anna",
+   "nation": "POL",
+   "rank": 27,
+   "jumps": [
+    117.5
+   ],
+   "total": 93.5
+  },
+  {
+   "id": "234928",
+   "name": "HANSEN Gyda Westvold",
+   "nation": "NOR",
+   "rank": 28,
+   "jumps": [
+    117.5
+   ],
+   "total": 93.4
+  },
+  {
+   "id": "227480",
+   "name": "ARNET Sina",
+   "nation": "SUI",
+   "rank": 29,
+   "jumps": [
+    117.5
+   ],
+   "total": 93.3
+  },
+  {
+   "id": "221320",
+   "name": "ZANITZER Martina",
+   "nation": "ITA",
+   "rank": 30,
+   "jumps": [
+    115.5
+   ],
+   "total": 93.1
+  },
+  {
+   "id": "203127",
+   "name": "MAURER Nicole",
+   "nation": "CAN",
+   "rank": 31,
+   "jumps": [
+    115.5
+   ],
+   "total": 91.9
+  },
+  {
+   "id": "136810",
+   "name": "KYKKAENEN Julia",
+   "nation": "FIN",
+   "rank": 32,
+   "jumps": [
+    112.5
+   ],
+   "total": 90.1
+  },
+  {
+   "id": "211536",
+   "name": "ULRICHOVA Klara",
+   "nation": "CZE",
+   "rank": 33,
+   "jumps": [
+    114.0
+   ],
+   "total": 89.3
+  },
+  {
+   "id": "138378",
+   "name": "HOLLANDT Anna",
+   "nation": "GER",
+   "rank": 34,
+   "jumps": [
+    113.0
+   ],
+   "total": 88.2
+  },
+  {
+   "id": "210919",
+   "name": "BELSHAW Annika",
+   "nation": "USA",
+   "rank": 35,
+   "jumps": [
+    113.0
+   ],
+   "total": 86.7
+  },
+  {
+   "id": "236110",
+   "name": "JESENKO Jerica",
+   "nation": "SLO",
+   "rank": 36,
+   "jumps": [
+    112.0
+   ],
+   "total": 83.8
+  },
+  {
+   "id": "227618",
+   "name": "KOMAR Tinkara",
+   "nation": "SLO",
+   "rank": 37,
+   "jumps": [
+    110.0
+   ],
+   "total": 82.6
+  },
+  {
+   "id": "253136",
+   "name": "SATO Yuzuki",
+   "nation": "JPN",
+   "rank": 38,
+   "jumps": [
+    108.5
+   ],
+   "total": 81.5
+  },
+  {
+   "id": "275829",
+   "name": "SPROCH Sandra",
+   "nation": "USA",
+   "rank": 39,
+   "jumps": [
+    112.0
+   ],
+   "total": 80.4
+  },
+  {
+   "id": "238611",
+   "name": "CHERVET Emma",
+   "nation": "FRA",
+   "rank": 40,
+   "jumps": [
+    108.5
+   ],
+   "total": 79.5
+  },
+  {
+   "id": "229466",
+   "name": "BELTOWSKA Pola",
+   "nation": "POL",
+   "rank": 41,
+   "jumps": [
+    109.0
+   ],
+   "total": 76.3
+  },
+  {
+   "id": "209522",
+   "name": "KINDLIMANN Rea",
+   "nation": "SUI",
+   "rank": 42,
+   "jumps": [
+    106.0
+   ],
+   "total": 73.1
+  },
+  {
+   "id": "201632",
+   "name": "MALSINER Jessica",
+   "nation": "ITA",
+   "rank": 43,
+   "jumps": [
+    105.0
+   ],
+   "total": 72.1
+  },
+  {
+   "id": "261055",
+   "name": "KAPUSTIKOVA Kira Maria",
+   "nation": "SVK",
+   "rank": 44,
+   "jumps": [
+    106.0
+   ],
+   "total": 70.6
+  },
+  {
+   "id": "231633",
+   "name": "MESIKOVA Tamara",
+   "nation": "SVK",
+   "rank": 45,
+   "jumps": [
+    102.0
+   ],
+   "total": 69.5
+  },
+  {
+   "id": "222887",
+   "name": "KONDERLA-JUROSZEK Nicole",
+   "nation": "POL",
+   "rank": 46,
+   "jumps": [
+    105.0
+   ],
+   "total": 68.7
+  },
+  {
+   "id": "296896",
+   "name": "KOZLOVA Karina",
+   "nation": "UKR",
+   "rank": 47,
+   "jumps": [
+    103.5
+   ],
+   "total": 60.5
+  }
+ ]
+}
