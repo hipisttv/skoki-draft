@@ -475,3 +475,10 @@ a.race:hover { background: var(--card-2); color: var(--text); }
 .triple.on { border: 1px solid var(--gold); background: var(--gold-soft); color: var(--text); }
 .triple.used { background: var(--card-2); border-style: solid; }
 .warnline.champline { background: var(--champ-soft); color: var(--champ-ink); }
+
+/* ============================================================ zasady */
+.rules { margin: 0; padding-left: 1.1rem; display: grid; gap: .45rem; color: var(--text-2); }
+.rules b { color: var(--text); }
+.ptsgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: .3rem; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.ptsgrid span { background: var(--card-2); border-radius: 6px; padding: .2rem .45rem; }
+.ptsgrid b { color: var(--muted); font-weight: 700; }

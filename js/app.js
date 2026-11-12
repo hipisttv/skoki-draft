@@ -97,6 +97,23 @@ const CHAMP = 'Mistrzostwa Świata';
 const champTag = (cls = '') => `<span class="tag champ ${cls}">${icon('star')}${CHAMP}</span>`;
 const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
 
+// FIS podaje godziny startu w czasie lokalnym skoczni.
+const TZ = {
+  NOR: 'Europe/Oslo', SWE: 'Europe/Stockholm', FIN: 'Europe/Helsinki', GER: 'Europe/Berlin', AUT: 'Europe/Vienna',
+  SUI: 'Europe/Zurich', SLO: 'Europe/Ljubljana', POL: 'Europe/Warsaw', ITA: 'Europe/Rome', CZE: 'Europe/Prague',
+  JPN: 'Asia/Tokyo', CHN: 'Asia/Shanghai', USA: 'America/New_York', CAN: 'America/Toronto',
+};
+function raceStart(r) {
+  if (!r.time) return new Date(r.date + 'T00:00:00'); // godzina jeszcze nieznana – blokada od północy
+  const [y, m, d] = r.date.split('-').map(Number);
+  const [hh, mm] = r.time.split(':').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d, hh, mm));
+  const tz = TZ[r.nation] || 'Europe/Warsaw';
+  const offset = new Date(utc.toLocaleString('en-US', { timeZone: tz })) - new Date(utc.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return new Date(utc - offset);
+}
+const raceStarted = (r) => new Date() >= raceStart(r);
+
 function weekendStatus(w) {
   const t = today();
   if (t > w.end) return 'past';
@@ -175,6 +192,7 @@ const NAV = [
   ['puchar', 'Puchar Świata', 'globe'],
   ['draft', 'Draft', 'draft'],
   ['zawodnicy', 'Zawodnicy', 'list'],
+  ['zasady', 'Zasady', 'info'],
   ['admin', 'Admin', 'settings'],
 ];
 
@@ -183,10 +201,13 @@ function render(scrollTop = false) {
   calc = computeAll(state, weekends, results, byId);
   const kept = keepInputs();
   if (!state.setup) { root.innerHTML = screenCreate(); restoreInputs(kept); return; }
-  if (!me() && !isAdmin()) { root.innerHTML = screenAuth(); restoreInputs(kept); return; }
+  if (!me() && !isAdmin()) {
+    if (location.hash === '#zasady') { root.innerHTML = `<main class="wrap"><a class="back" href="#">${icon('back')}Logowanie</a>${zasady()}</main>`; return; }
+    root.innerHTML = screenAuth(); restoreInputs(kept); return;
+  }
 
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, admin: adminView, wiecej };
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, zasady, admin: adminView, wiecej };
   const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
   const active = view === 'race' ? 'kalendarz' : views[view] ? view : 'ranking';
   const y = window.scrollY;
@@ -327,7 +348,7 @@ function screenAuth() {
   return authFrame(`${body}
     ${players.length ? `<div class="af" style="text-align:left"><div class="muted xs" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">W lidze (${players.length})</div>
       <div class="joined">${players.map((p) => `<span class="chip">${avatar(p, 'sm')}${esc(p.name)}</span>`).join('')}</div></div>` : ''}
-    <div class="af">${mode === 'admin' ? '<button data-action="authMode" data-v="">← Wróć</button>' : '<button data-action="authMode" data-v="admin">Jestem administratorem</button>'}</div>`);
+    <div class="af">${mode === 'admin' ? '<button data-action="authMode" data-v="">← Wróć</button>' : '<button data-action="authMode" data-v="admin">Jestem administratorem</button> · <a href="#zasady">Zasady gry</a>'}</div>`);
 }
 
 // ================================================================ ranking
@@ -643,7 +664,7 @@ function teamCard(p, w, drafting) {
       <div class="sect">Kobieta</div>${women.map((id) => line(id, true)).join('')}
       <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
       ${!l.captain ? `<div class="warnline">${icon('info')}Brak kapitana${editable ? ' — kliknij „C” przy zawodniku' : ' na ten weekend'}</div>` : ''}
-      ${tripleBox(p, w, editable)}
+      ${tripleBox(p, w, (p.id === me()?.id || isAdmin()) && ids.length === TEAM_SIZE)}
       <div class="muted xs" style="margin-top:.6rem;text-align:right">liczby = ${label}${l.inherited && editable ? ' · skład przeniesiony automatycznie' : ''}</div>`}
     </div></div>`;
 }
@@ -654,7 +675,7 @@ function tripleBox(p, w, editable) {
   const uw = used && weekends.find((x) => x.races.some((r) => r.id === used));
   const ur = uw?.races.find((r) => r.id === used);
   const label = (r) => `${raceLabel(r)} · ${esc(r.place)} · ${fmtDow(r.date)}`;
-  if (ur && isLocked(uw) && !isAdmin()) {
+  if (ur && raceStarted(ur) && !isAdmin()) {
     const v = calc.byRace[used]?.[p.id]?.total;
     return `<div class="triple used">${icon('star')}<span>×${TRIPLE} wykorzystany: <b>${label(ur)}</b>${v != null ? ` (${v > 0 ? '+' : ''}${v} pkt)` : ''}</span></div>`;
   }
@@ -662,8 +683,9 @@ function tripleBox(p, w, editable) {
     return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`
       : `<div class="triple">${icon('star')}<span>Mnożnik ×${TRIPLE} jeszcze dostępny</span></div>`;
   }
-  const races = w.races.filter(isMain);
-  return `<div class="triple ${ur && uw === w ? 'on' : ''}">${icon('star')}<span>Mnożnik ×${TRIPLE} (raz w sezonie)</span>
+  const races = w.races.filter((r) => isMain(r) && (!raceStarted(r) || isAdmin() || r.id === used));
+  if (!races.length) return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>` : '';
+  return `<div class="triple ${ur && uw === w ? 'on' : ''}">${icon('star')}<span>Mnożnik ×${TRIPLE} (raz w sezonie, do startu konkursu)</span>
     <select class="sm" data-action="triple" data-p="${p.id}"><option value="">${ur && uw !== w ? 'ustawiony na inny weekend' : 'nie używaj'}</option>
       ${races.map((r) => `<option value="${r.id}" ${r.id === used ? 'selected' : ''}>${label(r)}</option>`).join('')}</select>
     ${ur && uw !== w ? `<div class="xs muted" style="width:100%">Obecnie: ${label(ur)} — wybór tutaj go przeniesie.</div>` : ''}</div>`;
@@ -842,10 +864,71 @@ function zawodnicy() {
     </table></div></div>`;
 }
 
+// ================================================================ zasady
+
+function zasady() {
+  const c = scoringSettings(state?.settings || {});
+  const champsOn = state?.settings?.countChamps !== false;
+  const pts = c.placePoints;
+  const sec = (title, ic, body) => `<div class="card"><div class="row" style="margin-bottom:.6rem">${icon(ic)}<h3>${title}</h3></div>${body}</div>`;
+  const li = (items) => `<ul class="rules">${items.map((x) => `<li>${x}</li>`).join('')}</ul>`;
+  return `<div class="page-head"><div><h1>Zasady</h1><div class="sub">Wszystko, co trzeba wiedzieć o lidze — wartości aktualne dla tej ligi</div></div></div>
+  <div class="grid-2">
+    <div class="stack">
+      ${sec('Drużyna i draft', 'team', li([
+        `Każdy gracz ma <b>${TEAM_SIZE} zawodników</b>: ${TEAM.men} mężczyzn i ${TEAM.women} kobietę w składzie + ${TEAM.reserves} rezerwowych (dowolnej płci).`,
+        'Draft metodą <b>snake</b>: kolejność 1–2–3, potem 3–2–1 i tak na zmianę.',
+        'Każdy zawodnik może trafić tylko do jednej drużyny. Do wyboru są wszyscy aktywni skoczkowie z bazy FIS.',
+        'Punkty zdobywają tylko zawodnicy ze składu — rezerwowi nie. Przed każdym weekendem możesz wstawić rezerwowego za zawodnika tej samej płci.',
+      ]))}
+      ${sec('Kapitan', 'star', li([
+        'Przed każdym weekendem wybierasz <b>kapitana</b> spośród zawodników w składzie.',
+        'Kapitan zdobywa <b>×2</b> punkty za wszystko w danym weekendzie.',
+        `<b>Kara −${c.penalty} pkt</b>, gdy kapitan skończy konkurs poza czołową 30 — także gdy odpadnie w kwalifikacjach lub nie wystartuje. Dotyczy tylko konkursów jego płci, nie kwalifikacji.`,
+        'Kapitana nie można zmienić w trakcie weekendu; w każdym weekendzie może być inny.',
+      ]))}
+      ${sec(`Mnożnik ×${TRIPLE}`, 'star', li([
+        `<b>Raz w sezonie</b> wybierasz jeden konkurs, w którym wszystkie punkty Twojej drużyny są mnożone <b>×${TRIPLE}</b> (razem z kapitanem i karą).`,
+        'Nie działa na kwalifikacje.',
+        'Można go ustawić lub zmienić <b>do startu wybranego konkursu</b> (zakładka Drużyny). Potem jest wykorzystany.',
+      ]))}
+      ${sec('Terminy', 'clock', li([
+        'Skład i kapitan blokują się o <b>północy przed pierwszym dniem weekendu</b>.',
+        'Weekend to zawody mężczyzn i kobiet rozgrywane w tych samych dniach (np. Ruka + Hinzenbach).',
+        'Mistrzostwa Świata trwają dwa weekendy — to dwie osobne rundy z osobnym kapitanem.',
+      ]))}
+    </div>
+    <div class="stack">
+      ${sec('Punkty za miejsce — Puchar Świata', 'trophy', `<p class="small muted" style="margin-bottom:.6rem">Jak w klasyfikacji PŚ FIS:</p>
+        <div class="ptsgrid">${pts.map((v, i) => `<span><b>${i + 1}.</b> ${v}</span>`).join('')}</div>`)}
+      ${sec('Mistrzostwa Świata', 'star', `${li([
+        `🥇 Złoto <b>${c.champ.gold}</b> · 🥈 Srebro <b>${c.champ.silver}</b> · 🥉 Brąz <b>${c.champ.bronze}</b>`,
+        `Miejsca 4–10: <b>${c.champ.top10}</b> pkt`,
+        'Bonusy, kapitan, kara i mnożnik działają tak samo jak w PŚ.',
+      ])}${champsOn ? '' : '<div class="warnline">W tej lidze MŚ nie liczą się do punktacji (ustawienie admina).</div>'}`)}
+      ${sec('Bonusy', 'ruler', `${li([
+        `Zwycięstwo w kwalifikacjach: <b>+${c.bonus.quali}</b>`,
+        `Najdłuższy skok konkursu: <b>+${c.bonus.longest}</b> — tylko konkurs główny (wszystkie serie); przy remisie obaj dostają punkty.`,
+        `Rekord skoczni: <b>+${c.bonus.record}</b> — w konkursie i w kwalifikacjach. Wyrównanie rekordu się nie liczy.`,
+        'Bonusy sumują się z punktami za miejsce.',
+      ])}`)}
+      ${sec('Kwalifikacje', 'list', li([
+        'W kwalifikacjach <b>nie ma punktów za miejsce</b>.',
+        `Liczy się tylko zwycięzca kwalifikacji (+${c.bonus.quali}) i rekord skoczni (+${c.bonus.record}).`,
+      ]))}
+      ${sec('Skąd są wyniki', 'globe', li([
+        'Wyniki i odległości pobierane są automatycznie z oficjalnych danych FIS (co 2 h, w weekendy co 30 min).',
+        'Rekord skoczni odczytywany jest z oficjalnego protokołu FIS; admin może go poprawić, jeśli skok nie został uznany.',
+        'Liczą się tylko konkursy indywidualne — bez drużynówek, duetów i mikstów.',
+      ]))}
+    </div>
+  </div>`;
+}
+
 // ================================================================ więcej (telefon)
 
 function wiecej() {
-  const items = [['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
+  const items = [['zasady', 'Zasady', 'info'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
   if (isAdmin()) items.push(['admin', 'Panel admina', 'settings']);
   return `<div class="page-head"><h1>Więcej</h1></div>
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">
@@ -1035,10 +1118,10 @@ const actions = {
     save((s) => {
       s.triples = s.triples || {};
       const cur = s.triples[p];
+      const find = (id) => weekends.flatMap((x) => x.races).find((r) => r.id === id);
       const cw = cur && weekends.find((x) => x.races.some((r) => r.id === cur));
-      if (cw && isLocked(cw) && !isAdmin()) fail('Mnożnik ×3 został już wykorzystany w tym sezonie');
-      const nw = raceId && weekends.find((x) => x.races.some((r) => r.id === raceId));
-      if (nw && isLocked(nw) && !isAdmin()) fail('Ten weekend jest już zablokowany');
+      if (cur && raceStarted(find(cur)) && !isAdmin()) fail('Mnożnik ×3 został już wykorzystany w tym sezonie');
+      if (raceId && raceStarted(find(raceId)) && !isAdmin()) fail('Ten konkurs już się rozpoczął');
       if (raceId) s.triples[p] = raceId;
       else if (!cw || cw.id === ui.weekend) delete s.triples[p];
       return s;
