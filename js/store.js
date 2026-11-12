@@ -10,6 +10,7 @@ export const EMPTY_STATE = {
   draftOrder: [],
   picks: [],
   lineups: {},
+  triples: {},          // { pid: raceId } – mnożnik ×3, raz w sezonie
   hillRecords: {},
   settings: {},
 };

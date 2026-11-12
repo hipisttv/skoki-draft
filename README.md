@@ -65,25 +65,31 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
 
 ## Zasady zaimplementowane w aplikacji
 
-- Drużyna: 9 zawodników = 6 mężczyzn + 1 kobieta w składzie + 2 rezerwowych (dowolnej płci).
+- Drużyna: 9 zawodników = 6 mężczyzn + 1 kobieta w składzie + 2 rezerwowych (dowolnej płci). Punktują tylko zawodnicy ze składu.
 - Snake draft (1–2–3–3–2–1…), każdy zawodnik tylko w jednej drużynie.
-- Punkty za miejsce: punktacja PŚ FIS (100, 80, 60, 50, 45, 40, 36, 32, 29, 26 … 1 za 30. miejsce) – do zmiany w Ustawieniach.
-- Bonusy: wygrane kwalifikacje +5, najdłuższy skok konkursu +10 (tylko konkurs główny, wszystkie serie, remis = obaj),
-  rekord skoczni +15. Bonusy sumują się z punktami za miejsce.
-- Kapitan ×2 za wszystko w danym weekendzie. Punktują tylko zawodnicy ze składu (rezerwowi nie).
-- Weekend = zawody PŚ mężczyzn i kobiet, których terminy się pokrywają (np. Ruka + Hinzenbach).
-- Skład i kapitana można zmieniać do północy przed pierwszym dniem weekendu (pierwsze kwalifikacje), potem są zablokowane.
-- Punktowane i pokazywane w kalendarzu są tylko konkursy indywidualne PŚ i kwalifikacje do nich – bez drużynówek, duetów i mikstów.
-- **Mistrzostwa Świata (Falun 2027)** są w kalendarzu wyróżnione na złoto i domyślnie liczą się do ligi tak samo jak PŚ
-  (z kapitanem i bonusami). Admin może to wyłączyć w Panelu admina → Punktacja. MŚ trwają dwa weekendy, więc są dwiema rundami z osobnym kapitanem.
-- **Rekord skoczni** nie jest oznaczany w danych FIS, więc zaznacza się go ręcznie w widoku konkursu
-  (przycisk „Oznacz rekord skoczni”) – dopiero gdy rekord zostanie oficjalnie uznany.
+- **Konkursy PŚ:** punkty za miejsce wg punktacji PŚ FIS (100, 80, 60 … 1 za 30. miejsce).
+- **Mistrzostwa Świata (Falun 2027):** złoto 500, srebro 300, brąz 200, miejsca 4–10 po 50 pkt. W kalendarzu wyróżnione na złoto.
+  MŚ trwają dwa weekendy, więc to dwie rundy z osobnym kapitanem.
+- **Kwalifikacje:** nie ma punktów za miejsce – liczy się tylko zwycięstwo w kwalifikacjach (+5) i rekord skoczni (+15).
+- **Bonusy** (sumują się z punktami za miejsce): najdłuższy skok konkursu +10 (tylko konkurs główny, wszystkie serie,
+  remis = obaj), rekord skoczni +15.
+- **Kapitan** ×2 za wszystko w danym weekendzie. Wybierany przed weekendem, nie można go zmienić w trakcie.
+- **Kara −20 pkt**, gdy kapitan skończy konkurs (swojej płci) poza czołową 30 – także gdy odpadnie w kwalifikacjach lub nie wystartuje.
+- **Mnożnik ×3 raz w sezonie:** każdy wybiera jeden konkurs (nie kwalifikacje) i wszystkie punkty jego drużyny w tym
+  konkursie – razem z kapitanem i karą – są mnożone przez 3. Ustawia się go w zakładce Drużyny przed weekendem.
+- **Rekord skoczni** wykrywany jest automatycznie z oficjalnego protokołu FIS (PDF z wynikami): skok dłuższy od rekordu
+  albo rekord z datą tego konkursu. Wyrównanie rekordu nie jest nowym rekordem. Admin może to poprawić w widoku konkursu
+  (np. gdy skok z upadkiem nie został uznany).
+- Skład, kapitana i mnożnik można zmieniać do północy przed pierwszym dniem weekendu, potem są zablokowane.
+- Liczone są tylko konkursy indywidualne – bez drużynówek, duetów i mikstów.
+- Wszystkie wartości punktowe admin może zmienić w Panelu admina → Punktacja (również wyłączyć liczenie MŚ).
 
 ## Lista zawodników
 
-`data/athletes.json` – wszyscy z punktami w PŚ w zeszłym sezonie oraz w tegorocznym Letnim Grand Prix,
-posortowani wg punktów PŚ z zeszłego sezonu. Zawodnicy, którzy wystartują w PŚ w tym sezonie, a nie ma ich na liście,
-są dopisywani automatycznie.
+`data/athletes.json` – **wszyscy skoczkowie ze statusem Active w bazie FIS** (ok. 1350 osób), posortowani wg punktów
+PŚ z zeszłego sezonu, potem Pucharu Kontynentalnego i Letniego Grand Prix. `data/photos/` – portrety ok. 190 najlepszych
+zawodników z FIS (pozostali mają inicjały). Listę odświeża się ręcznie (Actions → Run workflow → „Odśwież też listę
+zawodników”) – najlepiej tylko przed draftem.
 
 ## Lokalnie
 

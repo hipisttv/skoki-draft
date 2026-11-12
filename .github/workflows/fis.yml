@@ -36,6 +36,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Zależności
+        run: pip install pypdf
+
       - name: Pobierz dane z FIS
         if: github.event_name != 'push'
         run: |

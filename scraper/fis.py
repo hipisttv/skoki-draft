@@ -6,9 +6,11 @@ Użycie:
     python scraper/fis.py --out data_test --season 2026
 
 Pliki wynikowe:
-    data/athletes.json    – zawodnicy (M i K) posortowani wg punktów PŚ z zeszłego sezonu
-    data/calendar.json    – weekendy PŚ z listą konkursów
-    data/results/<raceid>.json – wyniki konkursu (miejsca, odległości)
+    data/athletes.json    – wszyscy aktywni skoczkowie FIS, posortowani wg punktów z zeszłego sezonu
+    data/photos/          – portrety najlepszych zawodników
+    data/calendar.json    – weekendy PŚ i MŚ z listą konkursów
+    data/results/<raceid>.json – wyniki konkursu (miejsca, odległości, rekord skoczni z protokołu FIS)
+    data/results.json     – wszystkie wyniki w jednym pliku
 """
 import argparse
 import datetime as dt
@@ -28,6 +30,7 @@ MONTHS = {m: i + 1 for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oc
 def fetch(url, retries=3):
     for attempt in range(retries):
         try:
+            time.sleep(0.3)  # FIS odpowiada 429 przy zbyt szybkich zapytaniach
             req = urllib.request.Request(url, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=60) as r:
                 return r.read().decode("utf-8", errors="replace")
@@ -35,7 +38,20 @@ def fetch(url, retries=3):
             if attempt == retries - 1:
                 raise
             print(f"  retry {url}: {e}", file=sys.stderr)
-            time.sleep(3 * (attempt + 1))
+            time.sleep(10 * (attempt + 1))
+
+
+def fetch_bytes(url, retries=3):
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read(), r.headers.get("Content-Type", "")
+        except Exception as e:  # noqa: BLE001
+            if attempt == retries - 1:
+                raise
+            print(f"  retry {url}: {e}", file=sys.stderr)
+            time.sleep(10 * (attempt + 1))
 
 
 def text(fragment):
@@ -61,7 +77,7 @@ def parse_standings(h):
     out = []
     for row in re.split(r'<a class="table-row', h)[1:]:
         cid = re.search(r"competitorid=(\d+)", row)
-        if not cid:
+        if not cid or "cupcode=WCPR" in row:
             continue
         name = re.search(r'justify-left bold align-xs-top">\s*(.*?)\s*<', row, re.S)
         nation = re.search(r'country__name-short">(\w+)<', row)
@@ -84,32 +100,104 @@ def standings(season, gender, cup="WC"):
     return parse_standings(fetch(url))
 
 
-def build_athletes(season):
-    """Zawodnicy z punktami w PŚ zeszłego sezonu lub w tegorocznym Letnim Grand Prix.
+def parse_biographies(h, gender):
+    out = []
+    for row in re.split(r'<a class="table-row', h)[1:]:
+        cid = re.search(r"competitorid=(\d+)", row)
+        if not cid:
+            continue
+        t = text(row)
+        m = re.search(r"(Active|Inactive|Retired)\s+(\d+)\s+(.+?)\s+([A-Z]{3})\s+\d+\s+\S+\s+(\d{4})", t)
+        if not m or m.group(1) != "Active":
+            continue
+        out.append({"id": cid.group(1), "name": m.group(3).strip(), "nation": m.group(4),
+                    "gender": gender, "born": int(m.group(5))})
+    return out
 
-    Sortowanie: punkty PŚ zeszłego sezonu, potem punkty LGP.
-    Zawodnicy, którzy pojawią się w wynikach bieżącego sezonu, są dopisywani w main().
+
+def active_athletes(season):
+    """Wszyscy skoczkowie ze statusem Active w bazie FIS.
+
+    Wyszukiwarka FIS zwraca najwyżej 1000 osób, więc pytamy rocznik po roczniku.
+    """
+    found = {}
+    for gender in ("M", "W"):
+        for year in range(season - 60, season - 5):
+            url = (f"{BASE}/ski-jumping/biographies.html?lastname=&firstname=&sectorcode=JP&gendercode={gender}"
+                   f"&birthyear={year}&skiclub=&skis=&nationcode=&fiscode=&status=O&search=true")
+            rows = parse_biographies(fetch(url), gender)
+            if len(rows) >= 1000:
+                print(f"  UWAGA: rocznik {year} {gender} ma 1000+ zawodników, lista może być niepełna", file=sys.stderr)
+            for r in rows:
+                found[r["id"]] = r
+        print(f"  aktywni {gender}: {sum(1 for a in found.values() if a['gender'] == gender)}")
+    return found
+
+
+def build_athletes(season):
+    """Wszyscy aktywni skoczkowie z bazy FIS.
+
+    Sortowanie: punkty PŚ zeszłego sezonu, potem Pucharu Kontynentalnego zeszłego sezonu,
+    potem tegorocznego Letniego Grand Prix.
     """
     prev = season - 1
     athletes = {}
+    for a in active_athletes(season).values():
+        athletes[a["id"]] = {**a, "wc": 0, "wcRank": None, "coc": 0, "gp": 0}
     for gender in ("M", "W"):
-        for cup, key in (("WC", "wc"), ("GP", "gp")):
+        for cup, key, s in (("WC", "wc", prev), ("COC", "coc", prev), ("GP", "gp", season)):
             try:
-                rows = standings(prev if cup != "GP" else season, gender, cup)
+                rows = standings(s, gender, cup)
             except Exception as e:  # noqa: BLE001
                 print(f"  brak {cup} {gender}: {e}", file=sys.stderr)
                 rows = []
-            print(f"  {cup} {gender}: {len(rows)} zawodników")
+            print(f"  {cup} {gender}: {len(rows)} z punktami")
             for r in rows:
                 a = athletes.setdefault(r["id"], {
-                    "id": r["id"], "name": r["name"], "nation": r["nation"],
-                    "gender": gender, "wc": 0, "wcRank": None, "gp": 0,
+                    "id": r["id"], "name": r["name"], "nation": r["nation"], "gender": gender,
+                    "born": None, "wc": 0, "wcRank": None, "coc": 0, "gp": 0,
                 })
                 a[key] = r["points"]
                 if cup == "WC":
                     a["wcRank"] = r["rank"]
-    lst = sorted(athletes.values(), key=lambda a: (-a["wc"], -a["gp"], a["name"]))
-    return lst
+    return sorted(athletes.values(), key=lambda a: (-a["wc"], -a["coc"], -a["gp"], a["name"]))
+
+
+def download_photos(athletes, out, top=200):
+    """Portrety z FIS dla najlepszych zawodników.
+
+    Zawodnik bez zdjęcia dostaje od FIS ten sam zastępczy obrazek – takie pliki (identyczne
+    u kilku osób) usuwamy, żeby aplikacja pokazała wtedy inicjały.
+    """
+    import hashlib
+    folder = os.path.join(out, "photos")
+    os.makedirs(folder, exist_ok=True)
+    for a in athletes[:top]:
+        if any(f.startswith(a["id"] + ".") for f in os.listdir(folder)):
+            continue
+        try:
+            data, ctype = fetch_bytes(f"{BASE}/general/load-competitor-picture/{a['id']}.html")
+        except Exception as e:  # noqa: BLE001
+            print(f"  brak zdjęcia {a['name']}: {e}", file=sys.stderr)
+            continue
+        if not ctype.startswith("image/"):
+            continue
+        ext = "png" if "png" in ctype else "jpg"
+        with open(os.path.join(folder, f"{a['id']}.{ext}"), "wb") as f:
+            f.write(data)
+    by_hash = {}
+    for f in os.listdir(folder):
+        with open(os.path.join(folder, f), "rb") as fh:
+            by_hash.setdefault(hashlib.md5(fh.read()).hexdigest(), []).append(f)
+    for files in by_hash.values():
+        if len(files) > 1:
+            for f in files:
+                os.remove(os.path.join(folder, f))
+    photos = {f.split(".")[0]: f for f in os.listdir(folder)}
+    for a in athletes:
+        if a["id"] in photos:
+            a["photo"] = f"photos/{photos[a['id']]}"
+    print(f"  portrety: {len(photos)}")
 
 
 # ---------------------------------------------------------------- kalendarz
@@ -260,17 +348,81 @@ def parse_results(h):
     return out
 
 
+def results_pdf_url(h):
+    """Link do oficjalnego PDF z wynikami (konkurs lub kwalifikacje)."""
+    for m in re.finditer(r'data-link="([^"]+\.pdf)"[^>]*?data-ga-download="([^"]*)"', h, re.S):
+        if "Results" in m.group(2) and "Start" not in m.group(2):
+            return m.group(1)
+    return None
+
+
+def parse_hill_record(pdf_bytes):
+    """Rekord skoczni z protokołu FIS: {'distance': 146.0, 'holders': [{'date': '2009-12-06', 'name': 'AMMAN S.'}]}"""
+    try:
+        import io
+        import pypdf
+    except ImportError:
+        print("  brak pypdf – rekordy skoczni pominięte (pip install pypdf)", file=sys.stderr)
+        return None
+    try:
+        t = pypdf.PdfReader(io.BytesIO(pdf_bytes)).pages[0].extract_text()
+    except Exception as e:  # noqa: BLE001
+        print(f"  nie udało się odczytać PDF: {e}", file=sys.stderr)
+        return None
+    m = re.search(r"Hill Record\s+(\d+(?:\.\d)?)\s*m", t)
+    hs = re.search(r"HILL SIZE HS\s*/\s*\(95%\)\s*(\d+)\s*m", t)
+    if not m:
+        return None
+    holders = []
+    for d, mon, y, name in re.findall(r"\((\d{1,2}) ([A-Z]{3}) (\d{4}) (.+?) [A-Z]{3} G", t[m.end():m.end() + 400]):
+        try:
+            date = dt.date(int(y), MONTHS[mon.capitalize()], int(d)).isoformat()
+        except (KeyError, ValueError):
+            continue
+        holders.append({"date": date, "name": name.strip()})
+    return {"distance": float(m.group(1)), "holders": holders, "hs": int(hs.group(1)) if hs else None}
+
+
+def record_breakers(rows, record, race_date):
+    """Kto ustanowił nowy rekord skoczni w tym konkursie.
+
+    Protokół może podawać rekord sprzed konkursu (wtedy liczy się skok dłuższy od niego) albo już
+    zaktualizowany (wtedy autorzy z datą konkursu). Wyrównanie starego rekordu nie jest nowym rekordem.
+    """
+    if not record:
+        return []
+    best = max((j for r in rows for j in r["jumps"]), default=0)
+    today = [h for h in record["holders"] if h["date"] == race_date]
+    older = [h for h in record["holders"] if h["date"] < race_date]
+    if today and not older:
+        target = record["distance"]
+    elif best > record["distance"]:
+        target = best
+    else:
+        return []
+    return [r["id"] for r in rows if target in r["jumps"]]
+
+
 def build_results(race, outdir):
     path = os.path.join(outdir, "results", f"{race['id']}.json")
+    old = None
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             old = json.load(f)
-        if old.get("final"):
+        if old.get("final") and "hillRecord" in old:
             return old
     h = fetch(f"{BASE}/general/results.html?sectorcode=JP&raceid={race['id']}")
     rows = parse_results(h)
     if not rows:
         return None
+    record = old.get("hillRecord") if old else None
+    if not record:
+        url = results_pdf_url(h)
+        if url:
+            try:
+                record = parse_hill_record(fetch_bytes(url)[0])
+            except Exception as e:  # noqa: BLE001
+                print(f"  brak PDF {race['id']}: {e}", file=sys.stderr)
     days_ago = (dt.date.today() - dt.date.fromisoformat(race["date"])).days
     data = {
         "raceId": race["id"],
@@ -278,6 +430,8 @@ def build_results(race, outdir):
         # po 2 dniach uznajemy wyniki za ostateczne (FIS czasem poprawia DSQ)
         "final": days_ago >= 2,
         "fetched": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "hillRecord": record,
+        "recordBreakers": record_breakers(rows, record, race["date"]),
         "results": rows,
     }
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -304,8 +458,10 @@ def main():
     print(f"Sezon {args.season - 1}/{args.season % 100:02d}")
     athletes_path = os.path.join(out, "athletes.json")
     if not (args.skip_athletes and os.path.exists(athletes_path)):
-        print("Zawodnicy...")
-        save({"season": args.season, "generated": today, "athletes": build_athletes(args.season)}, athletes_path)
+        print("Zawodnicy (wszyscy aktywni w FIS)...")
+        lst = build_athletes(args.season)
+        download_photos(lst, out)
+        save({"season": args.season, "generated": today, "athletes": lst}, athletes_path)
 
     print("Kalendarz...")
     events = build_calendar(args.season)
@@ -348,7 +504,8 @@ def main():
                     if r["id"] not in known:
                         known.add(r["id"])
                         adata["athletes"].append({"id": r["id"], "name": r["name"], "nation": r["nation"],
-                                                  "gender": race["gender"], "wc": 0, "wcRank": None, "gp": 0})
+                                                  "gender": race["gender"], "born": None,
+                                                  "wc": 0, "wcRank": None, "coc": 0, "gp": 0})
                         added += 1
     if added:
         print(f"  dopisano {added} nowych zawodników")

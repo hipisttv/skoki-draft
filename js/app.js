@@ -1,8 +1,9 @@
 import { createStore } from './store.js';
 import { leagueId } from '../firebase-config.js';
 import {
-  FIS_POINTS, DEFAULT_BONUS, TEAM, TEAM_SIZE, buildWeekends, isLocked, snakeOrder, teams, canPick,
-  lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings, countsForLeague,
+  FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
+  snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
+  countsForLeague, isMain, recordIds, scoringSettings,
 } from './scoring.js';
 import {
   esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -26,7 +27,7 @@ let calc = null;
 let lastPicks = null;
 
 const ui = {
-  authMode: null, gender: 'ALL', q: '', hideTaken: true, weekend: null, editRecord: false,
+  authMode: null, gender: 'ALL', q: '', hideTaken: true, weekend: null, editRecord: false, limit: 150,
   wcGender: 'M', wcSeason: 'current', menu: false,
 };
 
@@ -70,11 +71,20 @@ const prettyName = (full) => {
   return { first: first.join(' '), last: last.map((x) => x.charAt(0) + x.slice(1).toLowerCase()).join(' ') || full };
 };
 const athInfo = (id, fallback) => byId[id] || fallback || { id, name: id, nation: '' };
-function ath(id, { fallback, short = false, gender = true } = {}) {
+function ath(id, { fallback, short = false, gender = true, photo = false } = {}) {
   const a = athInfo(id, fallback);
   const n = prettyName(a.name);
   const g = gender && a.gender ? `<span class="g ${a.gender === 'W' ? 'w' : ''}">${a.gender === 'W' ? 'K' : 'M'}</span>` : '';
-  return `<span class="ath">${g}${flag(a.nation)}<span class="nm">${short ? '' : esc(n.first) + ' '}<b>${esc(n.last)}</b></span></span>`;
+  return `<span class="ath">${photo ? portrait(a) : g}${flag(a.nation)}<span class="nm">${short ? '' : esc(n.first) + ' '}<b>${esc(n.last)}</b></span></span>`;
+}
+// Portret z FIS albo inicjały, gdy FIS nie ma zdjęcia.
+function portrait(a, cls = '') {
+  const n = prettyName(a.name);
+  const ini = `${n.first.charAt(0)}${n.last.charAt(0)}`;
+  const w = a.gender === 'W' ? 'w' : '';
+  return a.photo
+    ? `<img class="ph ${cls} ${w}" src="${DATA}/${esc(a.photo)}" alt="" loading="lazy">`
+    : `<span class="ph ini ${cls} ${w}">${esc(ini)}</span>`;
 }
 const ownerOf = (aid) => Object.entries(calc.teams).find(([, ids]) => ids.includes(aid))?.[0];
 function owner(pid, extra = '') {
@@ -430,8 +440,14 @@ function ranking() {
       ${best.map(([id, v], i) => `<tr><td class="rank muted">${i + 1}</td><td>${ath(id)}</td><td>${owner(ownerOf(id))}</td><td class="pts">${v}</td></tr>`).join('') || '<tr><td class="muted">—</td></tr>'}
     </tbody></table></div></div>
     <div class="card pad0"><div class="card-head"><h3>Statystyki</h3></div><div class="tablewrap"><table>
-      <thead><tr><th></th><th class="num">Wygrane weekendy</th><th class="num">Pkt od kapitanów</th><th class="num">Bonusy</th></tr></thead><tbody>
-      ${ps.map((p) => `<tr><td>${owner(p.id)}</td><td class="num">${wins[p.id]}</td><td class="num">+${capPts[p.id]}</td><td class="num">${bonusCnt[p.id]}</td></tr>`).join('')}
+      <thead><tr><th></th><th class="num">Wygrane weekendy</th><th class="num">Pkt od kapitanów</th><th class="num">Kary</th><th class="num">Bonusy</th><th class="num">×${TRIPLE}</th></tr></thead><tbody>
+      ${ps.map((p) => {
+        const t = state.triples?.[p.id];
+        const tv = t && calc.byRace[t]?.[p.id];
+        return `<tr><td>${owner(p.id)}</td><td class="num">${wins[p.id]}</td><td class="num">+${capPts[p.id]}</td>
+          <td class="num" style="color:${calc.penalties[p.id] ? 'var(--bad)' : 'inherit'}">${calc.penalties[p.id]}</td><td class="num">${bonusCnt[p.id]}</td>
+          <td class="num">${tv ? `${tv.total > 0 ? '+' : ''}${tv.total}` : '<span class="muted">dostępny</span>'}</td></tr>`;
+      }).join('')}
     </tbody></table></div></div>
   </div>`;
   return html;
@@ -527,9 +543,10 @@ function athleteTable(picking) {
   const myTurn = picking && cur && (cur.pid === me()?.id || isAdmin());
   const team = cur ? calc.teams[cur.pid] || [] : [];
   const q = ui.q.toLowerCase();
-  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
+  const all = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
     (!ui.hideTaken || !taken.has(a.id)) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)));
-  return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="spacer"></span>
+  const list = all.slice(0, ui.limit);
+  return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="muted small">${all.length} ${pl(all.length, 'aktywny', 'aktywnych', 'aktywnych')} w FIS</span><span class="spacer"></span>
       ${picking && cur && !myTurn ? `<span class="tag">czekasz na swoją kolej</span>` : ''}
       ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))}</span>` : ''}</div>
     <div class="row" style="margin-bottom:.8rem">
@@ -538,19 +555,22 @@ function athleteTable(picking) {
       ${picking ? `<label class="check small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}>ukryj wybranych</label>` : ''}
     </div>
     <div class="card pad0"><div class="tablewrap"><table>
-      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce</th><th class="num hide-sm">LGP ${athSeason - 1}</th><th></th></tr></thead>
+      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num hide-sm">Rocznik</th><th class="num">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce</th><th class="num hide-sm">PK ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">LGP ${athSeason - 1}</th><th></th></tr></thead>
       <tbody>${list.map((a) => {
         const t = taken.get(a.id);
         const ok = !t && myTurn && canPick(team, a.gender, byId);
         return `<tr class="${t ? 'dim' : ''}">
           <td class="num muted">${byId[a.id].idx}</td>
-          <td>${ath(a.id)}</td>
+          <td>${ath(a.id, { photo: true })}</td>
+          <td class="num hide-sm muted">${a.born || ''}</td>
           <td class="pts">${a.wc || '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.wcRank ? `${a.wcRank}.` : '<span class="muted">–</span>'}</td>
+          <td class="num hide-sm">${a.coc || '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.gp || '<span class="muted">–</span>'}</td>
           <td class="num">${t ? owner(t) : picking ? `<button class="sm ${ok ? 'primary' : ''}" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled'}>Wybierz</button>` : ''}</td>
         </tr>`;
-      }).join('') || '<tr><td colspan="6" class="empty">Brak zawodników dla tego filtra</td></tr>'}</tbody></table></div></div></div>`;
+      }).join('') || '<tr><td colspan="8" class="empty">Brak zawodników dla tego filtra</td></tr>'}</tbody></table></div></div>
+    ${all.length > list.length ? `<div class="row" style="justify-content:center;margin-top:.8rem"><button data-action="more">Pokaż kolejnych ${Math.min(150, all.length - list.length)} (zostało ${all.length - list.length})</button></div>` : ''}</div>`;
 }
 
 const genderSeg = () => `<div class="seg">${[['ALL', 'Wszyscy'], ['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) =>
@@ -607,7 +627,7 @@ function teamCard(p, w, drafting) {
       ctrl = `<select class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw do składu"><option value="">⇄ za…</option>${same.map((s) => `<option value="${s}">${esc(prettyName(byId[s]?.name).last)}</option>`).join('')}</select>`;
     }
     const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
-    return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false })}
+    return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false, photo: true })}
       ${drafting ? '' : `<span class="pp ${v ? '' : 'z'}">${v}</span>`}${ctrl}</div>`;
   };
   const men = l.starters.filter((id) => byId[id]?.gender === 'M');
@@ -623,8 +643,30 @@ function teamCard(p, w, drafting) {
       <div class="sect">Kobieta</div>${women.map((id) => line(id, true)).join('')}
       <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
       ${!l.captain ? `<div class="warnline">${icon('info')}Brak kapitana${editable ? ' — kliknij „C” przy zawodniku' : ' na ten weekend'}</div>` : ''}
+      ${tripleBox(p, w, editable)}
       <div class="muted xs" style="margin-top:.6rem;text-align:right">liczby = ${label}${l.inherited && editable ? ' · skład przeniesiony automatycznie' : ''}</div>`}
     </div></div>`;
+}
+
+// Mnożnik ×3 – raz w sezonie na wybrany konkurs (nie kwalifikacje).
+function tripleBox(p, w, editable) {
+  const used = state.triples?.[p.id];
+  const uw = used && weekends.find((x) => x.races.some((r) => r.id === used));
+  const ur = uw?.races.find((r) => r.id === used);
+  const label = (r) => `${raceLabel(r)} · ${esc(r.place)} · ${fmtDow(r.date)}`;
+  if (ur && isLocked(uw) && !isAdmin()) {
+    const v = calc.byRace[used]?.[p.id]?.total;
+    return `<div class="triple used">${icon('star')}<span>×${TRIPLE} wykorzystany: <b>${label(ur)}</b>${v != null ? ` (${v > 0 ? '+' : ''}${v} pkt)` : ''}</span></div>`;
+  }
+  if (!editable) {
+    return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`
+      : `<div class="triple">${icon('star')}<span>Mnożnik ×${TRIPLE} jeszcze dostępny</span></div>`;
+  }
+  const races = w.races.filter(isMain);
+  return `<div class="triple ${ur && uw === w ? 'on' : ''}">${icon('star')}<span>Mnożnik ×${TRIPLE} (raz w sezonie)</span>
+    <select class="sm" data-action="triple" data-p="${p.id}"><option value="">${ur && uw !== w ? 'ustawiony na inny weekend' : 'nie używaj'}</option>
+      ${races.map((r) => `<option value="${r.id}" ${r.id === used ? 'selected' : ''}>${label(r)}</option>`).join('')}</select>
+    ${ur && uw !== w ? `<div class="xs muted" style="width:100%">Obecnie: ${label(ur)} — wybór tutaj go przeniesie.</div>` : ''}</div>`;
 }
 
 // ================================================================ kalendarz
@@ -673,9 +715,10 @@ function raceView(id) {
   const race = w?.races.find((r) => r.id === id);
   const res = results[id];
   if (!race || !res) return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a><div class="card empty">${icon('calendar')}<b>Brak wyników</b>Ten konkurs jeszcze się nie odbył.</div>`;
-  const pts = racePoints(race, res, state.settings, state.hillRecords[id] || []);
+  const records = recordIds(state, id, res);
+  const pts = racePoints(race, res, state.settings, records);
+  const hr = res.hillRecord;
   const lj = race.category === 'WC' ? longestJump(res) : 0;
-  const records = state.hillRecords[id] || [];
   const lineups = Object.fromEntries(state.participants.map((p) => [p.id, lineupFor(state, weekends, w.id, p.id, calc.teams[p.id] || [], byId)]));
   const ownerInfo = (aid) => {
     const pid = ownerOf(aid);
@@ -694,20 +737,25 @@ function raceView(id) {
       <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
       <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${race.time}` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
         ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
+        ${hr ? `<span>${icon('star')}rekord skoczni: <b>${hr.distance} m</b>${records.length ? ' — <b>POBITY!</b>' : ''}</span>` : ''}
         <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
     </div>
     ${!countsForLeague(race, state.settings) ? `<div class="warnline" style="margin-top:1rem">${icon('info')}Mistrzostwa Świata nie liczą się do punktacji ligi (ustawienie admina).</div>` : ''}
     ${ps.length && countsForLeague(race, state.settings) ? `<div class="section grid">${ps.map((p) => {
-      const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [] };
+      const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [], penalty: 0 };
       return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(p.name)}</div><span class="spacer"></span>
           <div class="tot"><div class="v">+${e.total}</div><div class="l">pkt</div></div></div>
-        <div class="team-body">${e.athletes.sort((a, b) => b.pts - a.pts).map((a) => `<div class="player">${ath(a.id, { gender: false })}
+        <div class="team-body">${e.triple ? `<div class="triple on" style="margin:.6rem 0 .2rem">${icon('star')}<span>Mnożnik ×${TRIPLE} — wszystkie punkty potrojone</span></div>` : ''}
+          ${e.athletes.sort((a, b) => b.pts - a.pts).map((a) => `<div class="player">${ath(a.id, { gender: false, photo: true })}
           ${a.captain ? '<span class="cap">C</span>' : ''}<span class="pp">${a.pts}</span></div>
-          <div class="muted xs" style="margin:-.35rem 0 .3rem;text-align:right">${breakdown(a.base)}${a.captain ? ' · ×2 kapitan' : ''}</div>`).join('') || '<div class="muted small" style="padding:.6rem 0">Brak punktów w tym konkursie</div>'}</div></div>`;
+          <div class="muted xs" style="margin:-.35rem 0 .3rem;text-align:right">${breakdown(a.base)}${a.captain ? ' · ×2 kapitan' : ''}</div>`).join('') || '<div class="muted small" style="padding:.6rem 0">Brak punktów w tym konkursie</div>'}
+          ${e.penalty ? `<div class="player"><span class="ath"><span class="ph ini bad">!</span><span class="nm">Kapitan poza top 30</span></span><span class="pp" style="color:var(--bad)">${e.penalty}</span></div>` : ''}</div></div>`;
     }).join('')}</div>` : ''}
     <div class="section"><div class="row"><h2>Wyniki</h2><span class="spacer"></span>
-      ${race.category === 'WC' ? `<button class="sm" data-action="editRecord">${icon(ui.editRecord ? 'check' : 'star')}${ui.editRecord ? 'Gotowe' : 'Rekord skoczni'}</button>` : ''}</div>
-    ${ui.editRecord ? `<div class="warnline" style="margin:0 0 .8rem">${icon('info')}Zaznacz zawodnika, który ustanowił oficjalnie uznany rekord skoczni (+${{ ...DEFAULT_BONUS, ...state.settings.bonus }.record} pkt). Zapisuje się od razu.</div>` : ''}
+      ${isAdmin() ? `<button class="sm" data-action="editRecord">${icon(ui.editRecord ? 'check' : 'star')}${ui.editRecord ? 'Gotowe' : 'Popraw rekord skoczni'}</button>` : ''}</div>
+    ${records.length ? `<div class="warnline champline" style="margin:0 0 .8rem">${icon('star')}Nowy rekord skoczni: ${records.map((rid) => esc(prettyName(athInfo(rid, res.results.find((x) => x.id === rid)).name).last)).join(', ')} (+${scoringSettings(state.settings).bonus.record} pkt)</div>` : ''}
+    ${ui.editRecord ? `<div class="warnline" style="margin:0 0 .8rem">${icon('info')}Rekord wykrywany jest automatycznie z protokołu FIS. Tu możesz go poprawić, np. gdy skok z upadkiem nie został uznany.
+      ${Array.isArray(state.hillRecords?.[id]) ? `<button class="sm" data-action="recordAuto" data-race="${id}">Przywróć automatyczne</button>` : ''}</div>` : ''}
     <div class="card pad0"><div class="tablewrap"><table>
       <thead><tr><th class="num">Msc</th><th>Zawodnik</th><th class="num">${race.category === 'WC' ? 'Skoki' : 'Odl.'}</th><th class="num hide-sm">Nota</th><th class="num">Pkt ligi</th><th>Drużyna</th>${ui.editRecord ? '<th>Rekord</th>' : ''}</tr></thead>
       <tbody>${sorted.map((r) => {
@@ -715,7 +763,7 @@ function raceView(id) {
         const mine = m && ownerOf(r.id) === m.id;
         return `<tr class="${mine ? 'mine' : ''}">
           <td class="rank">${r.rank ? (r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : r.rank) : '<span class="tag bad">DSQ</span>'}</td>
-          <td>${ath(r.id, { fallback: { ...r, gender: race.gender }, gender: false })}</td>
+          <td>${ath(r.id, { fallback: { ...r, gender: race.gender }, gender: false, photo: true })}</td>
           <td class="num">${r.jumps.map((j) => (j === lj ? `<span class="longest">${j}</span>` : j)).join('<span class="muted"> / </span>')}</td>
           <td class="num hide-sm muted">${r.total ?? ''}</td>
           <td class="pts">${p?.total ? `${p.total}${p.quali ? '<span class="bonus">Q</span>' : ''}${p.longest ? '<span class="bonus">NS</span>' : ''}${p.record ? '<span class="bonus">RS</span>' : ''}` : ''}</td>
@@ -728,7 +776,7 @@ function raceView(id) {
 
 function breakdown(b) {
   const parts = [];
-  if (b.place) parts.push(`miejsce ${b.place}`);
+  if (b.place) parts.push(`miejsce +${b.place}`);
   if (b.quali) parts.push(`kwal. +${b.quali}`);
   if (b.longest) parts.push(`najdł. skok +${b.longest}`);
   if (b.record) parts.push(`rekord +${b.record}`);
@@ -778,7 +826,7 @@ function zawodnicy() {
   const raw = {};
   for (const w of weekends) for (const r of w.races) {
     if (!results[r.id] || !countsForLeague(r, state.settings)) continue;
-    for (const [id, p] of racePoints(r, results[r.id], state.settings, state.hillRecords[r.id] || [])) raw[id] = (raw[id] || 0) + p.total;
+    for (const [id, p] of racePoints(r, results[r.id], state.settings, recordIds(state, r.id, results[r.id]))) raw[id] = (raw[id] || 0) + p.total;
   }
   const q = ui.q.toLowerCase();
   const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)))
@@ -815,6 +863,7 @@ function adminView() {
   const ph = phase();
   const s = state.settings;
   const bonus = { ...DEFAULT_BONUS, ...(s.bonus || {}) };
+  const cfg = scoringSettings(s);
   const total = state.draftOrder.length * TEAM_SIZE;
   return `<div class="page-head"><div><h1>Panel admina</h1><div class="sub">${esc(state.setup.leagueName)} · ${ph === 'signup' ? 'zapisy otwarte' : ph === 'draft' ? `draft w toku (${state.picks.length}/${total})` : 'sezon trwa'}</div></div></div>
   <div class="grid-2">
@@ -856,6 +905,13 @@ function adminView() {
           <label class="field"><span>Najdłuższy skok</span><input id="bL" type="number" value="${bonus.longest}"></label>
           <label class="field"><span>Rekord skoczni</span><input id="bR" type="number" value="${bonus.record}"></label>
         </div>
+        <div class="grid-3" style="gap:.6rem">
+          <label class="field"><span>Kara: kapitan poza top 30</span><input id="pen" type="number" value="${cfg.penalty}"></label>
+        </div>
+        <label class="field"><span>Mistrzostwa Świata — złoto, srebro, brąz, miejsca 4–10</span>
+          <div class="grid-3" style="gap:.6rem;grid-template-columns:repeat(4,1fr)">
+            <input id="cG" type="number" value="${cfg.champ.gold}" title="Złoto"><input id="cS" type="number" value="${cfg.champ.silver}" title="Srebro">
+            <input id="cB" type="number" value="${cfg.champ.bronze}" title="Brąz"><input id="cT" type="number" value="${cfg.champ.top10}" title="Miejsca 4–10"></div></label>
         <label class="check" style="margin-bottom:1rem"><input type="checkbox" id="countChamps" ${s.countChamps !== false ? 'checked' : ''}>Mistrzostwa Świata liczą się do punktacji ligi (tak samo jak konkursy PŚ, z kapitanem i bonusami)</label>
         <div class="row"><button class="primary" data-action="saveScoring">${icon('check')}Zapisz</button><button class="ghost" data-action="resetScoring">Przywróć domyślne</button></div>
       </div>
@@ -971,7 +1027,24 @@ const actions = {
     if (await save((s) => { s.participants.find((p) => p.id === m.id).pinHash = pinHash; return s; }, 'PIN zmieniony')) setSession({ ...session, pinHash });
   },
 
-  gender: (el) => { ui.gender = el.dataset.v; render(); },
+  gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
+  more: () => { ui.limit += 150; render(); },
+  triple: (el) => {
+    const { p } = el.dataset;
+    const raceId = el.value;
+    save((s) => {
+      s.triples = s.triples || {};
+      const cur = s.triples[p];
+      const cw = cur && weekends.find((x) => x.races.some((r) => r.id === cur));
+      if (cw && isLocked(cw) && !isAdmin()) fail('Mnożnik ×3 został już wykorzystany w tym sezonie');
+      const nw = raceId && weekends.find((x) => x.races.some((r) => r.id === raceId));
+      if (nw && isLocked(nw) && !isAdmin()) fail('Ten weekend jest już zablokowany');
+      if (raceId) s.triples[p] = raceId;
+      else if (!cw || cw.id === ui.weekend) delete s.triples[p];
+      return s;
+    }, raceId ? `Mnożnik ×${TRIPLE} ustawiony` : 'Mnożnik ×3 zdjęty');
+  },
+  recordAuto: (el) => save((s) => { delete s.hillRecords[el.dataset.race]; return s; }, 'Przywrócono automatyczne wykrywanie'),
   hideTaken: (el) => { ui.hideTaken = el.checked; render(); },
   weekend: (el) => { ui.weekend = el.dataset.v; render(); },
   wcGender: (el) => { ui.wcGender = el.dataset.v; render(); },
@@ -1015,7 +1088,8 @@ const actions = {
     const { race, id } = el.dataset;
     const on = el.checked;
     save((s) => {
-      const cur = new Set(s.hillRecords[race] || []);
+      // ręczna poprawka zastępuje automatyczne wykrycie z protokołu FIS
+      const cur = new Set(recordIds(s, race, results[race]));
       on ? cur.add(id) : cur.delete(id);
       s.hillRecords[race] = [...cur];
       return s;
@@ -1062,16 +1136,19 @@ const actions = {
   },
   resetDraft: async () => {
     if (await confirmModal('Zresetować draft?', 'Wszystkie wybory i składy zostaną usunięte, a zapisy otwarte ponownie. Tego nie da się cofnąć.', 'Resetuj', true)) {
-      save((s) => { s.picks = []; s.lineups = {}; s.draftStarted = false; return s; }, 'Draft zresetowany');
+      save((s) => { s.picks = []; s.lineups = {}; s.triples = {}; s.draftStarted = false; return s; }, 'Draft zresetowany');
     }
   },
   saveScoring: () => {
     const placePoints = document.getElementById('placePts').value.split(/[,\s;]+/).filter(Boolean).map(Number).filter((n) => !Number.isNaN(n));
     const bonus = { quali: +document.getElementById('bQ').value, longest: +document.getElementById('bL').value, record: +document.getElementById('bR').value };
     const countChamps = document.getElementById('countChamps').checked;
-    save((s) => { s.settings = { ...s.settings, placePoints, bonus, countChamps }; return s; }, 'Punktacja zapisana');
+    const num = (id) => +document.getElementById(id).value;
+    const champ = { gold: num('cG'), silver: num('cS'), bronze: num('cB'), top10: num('cT') };
+    const captainPenalty = num('pen');
+    save((s) => { s.settings = { ...s.settings, placePoints, bonus, countChamps, champ, captainPenalty }; return s; }, 'Punktacja zapisana');
   },
-  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; delete s.settings.countChamps; return s; }, 'Przywrócono domyślną punktację'),
+  resetScoring: () => save((s) => { delete s.settings.placePoints; delete s.settings.bonus; delete s.settings.countChamps; delete s.settings.champ; delete s.settings.captainPenalty; return s; }, 'Przywrócono domyślną punktację'),
   renameLeague: async () => {
     const v = await modal({ title: 'Nazwa ligi', fields: [{ name: 'n', label: 'Nazwa', value: state.setup.leagueName, attrs: 'maxlength="40" required' }], ok: 'Zapisz' });
     if (v) save((s) => { s.setup.leagueName = v.n.trim(); return s; });
@@ -1092,7 +1169,7 @@ const actions = {
   },
   deleteLeague: async () => {
     if (!await confirmModal('Usunąć całą ligę?', 'Znikną gracze, draft, składy i hasło admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
-    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, hillRecords: {}, settings: {} }))) {
+    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, settings: {} }))) {
       setSession({}); location.hash = ''; render();
     }
   },
@@ -1143,6 +1220,7 @@ root.addEventListener('change', (e) => {
 root.addEventListener('input', (e) => {
   if (e.target.id !== 'q') return;
   ui.q = e.target.value;
+  ui.limit = 150;
   render();
 });
 root.addEventListener('submit', async (e) => {

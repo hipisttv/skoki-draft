@@ -462,3 +462,16 @@ a.race:hover { background: var(--card-2); color: var(--text); }
 .weeks button.champ { border-color: var(--champ-2); background: var(--champ-soft); }
 .weeks button.champ .d { color: var(--champ-ink); }
 .weeks button.champ.on { box-shadow: 0 0 0 2px var(--champ-2); }
+
+/* ============================================================ portrety, mnożnik */
+.ph { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; object-position: top; flex: none; background: var(--card-2); box-shadow: 0 0 0 1px var(--line); display: inline-block; }
+.ph.ini { display: inline-grid; place-items: center; font-size: .66rem; font-weight: 800; color: var(--accent); background: var(--accent-soft); box-shadow: none; }
+.ph.ini.w { color: var(--women); background: var(--women-soft); }
+.ph.ini.bad { color: #fff; background: var(--bad); }
+.ph.w:not(.ini) { box-shadow: 0 0 0 2px var(--women-soft); }
+.triple { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .75rem; padding: .5rem .7rem; border-radius: 9px; border: 1px dashed var(--line); font-size: .82rem; font-weight: 600; color: var(--text-2); }
+.triple svg { width: 15px; height: 15px; color: var(--gold); }
+.triple select { margin-left: auto; max-width: 100%; }
+.triple.on { border: 1px solid var(--gold); background: var(--gold-soft); color: var(--text); }
+.triple.used { background: var(--card-2); border-style: solid; }
+.warnline.champline { background: var(--champ-soft); color: var(--champ-ink); }

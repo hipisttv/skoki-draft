@@ -5,15 +5,52 @@ export const FIS_POINTS = [100, 80, 60, 50, 45, 40, 36, 32, 29, 26, 24, 22, 20, 
   15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
 export const DEFAULT_BONUS = { quali: 5, longest: 10, record: 15 };
+// Mistrzostwa Świata: medale i miejsca 4–10
+export const DEFAULT_CHAMP = { gold: 500, silver: 300, bronze: 200, top10: 50 };
+// kara, gdy kapitan skończy konkurs poza czołową 30 (albo w nim nie wystąpi)
+export const DEFAULT_PENALTY = 20;
+// raz w sezonie: wszystkie punkty drużyny w wybranym konkursie ×3
+export const TRIPLE = 3;
 
 export const TEAM = { men: 6, women: 1, reserves: 2 };
 export const TEAM_SIZE = TEAM.men + TEAM.women + TEAM.reserves;
 
-// Punkty każdego zawodnika w jednym konkursie (bez mnożnika kapitana).
+export const isMain = (race) => race.category !== 'QUA';
+// Mistrzostwa Świata liczą się do ligi, chyba że admin to wyłączy.
+export const countsForLeague = (race, settings) => !race.champ || settings.countChamps !== false;
+
+export function scoringSettings(settings = {}) {
+  return {
+    placePoints: settings.placePoints || FIS_POINTS,
+    bonus: { ...DEFAULT_BONUS, ...(settings.bonus || {}) },
+    champ: { ...DEFAULT_CHAMP, ...(settings.champ || {}) },
+    penalty: settings.captainPenalty ?? DEFAULT_PENALTY,
+  };
+}
+
+// Rekordziści konkursu: wykryci automatycznie z protokołu FIS, chyba że admin to poprawił.
+export function recordIds(state, raceId, result) {
+  const manual = state.hillRecords?.[raceId];
+  return Array.isArray(manual) ? manual : result?.recordBreakers || [];
+}
+
+// Punkty za miejsce w konkursie głównym (PŚ – tabela punktów, MŚ – medale i top 10).
+function placePoints(race, rank, cfg) {
+  if (!rank) return 0;
+  if (race.champ) {
+    if (rank === 1) return cfg.champ.gold;
+    if (rank === 2) return cfg.champ.silver;
+    if (rank === 3) return cfg.champ.bronze;
+    return rank <= 10 ? cfg.champ.top10 : 0;
+  }
+  return rank <= cfg.placePoints.length ? cfg.placePoints[rank - 1] : 0;
+}
+
+// Punkty każdego zawodnika w jednym konkursie (bez kapitana i mnożnika).
+// Kwalifikacje: tylko zwycięstwo w kwalifikacjach i rekord skoczni.
 // Zwraca Map athleteId -> { place, longest, quali, record, total }
-export function racePoints(race, result, settings, hillRecordIds = []) {
-  const placePts = settings.placePoints || FIS_POINTS;
-  const bonus = { ...DEFAULT_BONUS, ...(settings.bonus || {}) };
+export function racePoints(race, result, settings, records = []) {
+  const cfg = scoringSettings(settings);
   const out = new Map();
   if (!result) return out;
   const get = (id) => {
@@ -21,19 +58,20 @@ export function racePoints(race, result, settings, hillRecordIds = []) {
     return out.get(id);
   };
 
-  if (race.category === 'QUA') {
-    for (const r of result.results) if (r.rank === 1) get(r.id).quali = bonus.quali;
+  if (!isMain(race)) {
+    for (const r of result.results) if (r.rank === 1) get(r.id).quali = cfg.bonus.quali;
   } else {
     for (const r of result.results) {
-      if (r.rank && r.rank <= placePts.length) get(r.id).place = placePts[r.rank - 1];
+      const p = placePoints(race, r.rank, cfg);
+      if (p) get(r.id).place = p;
     }
     // najdłuższy skok konkursu (wszystkie serie konkursu głównego); remis = wszyscy dostają bonus
-    const max = Math.max(0, ...result.results.flatMap((r) => r.jumps || []));
+    const max = longestJump(result);
     if (max > 0) {
-      for (const r of result.results) if ((r.jumps || []).includes(max)) get(r.id).longest = bonus.longest;
+      for (const r of result.results) if ((r.jumps || []).includes(max)) get(r.id).longest = cfg.bonus.longest;
     }
-    for (const id of hillRecordIds) get(id).record = bonus.record;
   }
+  for (const id of records) get(id).record = cfg.bonus.record;
   for (const p of out.values()) p.total = p.place + p.longest + p.quali + p.record;
   return out;
 }
@@ -44,7 +82,7 @@ export function longestJump(result) {
 
 // ---------------------------------------------------------------- weekendy
 
-// Weekend = grupa zawodów PŚ (M i K), których terminy na siebie zachodzą.
+// Weekend = grupa zawodów (M i K), których terminy na siebie zachodzą.
 export function buildWeekends(events) {
   const sorted = [...events].sort((a, b) => a.start.localeCompare(b.start));
   const weekends = [];
@@ -115,12 +153,13 @@ export function defaultLineup(teamIds, athletesById) {
 // Skład na weekend: ustawiony dla tego weekendu, a jeśli nie – ostatni wcześniejszy, a jeśli nie – domyślny.
 export function lineupFor(state, weekends, weekendId, pid, teamIds, athletesById) {
   const lineups = state.lineups || {};
-  for (let i = weekends.findIndex((w) => w.id === weekendId); i >= 0; i--) {
+  const idx = weekends.findIndex((w) => w.id === weekendId);
+  for (let i = idx; i >= 0; i--) {
     const l = lineups[weekends[i].id]?.[pid];
     if (l) {
       const starters = l.starters.filter((id) => teamIds.includes(id));
       // kapitan przechodzi tylko, jeśli ustawiono go na ten konkretny weekend
-      return { starters, captain: i === weekends.findIndex((w) => w.id === weekendId) ? l.captain : null, inherited: weekends[i].id !== weekendId };
+      return { starters, captain: i === idx ? l.captain : null, inherited: i !== idx };
     }
   }
   return { ...defaultLineup(teamIds, athletesById), inherited: true };
@@ -134,19 +173,18 @@ export function validLineup(starters, athletesById) {
 
 // ---------------------------------------------------------------- całość
 
-// Mistrzostwa Świata liczą się do ligi, chyba że admin to wyłączy.
-export const countsForLeague = (race, settings) => !race.champ || settings.countChamps !== false;
-
 // Punkty wszystkich uczestników we wszystkich konkursach.
-// Zwraca { byRace: {raceId: {pid: {total, athletes: [{id, pts, captain}]}}}, byWeekend, totals, athleteTotals }
+// byRace[raceId][pid] = { total, athletes: [{ id, pts, base, captain }], penalty, triple }
 export function computeAll(state, weekends, results, athletesById) {
   const settings = state.settings || {};
+  const cfg = scoringSettings(settings);
   const tm = teams(state);
   const byRace = {};
   const byWeekend = {};
   const totals = {};
   const athleteTotals = {};
-  for (const p of state.participants || []) totals[p.id] = 0;
+  const penalties = {};
+  for (const p of state.participants || []) { totals[p.id] = 0; penalties[p.id] = 0; }
 
   for (const w of weekends) {
     byWeekend[w.id] = {};
@@ -158,19 +196,32 @@ export function computeAll(state, weekends, results, athletesById) {
     for (const race of w.races) {
       const res = results[race.id];
       if (!res || !countsForLeague(race, settings)) continue;
-      const pts = racePoints(race, res, settings, state.hillRecords?.[race.id] || []);
+      const pts = racePoints(race, res, settings, recordIds(state, race.id, res));
+      const rankOf = Object.fromEntries(res.results.map((r) => [r.id, r.rank]));
       byRace[race.id] = {};
       for (const p of state.participants || []) {
         const l = lineups[p.id];
-        const entry = { total: 0, athletes: [] };
+        const triple = isMain(race) && state.triples?.[p.id] === race.id;
+        const mult = triple ? TRIPLE : 1;
+        const entry = { total: 0, athletes: [], penalty: 0, triple };
         for (const aid of l.starters) {
           const ap = pts.get(aid);
           if (!ap || !ap.total) continue;
           const cap = l.captain === aid;
-          const v = ap.total * (cap ? 2 : 1);
+          const v = ap.total * (cap ? 2 : 1) * mult;
           entry.total += v;
           entry.athletes.push({ id: aid, pts: v, base: ap, captain: cap });
           athleteTotals[aid] = (athleteTotals[aid] || 0) + v;
+        }
+        // kara za kapitana poza top 30 – tylko w konkursach jego płci
+        const c = l.captain;
+        if (c && isMain(race) && athletesById[c]?.gender === race.gender) {
+          const rank = rankOf[c];
+          if (!rank || rank > 30) {
+            entry.penalty = -cfg.penalty * mult;
+            entry.total += entry.penalty;
+            penalties[p.id] += entry.penalty;
+          }
         }
         byRace[race.id][p.id] = entry;
         byWeekend[w.id][p.id] += entry.total;
@@ -178,7 +229,7 @@ export function computeAll(state, weekends, results, athletesById) {
       }
     }
   }
-  return { byRace, byWeekend, totals, athleteTotals, teams: tm };
+  return { byRace, byWeekend, totals, athleteTotals, penalties, teams: tm };
 }
 
 // Klasyfikacja generalna PŚ bieżącego sezonu liczona z wyników (punkty FIS za miejsca 1–30).
