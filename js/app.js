@@ -750,22 +750,31 @@ function athleteTable(picking) {
       ${picking ? `<label class="check small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}>ukryj wybranych</label>` : ''}
     </div>
     <div class="card pad0"><div class="tablewrap"><table>
-      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num hide-sm">Rocznik</th><th class="num" title="Punkty Pucharu Świata w sezonie ${seasonLabel(athSeason - 1)}">Pkt PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce w PŚ</th><th class="num hide-sm" title="Puchar Kontynentalny">Pkt PK</th><th class="num hide-sm" title="Letnie Grand Prix">Pkt LGP ${athSeason - 1}</th><th></th></tr></thead>
-      <tbody>${list.map((a) => {
+      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num hide-sm">Rocznik</th><th class="num hide-sm" title="Punkty Pucharu Świata w sezonie ${seasonLabel(athSeason - 1)}">Pkt PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm" title="Miejsce w klasyfikacji PŚ (osobno mężczyźni i kobiety)">Miejsce w PŚ</th><th class="num hide-sm" title="Puchar Kontynentalny">Pkt PK</th><th class="num hide-sm" title="Letnie Grand Prix">Pkt LGP ${athSeason - 1}</th><th></th></tr></thead>
+      <tbody>${list.map((a, i) => {
         const t = taken.get(a.id);
         const ok = !t && myTurn && canPick(team, a.gender, byId);
         return `<tr class="${t ? 'dim' : ''}">
-          <td class="num muted">${byId[a.id].idx}</td>
-          <td>${ath(a.id, { photo: true })}</td>
+          <td class="num muted">${i + 1}</td>
+          <td>${ath(a.id, { photo: true })}${athSub(a)}</td>
           <td class="num hide-sm muted">${a.born || ''}</td>
-          <td class="pts">${a.wc || '<span class="muted">–</span>'}</td>
-          <td class="num hide-sm">${a.wcRank ? `${a.wcRank}.` : '<span class="muted">–</span>'}</td>
+          <td class="pts hide-sm">${a.wc || '<span class="muted">–</span>'}</td>
+          <td class="num hide-sm">${a.wcRank ? `${a.wcRank}.${ui.gender === 'ALL' ? ` <span class="muted xs">${a.gender === 'W' ? 'K' : 'M'}</span>` : ''}` : '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.coc || '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.gp || '<span class="muted">–</span>'}</td>
           <td class="num">${t ? owner(t) : picking && myTurn ? `<button class="sm ${ok ? 'primary' : ''}" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled title="Ta płeć nie zmieści się już w składzie"'}>Wybierz</button>` : ''}</td>
         </tr>`;
       }).join('') || '<tr><td colspan="8" class="empty">Brak zawodników dla tego filtra</td></tr>'}</tbody></table></div></div>
     ${all.length > list.length ? `<div class="row" style="justify-content:center;margin-top:.8rem"><button data-action="more">Pokaż kolejnych ${Math.min(150, all.length - list.length)} (zostało ${all.length - list.length})</button></div>` : ''}</div>`;
+}
+
+// Na telefonie kolumny z punktami się nie mieszczą – pokazujemy je pod nazwiskiem.
+function athSub(a) {
+  const s = seasonLabel(athSeason - 1);
+  const wc = a.wc ? `PŚ ${s}: <b>${a.wc} pkt</b>${a.wcRank ? ` · ${a.wcRank}. ${a.gender === 'W' ? 'wśród kobiet' : 'wśród mężczyzn'}` : ''}`
+    : `bez punktów w PŚ ${s}`;
+  const extra = [a.coc ? `PK ${a.coc}` : '', a.gp ? `LGP ${a.gp}` : '', a.born ? `ur. ${a.born}` : ''].filter(Boolean).join(' · ');
+  return `<div class="athsub show-sm">${wc}${extra ? `<br><span>${extra}</span>` : ''}</div>`;
 }
 
 const genderSeg = () => `<div class="seg">${[['ALL', 'Wszyscy'], ['M', 'Mężczyźni'], ['W', 'Kobiety']].map(([k, l]) =>
@@ -1053,7 +1062,7 @@ function zawodnicy() {
       <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label></div>
     <div class="card pad0"><div class="tablewrap"><table>
       <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
-      <tbody>${list.map((a) => `<tr><td>${ath(a.id, { photo: true })}</td><td class="pts">${raw[a.id] || 0}</td>
+      <tbody>${list.map((a) => `<tr><td>${ath(a.id, { photo: true })}${athSub(a)}</td><td class="pts">${raw[a.id] || 0}</td>
         <td class="num hide-sm">${calc.athleteTotals[a.id] || '<span class="muted">–</span>'}</td>
         <td class="num hide-sm muted">${a.wc || '–'}</td><td>${owner(ownerOf(a.id))}</td></tr>`).join('')}</tbody>
     </table></div></div>`;

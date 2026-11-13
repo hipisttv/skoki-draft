@@ -641,3 +641,10 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .pausebox svg { width: 18px; height: 18px; flex: none; }
 .pause-list { display: flex; flex-wrap: wrap; gap: .45rem; }
 .pp-away { display: inline-flex; align-items: center; gap: .45rem; background: rgba(255, 255, 255, .55); border-radius: 999px; padding: .2rem .7rem .2rem .25rem; font-size: .85rem; }
+
+/* lista zawodników na telefonie: punkty pod nazwiskiem */
+.show-sm { display: none; }
+.athsub { font-size: .76rem; color: var(--text-2); margin: .2rem 0 0 2.4rem; line-height: 1.35; white-space: normal; }
+.athsub b { color: var(--text); }
+.athsub span { color: var(--muted); }
+@media (max-width: 640px) { .show-sm { display: block; } }
