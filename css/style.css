@@ -611,3 +611,27 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   .recent { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .3rem; scrollbar-width: none; }
   .recent > * { flex: none; }
 }
+
+/* ============================================================ poczekalnia draftu */
+.lobby { border: 2px solid var(--accent-soft); }
+.lobby-list { display: grid; gap: .55rem; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-top: .9rem; }
+.lp { display: flex; align-items: center; gap: .7rem; padding: .65rem .8rem; border-radius: 12px; border: 1px solid var(--line); background: var(--card-2); }
+.lp > div { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.lp b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp small { color: var(--muted); font-size: .75rem; }
+.lp.in { border-color: var(--good); background: var(--good-soft); }
+.lp.ghost { border-style: dashed; opacity: .6; }
+.lp.ghost .av { background: var(--line); color: var(--muted); }
+.st { font-size: .68rem; font-weight: 800; padding: .15rem .5rem; border-radius: 999px; white-space: nowrap; text-transform: uppercase; letter-spacing: .03em; }
+.st.on { background: var(--good-soft); color: var(--good); }
+.st.mid { background: var(--warn-soft); color: var(--warn); }
+.st.off { background: var(--card-2); color: var(--muted); border: 1px solid var(--line); }
+.hero .st.on { background: rgba(80, 220, 140, .25); color: #c9ffe0; }
+.hero .st.off { background: rgba(255, 255, 255, .12); color: #fff; border: 0; }
+.picker { position: relative; z-index: 1; font-size: .85rem; opacity: .9; margin: -.1rem 0 .35rem; }
+.dot-on, .dot-off { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: .3rem; vertical-align: 1px; }
+.dot-on { background: var(--good); }
+.dot-off { background: var(--line); }
+.lp .st { align-self: flex-start; margin-top: .35rem; }
+.lobby-list { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.menu button, .menu a { justify-content: flex-start; }

@@ -27,6 +27,8 @@ let weekends = [];
 let results = {};        // raceId -> wyniki
 let calc = null;
 let lastPicks = null;
+let presence = {};       // { pid: { t, view } } – kto ma otwartą aplikację i na której zakładce
+const ONLINE_MS = 60 * 1000;
 let localPick = null;   // wybór zrobiony na tym urządzeniu – bez podwójnego powiadomienia
 
 const ui = {
@@ -173,13 +175,41 @@ async function init() {
       const pid = snakeOrder(s.draftOrder)[i]?.pid;
       const p = s.participants.find((x) => x.id === pid);
       const n = prettyName(athInfo(s.picks[i]).name);
-      if (pid !== session.id && s.picks[i] !== localPick) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
+      if (pid !== session.id && s.picks[i] !== localPick) toast(`${p ? `${tname(p)} (${p.name})` : '?'} wybiera: ${n.first} ${n.last}`);
     }
     lastPicks = s.picks.length;
     state = s;
     render();
   });
-  window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; render(true); });
+  window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; beat(); render(true); });
+  // sygnał obecności co 15 s; poczekalnię i draft odświeżamy, gdy ktoś wejdzie lub wyjdzie
+  store.onPresence((p) => {
+    const before = lobbyKey();
+    presence = p;
+    if (lobbyKey() !== before && ['draft', 'admin', 'ranking', ''].includes(currentView())) render();
+  });
+  beat();
+  setInterval(beat, 15000);
+  setInterval(() => { if (phase() !== 'season' && ['draft', 'admin'].includes(currentView())) render(); }, 20000);
+}
+
+const currentView = () => (location.hash.slice(1) || 'ranking').split('/')[0];
+function beat() {
+  const m = state && me();
+  if (m) store.heartbeat(m.id, currentView());
+}
+const online = (pid) => !!presence[pid] && Date.now() - presence[pid].t < ONLINE_MS;
+const inLobby = (pid) => online(pid) && presence[pid].view === 'draft';
+const lobbyKey = () => (state ? state.participants.map((p) => `${p.id}:${inLobby(p.id) ? 1 : online(p.id) ? 2 : 0}`).join(',') : '');
+const maxPlayers = () => state.setup?.maxPlayers || state.participants.length;
+// Draft może ruszyć, gdy liga jest pełna i wszyscy gracze są w poczekalni (zakładka Draft otwarta)
+function draftBlocker() {
+  const ps = state.participants;
+  if (ps.length < 2) return 'Potrzeba co najmniej 2 graczy.';
+  if (ps.length < maxPlayers()) return `Brakuje graczy: ${ps.length} z ${maxPlayers()} ma konto.`;
+  const away = ps.filter((p) => !inLobby(p.id));
+  if (away.length) return `W poczekalni brakuje: ${away.map((p) => tname(p)).join(', ')}.`;
+  return '';
 }
 
 // ================================================================ render
@@ -312,6 +342,8 @@ function screenCreate() {
         <label class="field"><span>Hasło</span><input name="pass" type="password" minlength="6" required autocomplete="new-password"></label>
         <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="6" required autocomplete="new-password"></label>
       </div>
+      <label class="field"><span>Liczba graczy w lidze</span><input name="players" type="number" min="2" max="12" value="3" required>
+        <small class="muted">Gdy tylu graczy założy konta, zapisy same się zamkną. Można to zmienić w Panelu admina przed draftem.</small></label>
       <label class="field"><span>Kod zaproszenia dla znajomych</span><input name="invite" maxlength="20" value="${randomId(6).toUpperCase()}" required>
         <small class="muted">Bez tego kodu nikt nie założy konta. Wyślij go znajomym razem z linkiem.</small></label>
       <div class="formerr"></div>
@@ -364,11 +396,12 @@ function nextWeekendHero() {
   if (ph === 'signup') {
     return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Zapisy trwają</div><div class="big">Czekamy na graczy</div>
       <p>W lidze: ${state.participants.map((p) => esc(tname(p))).join(', ') || 'nikt jeszcze'}. ${isAdmin() ? 'Gdy wszyscy dołączą, rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}</p>
-      ${isAdmin() ? '<div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#admin">Panel admina</a></div>' : ''}</div>`;
+      <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#draft">${icon('team')}Wejdź do poczekalni draftu</a>
+        ${isAdmin() ? '<a class="btn" href="#admin">Panel admina</a>' : ''}</div></div>`;
   }
   if (ph === 'draft') {
     const cur = snakeOrder(state.draftOrder)[state.picks.length];
-    return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Draft na żywo</div><div class="big">${cur.pid === m?.id ? 'Twoja kolej!' : `Wybiera ${esc(pname(cur.pid))}`}</div>
+    return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Draft na żywo</div><div class="big">${cur.pid === m?.id ? 'Twoja kolej!' : `Wybiera ${esc(pname(cur.pid))} (${esc(P(cur.pid)?.name || '')})`}</div>
       <p>Wybór ${state.picks.length + 1} z ${state.draftOrder.length * TEAM_SIZE}.</p>
       <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#draft">Przejdź do draftu</a></div></div>`;
   }
@@ -512,10 +545,8 @@ function draft() {
   const ph = phase();
   const m = me();
   if (ph === 'signup') {
-    return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Snake draft · ${TEAM_SIZE} zawodników na gracza (${TEAM.men} M + ${TEAM.women} K + ${TEAM.reserves} rezerwowych)</div></div></div>
-      <div class="card empty">${icon('clock')}<b>Draft jeszcze się nie zaczął</b>
-      ${state.participants.length} ${pl(state.participants.length, 'gracz', 'graczy', 'graczy')} w lidze. ${isAdmin() ? 'Ustaw kolejność i rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}
-      ${isAdmin() ? '<div style="margin-top:1rem"><a class="btn primary" href="#admin">Panel admina</a></div>' : ''}</div>
+    return `<div class="page-head"><div><h1>Poczekalnia draftu</h1><div class="sub">Snake draft · ${TEAM_SIZE} zawodników na gracza (${TEAM.men} M + ${TEAM.women} K + ${TEAM.reserves} rezerwowych)</div></div></div>
+      ${lobbyCard(isAdmin())}
       ${athleteTable(false)}`;
   }
   const seq = snakeOrder(state.draftOrder);
@@ -552,6 +583,7 @@ function draft() {
     hero = `<div class="hero"><div class="clock">${avatar(p, 'xl')}
       <div class="who"><div class="eyebrow">Wybór ${n + 1} z ${seq.length} · runda ${cur.round}</div>
         <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(tname(p))}`}</div>
+        <div class="picker">${mine ? `${esc(tname(p))} · ` : ''}gracz: <b>${esc(p.name)}</b>${online(p.id) ? ' <span class="st on">online</span>' : ' <span class="st off">offline</span>'}</div>
         ${!mine && m ? nextPickInfo(seq, n, m.id) : ''}
         <div class="needs"><span class="need ${men >= TEAM.men ? 'done' : ''}">Mężczyźni ${Math.min(men, TEAM.men)}/${TEAM.men}</span>
           <span class="need ${wom >= TEAM.women ? 'done' : ''}">Kobieta ${Math.min(wom, TEAM.women)}/${TEAM.women}</span>
@@ -581,7 +613,7 @@ function draft() {
   const tabs = [!done && ['list', 'Zawodnicy'], ['board', 'Tablica draftu'], ['draw', 'Losowanie']].filter(Boolean);
   const board = `<div class="boardwrap"><div class="board" style="grid-template-columns:repeat(${Pn}, minmax(160px, 1fr))">
       ${state.draftOrder.map((pid, c) => `<div class="head ${pid === m?.id ? 'mine' : ''}" style="grid-column:${c + 1};grid-row:1">${avatar(P(pid), 'sm')}
-        <span><b>${esc(pname(pid))}</b><small>${esc(P(pid)?.name || '')}${pid === m?.id ? ' · Ty' : ''}</small></span></div>`).join('')}
+        <span><b>${esc(pname(pid))}</b><small>${online(pid) ? '<i class="dot-on"></i>' : '<i class="dot-off"></i>'}${esc(P(pid)?.name || '')}${pid === m?.id ? ' · Ty' : ''}</small></span></div>`).join('')}
       ${cells.join('')}
     </div></div>`;
   return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Kolejność: ${state.draftOrder.map((pid) => esc(pname(pid))).join(' → ')} → i z powrotem</div></div></div>
@@ -613,6 +645,30 @@ function recentPicks(seq, n) {
     ${last.map(({ aid, i }) => `<span class="rp ${i === n - 1 ? 'new' : ''}">${avatar(P(seq[i].pid), 'sm')}${shortAth(aid)}<small>#${i + 1}</small></span>`).join('')}</div>`;
 }
 
+// Poczekalnia: kto ma konto, kto ma otwartą zakładkę Draft. Start dopiero, gdy są wszyscy.
+function lobbyCard(withStart) {
+  const ps = state.participants;
+  const max = maxPlayers();
+  const block = draftBlocker();
+  const here = ps.filter((p) => inLobby(p.id)).length;
+  const empty = Math.max(0, max - ps.length);
+  const status = (p) => (inLobby(p.id) ? '<span class="st on">w poczekalni</span>'
+    : online(p.id) ? '<span class="st mid">w aplikacji – nie w poczekalni</span>' : '<span class="st off">nie ma</span>');
+  return `<div class="card lobby">
+    <div class="row"><h3>${here} z ${max} ${pl(max, 'gracza', 'graczy', 'graczy')} w poczekalni</h3><span class="spacer"></span>
+      ${block ? '<span class="tag warn live">czekamy</span>' : '<span class="tag good">wszyscy są</span>'}</div>
+    <div class="lobby-list">
+      ${ps.map((p) => `<div class="lp ${inLobby(p.id) ? 'in' : ''}">${avatar(p)}<div><b>${esc(tname(p))}</b><small>${esc(p.name)}${p.id === me()?.id ? ' · Ty' : ''}</small>${status(p)}</div></div>`).join('')}
+      ${Array.from({ length: empty }, () => '<div class="lp ghost"><span class="av">?</span><div><b>Wolne miejsce</b><small>czeka na założenie konta</small></div></div>').join('')}
+    </div>
+    <p class="muted small" style="margin-top:.8rem">${block
+      ? `${esc(block)} Draft ruszy, gdy wszyscy gracze będą mieli otwartą tę zakładkę — każdy wybiera na żywo.`
+      : withStart ? 'Wszyscy są w poczekalni. Po kliknięciu aplikacja wylosuje kolejność i draft wystartuje.' : 'Wszyscy są! Czekamy, aż administrator wystartuje draft.'}</p>
+    ${withStart ? `<button class="primary" data-action="startDraft" ${block ? 'disabled' : ''}>${icon('play')}Losuj kolejność i zacznij draft</button>
+      ${!isAdmin() ? '' : '<p class="muted xs" style="margin-top:.5rem">Konto admina nie musi być w poczekalni — liczą się tylko gracze.</p>'}` : ''}
+  </div>`;
+}
+
 // Wynik losowania kolejności – widoczny dla wszystkich, razem z historią ewentualnych ponownych losowań.
 function drawCard() {
   const draws = state.draws || [];
@@ -641,7 +697,7 @@ function athleteTable(picking) {
   return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="muted small">${all.length} ${pl(all.length, 'aktywny', 'aktywnych', 'aktywnych')} w FIS</span><span class="spacer"></span>
       ${picking && cur && !myTurn ? `<span class="tag">przeglądasz — „Wybierz” pojawi się, gdy przyjdzie Twoja kolej</span>` : ''}
       ${picking && myTurn && cur.pid === me()?.id ? '<span class="tag good">Twoja kolej — wybierz zawodnika</span>' : ''}
-      ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))}</span>` : ''}</div>
+      ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))} (${esc(P(cur.pid)?.name || '')})</span>` : ''}</div>
     <div class="row" style="margin-bottom:.8rem">
       ${genderSeg()}
       <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label>
@@ -971,6 +1027,7 @@ function zasady() {
       ${sec('Drużyna i draft', 'team', li([
         `Każdy gracz ma <b>${TEAM_SIZE} zawodników</b>: ${TEAM.men} mężczyzn i ${TEAM.women} kobietę w składzie + ${TEAM.reserves} rezerwowych (dowolnej płci).`,
         'Draft metodą <b>snake</b>: kolejność 1–2–3, potem 3–2–1 i tak na zmianę.',
+        'Draft rusza dopiero, gdy liga jest pełna i <b>wszyscy gracze są w poczekalni</b> (mają otwartą zakładkę Draft) — każdy wybiera na żywo.',
         '<b>Kolejność losuje aplikacja</b> w chwili startu draftu. Wynik z godziną losowania widzą wszyscy, a każde ponowne losowanie (po resecie draftu) zostaje w historii.',
         'Każdy zawodnik może trafić tylko do jednej drużyny. Do wyboru są wszyscy aktywni skoczkowie z bazy FIS.',
         'Punkty zdobywają tylko zawodnicy ze składu — rezerwowi nie. Przed każdym weekendem możesz wstawić rezerwowego za zawodnika tej samej płci.',
@@ -1047,7 +1104,9 @@ function adminView() {
   <div class="grid-2">
     <div class="stack">
       <div class="card">
-        <div class="row" style="margin-bottom:.6rem"><h3>Gracze</h3><span class="spacer"></span><span class="muted small">${state.participants.length}</span></div>
+        <div class="row" style="margin-bottom:.6rem"><h3>Gracze</h3><span class="spacer"></span>
+          <span class="tag ${state.participants.length >= maxPlayers() ? 'good' : ''}">${state.participants.length} / ${maxPlayers()}</span>
+          ${ph === 'signup' ? '<button class="sm" data-action="setMax">Zmień liczbę</button>' : ''}</div>
         ${(ph === 'signup' ? state.participants.map((p) => p.id) : state.draftOrder).map((pid, i) => {
           const p = P(pid);
           return `<div class="player">${ph === 'signup' ? '' : `<b class="muted" style="width:1.2rem">${i + 1}.</b>`}${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(tname(p))} <span class="muted xs">· ${esc(p.name)}</span></span></span>
@@ -1063,7 +1122,7 @@ function adminView() {
       <div class="card">
         <h3 style="margin-bottom:.4rem">Draft</h3>
         ${ph === 'signup' ? `<p class="muted small" style="margin-bottom:1rem">Rozpoczęcie draftu zamyka zapisy. <b>Kolejność wylosuje aplikacja</b> w chwili startu — wynik i godzinę losowania zobaczą wszyscy gracze.</p>
-          <button class="primary" data-action="startDraft" ${state.draftOrder.length < 2 ? 'disabled' : ''}>${icon('play')}Rozpocznij draft</button>`
+          ${lobbyCard(true)}`
         : `<p class="muted small" style="margin-bottom:1rem">${ph === 'draft' ? `Wybrano ${state.picks.length} z ${total}.` : 'Draft zakończony.'} Jako admin możesz wybierać za innych w zakładce Draft.</p>
           <div class="row"><button data-action="undo" ${state.picks.length ? '' : 'disabled'}>${icon('undo')}Cofnij ostatni wybór</button>
           <button class="danger" data-action="resetDraft">${icon('trash')}Zresetuj draft</button></div>`}
@@ -1116,6 +1175,7 @@ function newParticipant(s, username, passHash, team = '') {
   if (!USER_RE.test(n)) fail('Login: 3–20 znaków, litery, cyfry, kropka, myślnik lub podkreślnik');
   if (n.toLowerCase() === s.setup.adminUser.toLowerCase()) fail('Ten login jest zajęty');
   if (s.participants.some((p) => p.name.toLowerCase() === n.toLowerCase())) fail('Ten login jest zajęty');
+  if (s.setup.maxPlayers && s.participants.length >= s.setup.maxPlayers) fail(`Liga jest pełna (${s.setup.maxPlayers} graczy)`);
   const used = new Set(s.participants.map((p) => p.color));
   const color = COLORS.find((c) => !used.has(c)) || COLORS[s.participants.length % COLORS.length];
   const t = String(team || '').trim().slice(0, 30) || n;
@@ -1136,7 +1196,8 @@ const forms = {
     const adminHash = await adminHashOf(salt, adminUser, f.pass);
     const ok = await save((s) => {
       if (s.setup?.adminUser) fail('Liga została już założona');
-      return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), created: new Date().toISOString() },
+      const maxPlayers = Math.min(12, Math.max(2, Math.round(+f.players) || 3));
+      return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), maxPlayers, created: new Date().toISOString() },
         draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {} };
     });
     if (ok) {
@@ -1249,7 +1310,7 @@ const actions = {
     if (!cur) return;
     const a = athInfo(aid);
     const n = prettyName(a.name);
-    const forWho = cur.pid !== me()?.id ? ` dla gracza <b>${esc(pname(cur.pid))}</b>` : '';
+    const forWho = cur.pid !== me()?.id ? ` dla drużyny <b>${esc(pname(cur.pid))}</b> (gracz ${esc(P(cur.pid)?.name || '')})` : '';
     const ok = await confirmModal(`Wybrać ${n.first} ${n.last}?`,
       `<span class="pick-prev">${portrait(a, 'lg')}<span>${flag(a.nation)} ${esc(a.nation)}${a.wc ? ` · PŚ ${seasonLabel(athSeason - 1)}: ${a.wc} pkt` : ''}</span></span>Wybór jest ostateczny${forWho}.`, 'Wybieram');
     if (!ok) return;
@@ -1332,11 +1393,26 @@ const actions = {
     const v = await modal({ title: 'Kod zaproszenia', fields: [{ name: 'c', label: 'Nowy kod', value: state.setup.invite || '', attrs: 'maxlength="20" required' }], ok: 'Zapisz' });
     if (v) save((s) => { s.setup.invite = v.c.trim(); return s; }, 'Kod zmieniony');
   },
+  setMax: async () => {
+    const v = await modal({ title: 'Liczba graczy w lidze', text: `Teraz kont: ${state.participants.length}.`,
+      fields: [{ name: 'n', label: 'Liczba graczy (2–12)', type: 'number', value: String(maxPlayers()), attrs: `min="${Math.max(2, state.participants.length)}" max="12" required` }], ok: 'Zapisz' });
+    if (!v) return;
+    const n = Math.round(+v.n);
+    save((s) => {
+      if (s.draftStarted) fail('Draft już trwa');
+      if (n < Math.max(2, s.participants.length) || n > 12) fail(`Podaj liczbę od ${Math.max(2, s.participants.length)} do 12`);
+      s.setup.maxPlayers = n;
+      return s;
+    }, 'Zapisano');
+  },
   startDraft: async () => {
+    const block = draftBlocker();
+    if (block) return toast(block, 'err');
     const names = state.participants.map((p) => esc(tname(p))).join(', ');
     if (!await confirmModal('Rozpocząć draft?', `Gracze: <b>${names}</b>.<br>Aplikacja wylosuje teraz kolejność — wynik zobaczą wszyscy. Zapisy zostaną zamknięte.`, 'Losuj i zaczynaj')) return;
     if (await save((s) => {
       if (s.participants.length < 2) fail('Potrzeba co najmniej 2 graczy');
+      if (s.setup.maxPlayers && s.participants.length < s.setup.maxPlayers) fail('Liga nie jest jeszcze pełna');
       if (s.draftStarted) fail('Draft już wystartował');
       s.draftOrder = drawOrder(s.participants.map((p) => p.id));
       s.draws = [...(s.draws || []), { at: new Date().toISOString(), order: s.draftOrder }];

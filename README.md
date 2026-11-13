@@ -42,15 +42,17 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 4. Strona będzie pod adresem `https://<twoj-login>.github.io/<nazwa-repo>/`.
 
 ### 3. Liga
-1. **Konto administratora:** pierwsza osoba, która wejdzie na stronę, zakłada ligę – nazwa, **login i hasło admina**
-   oraz **kod zaproszenia**. Konto admina służy tylko do zarządzania ligą (nie gra).
+1. **Konto administratora:** pierwsza osoba, która wejdzie na stronę, zakłada ligę – nazwa, **login i hasło admina**,
+   **liczba graczy** oraz **kod zaproszenia**. Konto admina służy tylko do zarządzania ligą (nie gra).
 2. Admin wylogowuje się i **zakłada swoje konto gracza** tak jak wszyscy (login, hasło, kod zaproszenia).
 3. Wysyłasz znajomym link i kod zaproszenia. **Bez kodu nikt nie założy konta**, a po starcie draftu konta zakłada już
    tylko admin (Panel admina → „Załóż konto graczowi”).
-4. Admin w **Panelu admina** klika **Rozpocznij draft** – **aplikacja sama losuje kolejność**, a wynik z godziną
+4. **Poczekalnia draftu:** w dniu draftu każdy otwiera zakładkę **Draft** – widać, kto już jest. Start jest możliwy
+   dopiero, gdy liga jest pełna i **wszyscy gracze są w poczekalni**.
+5. Admin klika **Losuj kolejność i zacznij draft** – **aplikacja sama losuje kolejność**, a wynik z godziną
    losowania widzą wszyscy (zakładka Draft). Zapisy się zamykają. Każde ponowne losowanie po resecie draftu zostaje w historii.
-5. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
-6. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
+6. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
+7. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
 
 Każdy gracz ma **login** (do logowania) i osobną **nazwę drużyny** (widoczną w rankingu, drafcie i tabelach). Nazwę drużyny
 i **zdjęcie profilowe** zmienia się w menu pod swoim loginem → „Moja drużyna i zdjęcie”.
