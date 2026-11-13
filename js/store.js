@@ -13,6 +13,7 @@ export const EMPTY_STATE = {
   triples: {},          // { pid: raceId } – mnożnik ×3, raz w sezonie
   draws: [],            // [{ at, order }] – historia losowań kolejności draftu (jawna dla wszystkich)
   hillRecords: {},
+  reactions: {},        // { weekendId: { pid: { emoji: [pid, …] } } } – reakcje pod składami
   settings: {},
 };
 

@@ -477,6 +477,7 @@ function ranking() {
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
       <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników</div></div>
       <div class="bar" style="background:${p.color};width:100%"></div></div>`).join('')}</div></div>
+      ${strengthCard()}
       <div class="section card empty">${icon('snow')}<b>Sezon jeszcze nie wystartował</b>
       Punkty pojawią się po pierwszym konkursie${weekends[0] ? ` — ${esc(weekends[0].name)}, ${fmtLong(weekends[0].races[0]?.date || weekends[0].start)}` : ''}.</div>`;
   }
@@ -493,6 +494,7 @@ function ranking() {
 
 
   // wykres narastająco
+  html += strengthCard();
   html += `<div class="section card"><div class="row" style="margin-bottom:.6rem"><h2>Przebieg sezonu</h2><span class="spacer"></span>
     <div class="legend">${ps.map((p) => `<span><i style="background:${p.color}"></i>${esc(tname(p))}</span>`).join('')}</div></div>
     ${chart(ps, played)}</div>`;
@@ -542,6 +544,33 @@ function ranking() {
     </tbody></table></div></div>
   </div>`;
   return html;
+}
+
+// „Siła na papierze”: ile punktów PŚ 2025/26 zdobyli zawodnicy wybrani do każdej drużyny.
+function strengthCard() {
+  if (!state.picks.length) return '';
+  const label = seasonLabel(athSeason - 1);
+  const w = currentWeekend();
+  const rows = state.participants.map((p) => {
+    const ids = calc.teams[p.id] || [];
+    const pts = (id) => byId[id]?.wc || 0;
+    const starters = w ? lineupFor(state, weekends, w.id, p.id, ids, byId).starters : ids;
+    const best = [...ids].sort((a, b) => pts(b) - pts(a))[0];
+    return { p, all: ids.reduce((t, id) => t + pts(id), 0), start: starters.reduce((t, id) => t + pts(id), 0), best, n: ids.length };
+  }).sort((a, b) => b.all - a.all);
+  const max = Math.max(1, ...rows.map((r) => r.all));
+  return `<div class="section card pad0">
+    <div class="card-head"><h3>Siła drużyn wg sezonu ${label}</h3><span class="spacer"></span>
+      <span class="muted xs">suma punktów PŚ ${label} wybranych zawodników — „na papierze”</span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="num">#</th><th>Drużyna</th><th class="strength-col">Cały skład</th><th class="num hide-sm">Podstawowa 7</th><th class="hide-sm">Najmocniejszy</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr class="${r.p.id === me()?.id ? 'mine' : ''}">
+        <td class="rank">${i < 3 ? `<span class="medal m${i + 1}">${i + 1}</span>` : i + 1}</td>
+        <td>${owner(r.p.id)}<div class="muted xs">${esc(r.p.name)}${r.n < TEAM_SIZE ? ` · ${r.n}/${TEAM_SIZE} zawodników` : ''}</div></td>
+        <td class="strength-col"><div class="sbar"><i style="width:${(r.all / max) * 100}%;background:${r.p.color}"></i><b>${r.all}</b></div></td>
+        <td class="num hide-sm">${r.start}</td>
+        <td class="hide-sm">${r.best ? `${ath(r.best, { photo: true, gender: false })} <span class="muted xs">${byId[r.best]?.wc || 0} pkt</span>` : ''}</td>
+      </tr>`).join('')}</tbody></table></div></div>`;
 }
 
 function chart(ps, played) {
@@ -849,8 +878,23 @@ function teamCard(p, w, drafting) {
       <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
       ${!l.captain ? (editable ? `<div class="warnline">${icon('info')}Nie masz kapitana na ten weekend</div>` : '<div class="muted xs" style="margin-top:.6rem">Bez kapitana na ten weekend</div>') : ''}
       ${tripleBox(p, w, (p.id === me()?.id || isAdmin()) && ids.length === TEAM_SIZE)}
+      ${reactionsBar(p, w)}
 `}
     </div></div>`;
+}
+
+// Reakcje emotkami pod składem – osobno dla każdego weekendu, każdy gracz może dać każdą emotkę raz.
+const EMOJIS = ['🔥', '😂', '🐐', '👏', '🤡', '💀', '😭', '💩'];
+function reactionsBar(p, w) {
+  const r = state.reactions?.[w.id]?.[p.id] || {};
+  const m = me();
+  return `<div class="reactions">${EMOJIS.map((e) => {
+    const who = r[e] || [];
+    const mine = m && who.includes(m.id);
+    const names = who.map((id) => P(id)?.name).filter(Boolean).join(', ');
+    return `<button class="rx ${who.length ? 'has' : ''} ${mine ? 'mine' : ''}" data-action="react" data-p="${p.id}" data-e="${e}"
+      title="${names ? esc(names) : m ? 'Zareaguj' : 'Reagować mogą gracze'}" ${m ? '' : 'disabled'}>${e}${who.length ? `<b>${who.length}</b>` : ''}</button>`;
+  }).join('')}</div>`;
 }
 
 // Mnożnik ×3 – raz w sezonie na wybrany konkurs (nie kwalifikacje).
@@ -1275,7 +1319,7 @@ const forms = {
       if (s.setup?.adminUser) fail('Liga została już założona');
       const maxPlayers = Math.min(12, Math.max(2, Math.round(+f.players) || 3));
       return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), maxPlayers, created: new Date().toISOString() },
-        draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {} };
+        draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {} };
     });
     if (ok) {
       setSession({ role: 'admin', h: adminHash });
@@ -1357,6 +1401,21 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  react: (el) => {
+    const m = me();
+    if (!m) return;
+    const { p, e } = el.dataset;
+    const wid = ui.weekend;
+    save((s) => {
+      s.reactions = s.reactions || {};
+      const byTeam = (s.reactions[wid] = s.reactions[wid] || {});
+      const r = (byTeam[p] = byTeam[p] || {});
+      const who = new Set(r[e] || []);
+      who.has(m.id) ? who.delete(m.id) : who.add(m.id);
+      if (who.size) r[e] = [...who]; else delete r[e];
+      return s;
+    });
+  },
   draftTab: (el) => { ui.draftTab = el.dataset.v; render(); },
   triple: (el) => {
     const { p } = el.dataset;
@@ -1528,7 +1587,7 @@ const actions = {
   },
   deleteLeague: async () => {
     if (!await confirmModal('Usunąć całą ligę?', 'Znikną konta graczy, draft, składy i konto admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
-    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, settings: {} }))) {
+    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {}, settings: {} }))) {
       setSession({}); location.hash = ''; render();
     }
   },
