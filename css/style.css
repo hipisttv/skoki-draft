@@ -795,3 +795,34 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 @media (max-width: 760px) { .sk-hill { grid-template-columns: 1fr; } }
 .sk-hint { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 700; font-size: .82rem; white-space: nowrap; }
 .sk-hint .flag { display: inline-block; }
+
+/* skokdle – dymek w prawym dolnym rogu */
+.skfab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 40;
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .7rem 1.05rem; border-radius: 999px; border: 0;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: .95rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35); cursor: pointer;
+  transition: transform .15s ease;
+}
+.skfab:hover { transform: translateY(-2px); }
+.skfab b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; font-size: .72rem; }
+.skfab-n { background: var(--bad); color: #fff; }
+.skfab-ok { background: #1f9d55; color: #fff; }
+.skpanel {
+  position: fixed; right: 20px; bottom: 20px; z-index: 40;
+  width: min(640px, calc(100vw - 40px)); max-height: calc(100vh - 110px); overflow: auto;
+  border-radius: 16px; box-shadow: 0 16px 48px rgba(0, 0, 0, .45);
+  animation: skIn .18s ease-out;
+}
+.skpanel .skok { margin: 0; }
+.skpanel .skok > .row { flex-wrap: wrap; gap: .5rem; }
+.skpanel .skok { position: relative; }
+.skpanel .skok > .row > div:first-child { padding-right: 2.2rem; }
+.sk-close { position: absolute; top: .55rem; right: .55rem; font-size: 1rem; line-height: 1; }
+@keyframes skIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 1150px) {
+  .skfab { right: 14px; bottom: calc(80px + env(safe-area-inset-bottom)); padding: .6rem .9rem; }
+  .skpanel { right: 8px; left: 8px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100vh - 150px); }
+}
+@media (max-width: 520px) { .skfab span { display: none; } }

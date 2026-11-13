@@ -278,8 +278,11 @@ function render(scrollTop = false) {
   const sel = focusId && document.activeElement.selectionStart;
 
   const weeksScroll = document.getElementById('weeks')?.scrollLeft;
+  const skY = document.querySelector('.skpanel')?.scrollTop;
   root.innerHTML = shell(active, fn(arg));
   restoreInputs(kept);
+  const skp = document.querySelector('.skpanel');
+  if (skp && skY) skp.scrollTop = skY;
   const weeks = document.getElementById('weeks');
   if (weeks) {
     const on = weeks.querySelector('.on');
@@ -341,6 +344,7 @@ function shell(active, content) {
   ${store?.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
+  ${skBubble()}
   <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'analityka', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
 }
 
@@ -474,8 +478,7 @@ function ranking() {
   const best = Object.entries(calc.athleteTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
   let html = `<div class="page-head"><div><h1>Ranking ligi</h1><div class="sub">${played.length} z ${weekends.length} weekendów rozegranych</div></div></div>
-    ${nextWeekendHero()}
-    ${skokdleCard()}`;
+    ${nextWeekendHero()}`;
 
   if (!ps.length) return html;
   if (!played.length) {
@@ -1226,10 +1229,12 @@ const skPool = () => {
   return [...active, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
 };
 const skHills = () => Object.keys(hills).sort();
-const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${skDay()}|skoczek`) % pool.length] : null; };
-const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${skDay()}|skocznia`) % pool.length] : null; };
+// SK_SEED: zmiana = reset Skokdle (nowe zagadki i czysty postęp u wszystkich)
+const SK_SEED = 'v2';
+const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skoczek`) % pool.length] : null; };
+const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skocznia`) % pool.length] : null; };
 const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}${a.retired ? ' (emeryt)' : ''}`; };
-const skKey = () => `skokdle-${skDay()}`;
+const skKey = () => `skokdle-${SK_SEED}-${skDay()}`;
 const skLoad = () => LS.get(skKey(), { a: [], h: [] });
 const skSave = (v) => LS.set(skKey(), v);
 function hillInfo(place) {
@@ -1239,10 +1244,11 @@ function hillInfo(place) {
 }
 
 // porównanie cechy: ok / blisko / pudło + strzałka (↑ = szukany ma więcej)
-function skCmp(g, t, close) {
+// rank = true: przy miejscu ↑ znaczy „szukany jest wyżej w klasyfikacji” (mniejszy numer)
+function skCmp(g, t, close, rank = false) {
   if (g == null || t == null) return { c: 'bad', arrow: '' };
   if (g === t) return { c: 'ok', arrow: '' };
-  return { c: close(g, t) ? 'close' : 'bad', arrow: t > g ? '↑' : '↓' };
+  return { c: close(g, t) ? 'close' : 'bad', arrow: (rank ? t < g : t > g) ? '↑' : '↓' };
 }
 function skRow(g, t) {
   return [
@@ -1251,7 +1257,7 @@ function skRow(g, t) {
     { c: g.nation === t.nation ? 'ok' : 'bad', v: `${flag(g.nation)}${esc(g.nation)}` },
     { ...skCmp(g.born, t.born, (a, b) => Math.abs(a - b) <= 2), v: g.born || '–' },
     { ...skCmp(g.wc, t.wc, (a, b) => Math.abs(a - b) <= Math.max(60, b * 0.15)), v: g.wc },
-    { ...skCmp(g.wcRank, t.wcRank, (a, b) => Math.abs(a - b) <= 5), v: g.wcRank ? `${g.wcRank}.` : '–' },
+    { ...skCmp(g.wcRank, t.wcRank, (a, b) => Math.abs(a - b) <= 5, true), v: g.wcRank ? `${g.wcRank}.` : '–' },
   ];
 }
 
@@ -1265,14 +1271,26 @@ function skokdleCard() {
   const doneH = prog.h.includes(tH) || prog.h.length >= SK_H_MAX;
   const solvers = state.skokdle?.[skDay()] || {};
   const solved = Object.entries(solvers).filter(([pid]) => P(pid));
-  return `<div class="section card skok">
+  return `<div class="card skok">
     <div class="row"><div><h2>🎯 Skokdle</h2><div class="muted small">Codzienna zagadka · ${fmtLong(skDay())} · nowa o północy</div></div><span class="spacer"></span>
+      <button class="icon ghost sk-close" data-action="skToggle" title="Zwiń" aria-label="Zwiń Skokdle">✕</button>
       <div class="seg">${[['a', 'Skoczek dnia', doneA], ['h', 'Skocznia dnia', doneH], ['r', '🏆 Ranking', false]].map(([k, l, d]) =>
         `<button data-action="skTab" data-v="${k}" class="${tab === k ? 'on' : ''}">${l}${d ? ' ✓' : ''}</button>`).join('')}</div></div>
     ${tab === 'a' ? skAthlete(prog, tA, doneA) : tab === 'h' ? skHill(prog, tH, doneH) : skRanking()}
     ${solved.length ? `<div class="sk-solvers"><span class="muted xs">Dziś w lidze:</span>${solved.map(([pid, v]) => `<span class="chip">${avatar(P(pid), 'sm')}${esc(P(pid).name)}
       ${v.a ? `<b>🧑 ${v.a === 'x' ? '✗' : `${v.a}/${SK_A_MAX}`}</b>` : ''}${v.h ? `<b>🏔 ${v.h === 'x' ? '✗' : `${v.h}/${SK_H_MAX}`}</b>` : ''}</span>`).join('')}</div>` : ''}
   </div>`;
+}
+
+// Skokdle jako dymek w prawym dolnym rogu; po kliknięciu rozwija się panel z grą.
+function skBubble() {
+  if (!athletes.length || !me()) return '';
+  if (ui.skOpen) return `<div class="skpanel" role="dialog" aria-label="Skokdle">${skokdleCard()}</div>`;
+  const prog = skLoad();
+  const tA = skTargetA();
+  const tH = skTargetH();
+  const left = (prog.a.includes(tA?.id) || prog.a.length >= SK_A_MAX ? 0 : 1) + (prog.h.includes(tH) || prog.h.length >= SK_H_MAX ? 0 : 1);
+  return `<button class="skfab" data-action="skToggle" title="Skokdle — codzienna zagadka">🎯<span>Skokdle</span>${left ? `<b class="skfab-n">${left}</b>` : '<b class="skfab-ok">✓</b>'}</button>`;
 }
 
 // Ranking Skokdle: punkty za szybkość (skoczek 8…1, skocznia 6…1, nieodgadnięte 0), seria dni z rzędu.
@@ -1322,13 +1340,13 @@ function skAthlete(prog, t, done) {
   const won = prog.a.includes(t.id);
   const head = ['Zawodnik', 'Płeć', 'Status', 'Kraj', 'Rocznik', `Pkt PŚ ${seasonLabel(athSeason - 1)}`, 'Miejsce PŚ'];
   return `<p class="muted small" style="margin:.6rem 0">Zgadnij zawodnika lub zawodniczkę z punktami w PŚ ${seasonLabel(athSeason - 1)} (także tych, którzy już zakończyli karierę). Po każdej próbie widzisz, co się zgadza:
-      <span class="skc ok">trafione</span> <span class="skc close">blisko</span> <span class="skc bad">pudło</span>, ↑ szukany ma więcej, ↓ mniej.</p>
+      <span class="skc ok">trafione</span> <span class="skc close">blisko</span> <span class="skc bad">pudło</span>, ↑ szukany ma więcej, ↓ mniej; przy miejscu ↑ = szukany jest wyżej w klasyfikacji, ↓ = niżej.</p>
     ${done ? `<div class="sk-done ${won ? 'win' : 'lose'}">${portrait(t, 'lg')}<div><div class="eyebrow">${won ? `Brawo! Zgadnięte w ${prog.a.length}/${SK_A_MAX}` : 'Tym razem się nie udało'}</div>
         <div class="sk-name">${esc(prettyName(t.name).first)} <b>${esc(prettyName(t.name).last)}</b></div>
         <div class="muted small">${flag(t.nation)} ${esc(t.nation)} · ur. ${t.born || '?'} · ${t.wc} pkt w PŚ ${seasonLabel(athSeason - 1)}${t.wcRank ? ` (${t.wcRank}.)` : ''}${t.retired ? ' · zakończył(a) karierę' : ''}</div></div>
         <button class="sm" data-action="skShare" data-v="a">${icon('upload')}Udostępnij wynik</button></div>`
       : `<form data-form="skokA" class="sk-form" autocomplete="off">
-        <input name="g" list="sk-athletes" placeholder="Wpisz nazwisko skoczka/skoczkini…" required>
+        <input id="sk-ga" name="g" list="sk-athletes" placeholder="Wpisz nazwisko skoczka/skoczkini…" required>
         <datalist id="sk-athletes">${skPool().map((a) => `<option value="${esc(skLabel(a))}"></option>`).join('')}</datalist>
         <button class="primary" type="submit">Zgadnij</button><span class="muted small">${SK_A_MAX - prog.a.length} prób</span><div class="formerr"></div></form>`}
     ${guesses.length ? `<div class="tablewrap"><table class="sk-table"><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
@@ -1357,7 +1375,7 @@ function skHill(prog, t, done) {
             <div class="sk-name">${flag(info.nation)} <b>${esc(t)}</b></div><div class="muted small">${esc(h.hill)} · skocznia ${esc(info.type)}</div></div>
             <button class="sm" data-action="skShare" data-v="h">${icon('upload')}Udostępnij wynik</button></div>`
           : `<form data-form="skokH" class="sk-form" autocomplete="off">
-            <input name="g" list="sk-hills" placeholder="Wpisz miejscowość…" required>
+            <input id="sk-gh" name="g" list="sk-hills" placeholder="Wpisz miejscowość…" required>
             <datalist id="sk-hills">${skHills().map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
             <button class="primary" type="submit">Zgadnij</button><span class="muted small">${SK_H_MAX - prog.h.length} prób</span><div class="formerr"></div></form>`}
         ${hints.length && !done ? `<div class="sk-hints">${hints.map((x) => `<span class="sk-hint">💡 ${x}</span>`).join('')}</div>` : ''}
@@ -1379,6 +1397,9 @@ function skRecord(kind, value) {
   });
 }
 
+// po próbie czyścimy pole, żeby kolejne nazwisko nie doklejało się do poprzedniego
+const skClear = () => document.querySelectorAll('.sk-form input[name=g]').forEach((i) => { i.value = ''; });
+
 function skGuessA(text, err) {
   const prog = skLoad();
   const t = skTargetA();
@@ -1394,6 +1415,7 @@ function skGuessA(text, err) {
   if (prog.a.includes(hit.id)) return err('Ten już był');
   prog.a.push(hit.id);
   skSave(prog);
+  skClear();
   if (hit.id === t.id) { skRecord('a', prog.a.length); toast(`Brawo! Skoczek dnia odgadnięty w ${prog.a.length} ${pl(prog.a.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
   else if (prog.a.length >= SK_A_MAX) skRecord('a', 'x');
   render();
@@ -1409,6 +1431,7 @@ function skGuessH(text, err) {
   if (prog.h.includes(hit)) return err('Ta już była');
   prog.h.push(hit);
   skSave(prog);
+  skClear();
   if (hit === t) { skRecord('h', prog.h.length); toast(`Brawo! Skocznia dnia odgadnięta w ${prog.h.length} ${pl(prog.h.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
   else if (prog.h.length >= SK_H_MAX) skRecord('h', 'x');
   render();
@@ -1923,6 +1946,7 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  skToggle: () => { ui.skOpen = !ui.skOpen; render(); },
   skTab: (el) => { ui.skTab = el.dataset.v; render(); },
   skShare: async (el) => {
     const text = skShareText(el.dataset.v);
