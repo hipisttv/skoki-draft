@@ -685,3 +685,21 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .sbar i { position: absolute; inset: 0 auto 0 0; opacity: .35; border-radius: 7px; }
 .sbar b { position: relative; padding-left: .6rem; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .strength-col { width: auto; min-width: 120px; } }
+
+/* siła drużyn: najmocniejszy zawodnik i rozwijany skład */
+.bestath { display: flex; align-items: center; gap: .6rem; }
+.ptspill { display: inline-block; flex: none; font-size: .74rem; font-weight: 800; font-variant-numeric: tabular-nums; padding: .15rem .55rem; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); color: var(--text-2); white-space: nowrap; }
+.srow { cursor: pointer; }
+.srow .chev { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--muted); transition: transform .15s; flex: none; }
+.srow:hover .chev { color: var(--accent); background: var(--accent-soft); }
+.srow.open .chev { transform: rotate(90deg); color: var(--accent); }
+.srow.open td { border-bottom-color: transparent; }
+.sdetail td { background: var(--card-2); padding: .4rem .9rem .9rem; white-space: normal; }
+.sdetail:hover td { background: var(--card-2); }
+.squad { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .1rem 1.2rem; }
+.sq { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "a t p" "a t r"; align-items: center; column-gap: .5rem; padding: .45rem 0; border-bottom: 1px solid var(--line-2); }
+.sq .ath { grid-area: a; }
+.sq .sq-tags { grid-area: t; display: flex; gap: .3rem; align-items: center; }
+.sq .ptspill { grid-area: p; justify-self: end; }
+.sq .sq-rank { grid-area: r; justify-self: end; font-size: .68rem; }
+.sq.res { opacity: .75; }

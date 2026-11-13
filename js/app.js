@@ -564,13 +564,31 @@ function strengthCard() {
       <span class="muted xs">suma punktów PŚ ${label} wybranych zawodników — „na papierze”</span></div>
     <div class="tablewrap"><table>
       <thead><tr><th class="num">#</th><th>Drużyna</th><th class="strength-col">Cały skład</th><th class="num hide-sm">Podstawowa 7</th><th class="hide-sm">Najmocniejszy</th></tr></thead>
-      <tbody>${rows.map((r, i) => `<tr class="${r.p.id === me()?.id ? 'mine' : ''}">
+      <tbody>${rows.map((r, i) => {
+        const open = ui.strengthOpen?.has(r.p.id);
+        return `<tr class="srow ${r.p.id === me()?.id ? 'mine' : ''} ${open ? 'open' : ''}" data-action="toggleStrength" data-p="${r.p.id}" title="${open ? 'Zwiń skład' : 'Pokaż cały skład'}">
         <td class="rank">${i < 3 ? `<span class="medal m${i + 1}">${i + 1}</span>` : i + 1}</td>
-        <td>${owner(r.p.id)}<div class="muted xs">${esc(r.p.name)}${r.n < TEAM_SIZE ? ` · ${r.n}/${TEAM_SIZE} zawodników` : ''}</div></td>
+        <td><div class="row nowrap" style="gap:.5rem"><span class="chev">${icon('chevron')}</span><div>${owner(r.p.id)}<div class="muted xs">${esc(r.p.name)}${r.n < TEAM_SIZE ? ` · ${r.n}/${TEAM_SIZE} zawodników` : ''}</div></div></div></td>
         <td class="strength-col"><div class="sbar"><i style="width:${(r.all / max) * 100}%;background:${r.p.color}"></i><b>${r.all}</b></div></td>
         <td class="num hide-sm">${r.start}</td>
-        <td class="hide-sm">${r.best ? `${ath(r.best, { photo: true, gender: false })} <span class="muted xs">${byId[r.best]?.wc || 0} pkt</span>` : ''}</td>
-      </tr>`).join('')}</tbody></table></div></div>`;
+        <td class="hide-sm">${r.best ? `<div class="bestath">${ath(r.best, { photo: true, gender: false })}<span class="ptspill">${byId[r.best]?.wc || 0} pkt</span></div>` : ''}</td>
+      </tr>${open ? `<tr class="sdetail"><td colspan="5">${squadList(r.p.id, w)}</td></tr>` : ''}`;
+      }).join('')}</tbody></table></div></div>`;
+}
+
+// Rozwinięty skład w tabeli siły: wszyscy zawodnicy z punktami PŚ zeszłego sezonu.
+function squadList(pid, w) {
+  const ids = calc.teams[pid] || [];
+  const l = w ? lineupFor(state, weekends, w.id, pid, ids, byId) : { starters: ids, captain: null };
+  const label = seasonLabel(athSeason - 1);
+  const sorted = [...ids].sort((a, b) => (byId[b]?.wc || 0) - (byId[a]?.wc || 0));
+  return `<div class="squad">${sorted.map((id) => {
+    const a = byId[id] || {};
+    const starter = l.starters.includes(id);
+    return `<div class="sq ${starter ? '' : 'res'}">${ath(id, { photo: true, gender: true })}
+      <span class="sq-tags">${l.captain === id ? '<span class="cap" title="Kapitan">C</span>' : ''}${starter ? '' : '<span class="tag">rezerwa</span>'}</span>
+      <span class="ptspill">${a.wc || 0} pkt</span>${a.wcRank ? `<span class="muted xs sq-rank">${a.wcRank}. w PŚ ${label}</span>` : '<span class="muted xs sq-rank">bez pkt w PŚ</span>'}</div>`;
+  }).join('') || '<div class="muted small">Brak zawodników</div>'}</div>`;
 }
 
 function chart(ps, played) {
@@ -1401,6 +1419,12 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  toggleStrength: (el) => {
+    ui.strengthOpen = ui.strengthOpen || new Set();
+    const id = el.dataset.p;
+    ui.strengthOpen.has(id) ? ui.strengthOpen.delete(id) : ui.strengthOpen.add(id);
+    render();
+  },
   react: (el) => {
     const m = me();
     if (!m) return;
