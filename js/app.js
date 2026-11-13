@@ -7,7 +7,7 @@ import {
   raceStart, lockTime, firstRace, canTriple,
 } from './scoring.js';
 import {
-  esc, icon, flag, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
+  esc, icon, flag, countryName, fold, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
 } from './ui.js';
 
 // ================================================================ stan
@@ -862,9 +862,9 @@ function athleteTable(picking) {
   const paused = picking && draftPaused();
   const myTurn = picking && cur && ((cur.pid === me()?.id && !paused) || isAdmin());
   const team = cur ? calc.teams[cur.pid] || [] : [];
-  const q = ui.q.toLowerCase();
+  const q = fold(ui.q.trim());
   const all = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
-    (!ui.hideTaken || !taken.has(a.id)) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)));
+    (!ui.hideTaken || !taken.has(a.id)) && athMatch(a, q));
   const list = all.slice(0, ui.limit);
   return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="muted small">${all.length} ${pl(all.length, 'aktywny', 'aktywnych', 'aktywnych')} w FIS</span><span class="spacer"></span>
       ${paused ? `<span class="tag warn">${icon('clock')}draft wstrzymany — czekamy na ${absentPlayers().map((x) => esc(tname(x))).join(', ')}</span>` : ''}
@@ -873,7 +873,7 @@ function athleteTable(picking) {
       ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))} (${esc(P(cur.pid)?.name || '')})</span>` : ''}</div>
     <div class="row" style="margin-bottom:.8rem">
       ${genderSeg()}
-      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label>
+      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju (np. Polska)" value="${esc(ui.q)}"></label>
       ${picking ? `<label class="check small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}>ukryj wybranych</label>` : ''}
     </div>
     <div class="card pad0"><div class="tablewrap"><table>
@@ -1223,14 +1223,17 @@ function puchar() {
 
 // ================================================================ zawodnicy
 
+// wyszukiwarka zawodników: nazwisko, kod FIS (POL) albo nazwa kraju (Polska, polsk…)
+const athMatch = (a, q) => !q || fold(`${a.name} ${a.nation} ${countryName(a.nation)}`).includes(q);
+
 function zawodnicy() {
   const raw = calc.raw;
-  const q = ui.q.toLowerCase();
-  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)))
+  const q = fold(ui.q.trim());
+  const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) && athMatch(a, q))
     .sort((a, b) => (raw[b.id] || 0) - (raw[a.id] || 0) || byId[a.id].idx - byId[b.id].idx);
   return `<div class="page-head"><div><h1>Zawodnicy</h1><div class="sub">Ile punktów ligi zdobywa każdy skoczek — także ci, których nikt nie wybrał</div></div></div>
     <div class="row" style="margin-bottom:.8rem">${genderSeg()}
-      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label></div>
+      <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju (np. Polska)" value="${esc(ui.q)}"></label></div>
     <div class="card pad0"><div class="tablewrap"><table>
       <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num" title="Punkty ligi na rozegrany weekend (bez kapitana)">Śr./weekend</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm" title="Punkty PŚ ${seasonLabel(athSeason - 1)} na weekend PŚ">Śr. ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
       <tbody>${list.map((a) => `<tr><td>${ath(a.id, { photo: true })}${athSub(a)}</td><td class="pts">${raw[a.id] || 0}</td>

@@ -58,11 +58,25 @@ const ISO = {
   USA: 'us', CAN: 'ca', KAZ: 'kz', BUL: 'bg', EST: 'ee', FRA: 'fr', SVK: 'sk', UKR: 'ua', TUR: 'tr', ROU: 'ro',
   CHN: 'cn', KOR: 'kr', SWE: 'se', RUS: 'ru', GBR: 'gb', ISL: 'is', LAT: 'lv', LTU: 'lt', GEO: 'ge', BLR: 'by',
   HUN: 'hu', NED: 'nl', ESP: 'es', BEL: 'be', DEN: 'dk', RSA: 'za', ISR: 'il', AND: 'ad', KGZ: 'kg', ARG: 'ar',
+  AZE: 'az', KOS: 'xk', SGP: 'sg', SRB: 'rs', THA: 'th',
 };
+// Kody FIS -> polskie nazwy krajów (wyszukiwanie po „Polska”, „Niemcy”…)
+const COUNTRY = {
+  SLO: 'Słowenia', AUT: 'Austria', GER: 'Niemcy', POL: 'Polska', NOR: 'Norwegia', JPN: 'Japonia', SUI: 'Szwajcaria',
+  FIN: 'Finlandia', CZE: 'Czechy', ITA: 'Włochy', USA: 'Stany Zjednoczone USA', CAN: 'Kanada', KAZ: 'Kazachstan',
+  BUL: 'Bułgaria', EST: 'Estonia', FRA: 'Francja', SVK: 'Słowacja', UKR: 'Ukraina', TUR: 'Turcja', ROU: 'Rumunia',
+  CHN: 'Chiny', KOR: 'Korea Południowa', SWE: 'Szwecja', RUS: 'Rosja', GBR: 'Wielka Brytania', ISL: 'Islandia',
+  LAT: 'Łotwa', LTU: 'Litwa', GEO: 'Gruzja', BLR: 'Białoruś', HUN: 'Węgry', NED: 'Holandia', ESP: 'Hiszpania',
+  BEL: 'Belgia', DEN: 'Dania', RSA: 'RPA', ISR: 'Izrael', AND: 'Andora', KGZ: 'Kirgistan', ARG: 'Argentyna',
+  AZE: 'Azerbejdżan', KOS: 'Kosowo', SGP: 'Singapur', SRB: 'Serbia', THA: 'Tajlandia',
+};
+export const countryName = (nation) => COUNTRY[nation] || nation;
+// tekst do wyszukiwania: małe litery bez polskich znaków („slowenia” znajdzie Słowenię)
+export const fold = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l');
 export function flag(nation) {
   const iso = ISO[nation];
   return iso
-    ? `<img class="flag" src="https://flagcdn.com/w40/${iso}.png" alt="${esc(nation)}" loading="lazy" width="20" height="14">`
+    ? `<img class="flag" src="https://flagcdn.com/w40/${iso}.png" alt="${esc(nation)}" title="${esc(countryName(nation))}" loading="lazy" width="20" height="14">`
     : '<span class="flag blank"></span>';
 }
 
