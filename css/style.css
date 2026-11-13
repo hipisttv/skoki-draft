@@ -140,7 +140,7 @@ code { font-size: .9em; background: var(--card-2); padding: .1em .35em; border-r
 
 /* dolny pasek na telefonie */
 .tabbar { display: none; }
-@media (max-width: 860px) {
+@media (max-width: 1000px) {
   .nav { display: none; }
   .top__inner { height: 54px; }
   .brand small { display: none; }
@@ -448,7 +448,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .toast { background: #101b2c; color: #fff; padding: .7rem 1rem; border-radius: 12px; box-shadow: var(--shadow-lg); font-weight: 600; font-size: .9rem; animation: pop .15s; display: flex; gap: .55rem; align-items: center; }
 .toast.err { background: var(--bad); }
 .toast.ok { background: #0f7a48; }
-@media (max-width: 860px) { .toasts { bottom: 84px; } }
+@media (max-width: 1000px) { .toasts { bottom: 84px; } }
 
 .foot { max-width: 1160px; margin: 0 auto; padding: 0 16px 2rem; color: var(--muted); font-size: .78rem; display: flex; gap: 1rem; flex-wrap: wrap; }
 .loading { min-height: 70vh; display: grid; place-items: center; color: var(--muted); }
@@ -480,11 +480,6 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .ph.ini.w { color: var(--women); background: var(--women-soft); }
 .ph.ini.bad { color: #fff; background: var(--bad); }
 .ph.w:not(.ini) { box-shadow: 0 0 0 2px var(--women-soft); }
-.triple { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .75rem; padding: .5rem .7rem; border-radius: 9px; border: 1px dashed var(--line); font-size: .82rem; font-weight: 600; color: var(--text-2); }
-.triple svg { width: 15px; height: 15px; color: var(--gold); }
-.triple select { margin-left: auto; max-width: 100%; }
-.triple.on { border: 1px solid var(--gold); background: var(--gold-soft); color: var(--text); }
-.triple.used { background: var(--card-2); border-style: solid; }
 .warnline.champline { background: var(--champ-soft); color: var(--champ-ink); }
 
 /* ============================================================ zasady */
@@ -493,3 +488,49 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .ptsgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: .3rem; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .ptsgrid span { background: var(--card-2); border-radius: 6px; padding: .2rem .45rem; }
 .ptsgrid b { color: var(--muted); font-weight: 700; }
+
+/* ============================================================ czytelność */
+@media (max-width: 1240px) {
+  .nav a svg { display: none; }
+  .nav a { padding: .45rem .55rem; }
+  .brand small { display: none; }
+}
+.top__inner { min-width: 0; }
+.nav { min-width: 0; overflow: hidden; }
+
+.todos { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .5rem; position: relative; z-index: 1; }
+.todo { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; font-weight: 700; padding: .3rem .7rem; border-radius: 999px; background: rgba(255, 255, 255, .14); }
+.todo svg { width: 14px; height: 14px; }
+.todo.ok { background: rgba(80, 220, 140, .22); }
+.todo.warn { background: #ffcf3d; color: #3a2a00; }
+
+.hint { display: flex; gap: .5rem; align-items: flex-start; background: var(--accent-soft); color: var(--text-2); font-size: .8rem; padding: .55rem .7rem; border-radius: 9px; margin-top: .7rem; line-height: 1.45; }
+.hint svg { color: var(--accent); margin-top: .1rem; }
+.capdot { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: .62rem; font-weight: 900; vertical-align: 1px; }
+.sect-r { margin-left: auto; font-size: .62rem; font-weight: 700; letter-spacing: .04em; color: var(--muted); order: 2; padding-left: .5rem; }
+.sect .sect-r + * { order: 1; }
+.sect::after { order: 1; }
+.capbtn:not(.on):hover { border-color: var(--gold); color: var(--gold); }
+
+.triple { margin-top: .8rem; padding: .65rem .75rem; border-radius: 10px; border: 1px dashed var(--line); display: grid; gap: .45rem; }
+.triple .th { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; font-size: .85rem; font-weight: 800; }
+.triple .th svg { width: 15px; height: 15px; color: var(--gold); }
+.triple .tv { font-size: .82rem; color: var(--text-2); }
+.triple select { width: 100%; font-size: .85rem; padding: .45rem .6rem; }
+.triple.on { border: 1px solid var(--gold); background: var(--gold-soft); }
+.triple.used { background: var(--card-2); border-style: solid; }
+
+.choices { display: grid; gap: .45rem; margin-top: 1rem; }
+.choice { justify-content: flex-start; width: 100%; padding: .6rem .75rem; gap: .5rem; }
+.choice:hover { background: var(--accent-soft); }
+.pick-prev { display: flex; align-items: center; gap: .8rem; margin: .4rem 0 .9rem; font-weight: 600; }
+.ph.lg { width: 64px; height: 64px; font-size: 1.1rem; }
+.bonus { margin: 0 .3rem 0 0; }
+.bonus.gold { background: var(--champ-soft); color: var(--champ-ink); }
+
+.mustline { position: relative; z-index: 1; display: flex; gap: .55rem; align-items: center; margin-top: 1rem; padding: .7rem .9rem; border-radius: 10px; background: #ffcf3d; color: #3a2a00; font-size: .92rem; animation: pop .2s; }
+.mustline svg { width: 18px; height: 18px; flex: none; }
+.mustline.soft { background: rgba(255, 255, 255, .14); color: #fff; font-size: .85rem; }
+.toast.warn { background: #ffcf3d; color: #3a2a00; }
+.player .ath .nm { white-space: nowrap; }
+.player .ath { min-width: 0; overflow: hidden; }

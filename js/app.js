@@ -7,7 +7,7 @@ import {
   raceStart, lockTime, firstRace, canTriple,
 } from './scoring.js';
 import {
-  esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
+  esc, icon, flag, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
 } from './ui.js';
 
 // ================================================================ stan
@@ -26,6 +26,7 @@ let weekends = [];
 let results = {};        // raceId -> wyniki
 let calc = null;
 let lastPicks = null;
+let localPick = null;   // wybór zrobiony na tym urządzeniu – bez podwójnego powiadomienia
 
 const ui = {
   authMode: null, gender: 'ALL', q: '', hideTaken: true, weekend: null, editRecord: false, limit: 150,
@@ -161,7 +162,7 @@ async function init() {
       const pid = snakeOrder(s.draftOrder)[i]?.pid;
       const p = s.participants.find((x) => x.id === pid);
       const n = prettyName(athInfo(s.picks[i]).name);
-      if (pid !== session.pid) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
+      if (pid !== session.pid && s.picks[i] !== localPick) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
     }
     lastPicks = s.picks.length;
     state = s;
@@ -361,10 +362,16 @@ function nextWeekendHero() {
   if (m) {
     const l = lineupFor(state, weekends, w.id, m.id, calc.teams[m.id] || [], byId);
     const capName = l.captain ? prettyName(athInfo(l.captain).name) : null;
+    const used = state.triples?.[m.id];
+    const ur = used && weekends.flatMap((x) => x.races).find((r) => r.id === used);
+    const todo = [
+      capName ? `<span class="todo ok">${icon('check')}Kapitan: ${esc(capName.last)}</span>` : `<span class="todo warn">${icon('info')}Wybierz kapitana</span>`,
+      ur ? `<span class="todo ok">${icon('star')}×${TRIPLE}: ${raceLabel(ur)}, ${esc(ur.place)}</span>` : `<span class="todo">${icon('star')}Mnożnik ×${TRIPLE} dostępny</span>`,
+    ].join('');
     cta = st === 'next'
-      ? `<p>${capName ? `Twój kapitan: <b>${esc(capName.first)} ${esc(capName.last)}</b>.` : '<b>Nie masz jeszcze kapitana na ten weekend!</b>'} Zmiany do ${lockLabel(w)}.</p>
-         <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#druzyny" data-week="${w.id}">${icon('team')}Ustaw skład i kapitana</a></div>`
-      : `<p>Składy zablokowane. ${capName ? `Twój kapitan: <b>${esc(capName.first)} ${esc(capName.last)}</b>.` : ''}</p>`;
+      ? `<div class="todos">${todo}</div><p class="small" style="margin-top:.6rem">Zmiany do <b>${lockLabel(w)}</b></p>
+         <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#druzyny" data-week="${w.id}">${icon('team')}${capName ? 'Zmień skład' : 'Ustaw kapitana'}</a></div>`
+      : `<div class="todos">${todo}</div><p class="small" style="margin-top:.6rem">${icon('lock')} Składy zablokowane do końca weekendu.</p>`;
   }
   const d = daysTo(w.start);
   if (st === 'past') {
@@ -445,7 +452,7 @@ function ranking() {
   }
   html += `<div class="section grid-2">
     <div class="card pad0"><div class="card-head"><h3>Najlepsi zawodnicy w lidze</h3></div><div class="tablewrap"><table><tbody>
-      ${best.map(([id, v], i) => `<tr><td class="rank muted">${i + 1}</td><td>${ath(id)}</td><td>${owner(ownerOf(id))}</td><td class="pts">${v}</td></tr>`).join('') || '<tr><td class="muted">—</td></tr>'}
+      ${best.map(([id, v], i) => `<tr><td class="rank muted">${i + 1}</td><td>${ath(id, { photo: true, gender: false })}</td><td>${owner(ownerOf(id))}</td><td class="pts">${v}</td></tr>`).join('') || '<tr><td class="muted">—</td></tr>'}
     </tbody></table></div></div>
     <div class="card pad0"><div class="card-head"><h3>Statystyki</h3></div><div class="tablewrap"><table>
       <thead><tr><th></th><th class="num">Wygrane weekendy</th><th class="num">Pkt od kapitanów</th><th class="num">Kary</th><th class="num">Bonusy</th><th class="num">×${TRIPLE}</th></tr></thead><tbody>
@@ -478,7 +485,8 @@ function chart(ps, played) {
   const labels = played.map((w, i) => ({ i: i + 1, w })).filter((_, i) => n <= 12 || i % Math.ceil(n / 12) === 0 || i === n - 1);
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Punkty narastająco">
     <g class="grid">${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join('')}</g>
-    ${labels.map(({ i, w }) => `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${w.no}</text>`).join('')}
+    ${labels.map(({ i, w }) => `<text x="${x(i)}" y="${H - 8}" text-anchor="middle"><title>${esc(w.name)}</title>${w.no}</text>`).join('')}
+    <text x="${L}" y="${H - 8}" text-anchor="start" style="font-size:10px">weekend →</text>
     ${series.map((s, k) => `<polyline fill="none" stroke="${ps[k].color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${s.map((v, i) => `${x(i)},${y(v)}`).join(' ')}"/>
       <circle cx="${x(n)}" cy="${y(s[n])}" r="4.5" fill="${ps[k].color}"/>
       <text x="${x(n) + 9}" y="${y(s[n]) + 4}" style="fill:${ps[k].color};font-weight:800">${s[n]}</text>`).join('')}
@@ -513,6 +521,21 @@ function draft() {
     const men = t.filter((id) => byId[id]?.gender === 'M').length;
     const wom = t.filter((id) => byId[id]?.gender === 'W').length;
     const mine = cur.pid === m?.id;
+    // gdy zostały już tylko miejsca dla jednej płci – ostrzeżenie i automatyczny filtr
+    const must = !canPick(t, 'M', byId) ? 'W' : !canPick(t, 'W', byId) ? 'M' : null;
+    const left = TEAM_SIZE - t.length;
+    const mustTxt = must === 'W' ? 'kobietę' : 'mężczyznę';
+    if (must && (mine || isAdmin()) && ui.autoGender !== n) {
+      ui.autoGender = n;
+      ui.gender = must;
+      ui.limit = 150;
+      toast(mine ? `Teraz musisz wybrać ${mustTxt} — pokazuję tylko ${must === 'W' ? 'kobiety' : 'mężczyzn'}` : `${p.name} musi teraz wybrać ${mustTxt}`, 'warn');
+    }
+    const alert = must
+      ? `<div class="mustline">${icon('info')}<span>${mine ? `<b>Teraz musisz wybrać ${mustTxt}</b> — inaczej nie skompletujesz składu (${TEAM.men} M + ${TEAM.women} K).` : `<b>${esc(p.name)} musi teraz wybrać ${mustTxt}.</b>`}</span></div>`
+      : wom < TEAM.women && left <= 3
+        ? `<div class="mustline soft">${icon('info')}<span>${mine ? 'Pamiętaj' : esc(p.name)}: w drużynie nie ma jeszcze kobiety — zostały ${left} ${pl(left, 'wybór', 'wybory', 'wyborów')}.</span></div>`
+        : '';
     hero = `<div class="hero"><div class="clock">${avatar(p, 'xl')}
       <div class="who"><div class="eyebrow">Wybór ${n + 1} z ${seq.length} · runda ${cur.round}</div>
         <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(p.name)}`}</div>
@@ -520,7 +543,7 @@ function draft() {
           <span class="need ${wom >= TEAM.women ? 'done' : ''}">Kobieta ${Math.min(wom, TEAM.women)}/${TEAM.women}</span>
           <span class="need">Rezerwa ${Math.max(0, t.length - Math.min(men, TEAM.men) - Math.min(wom, TEAM.women))}/${TEAM.reserves}</span></div></div>
       ${n > 0 && (isAdmin() || seq[n - 1].pid === m?.id) ? `<button class="btn sm" data-action="undo" style="position:relative;z-index:1">${icon('undo')}Cofnij ostatni</button>` : ''}
-    </div></div>`;
+    </div>${alert}</div>`;
   }
 
   const cells = [];
@@ -626,13 +649,12 @@ function teamCard(p, w, drafting) {
     const isCap = l.captain === id;
     let ctrl = '';
     if (editable && starter) {
-      ctrl = `<button class="capbtn ${isCap ? 'on' : ''}" data-action="captain" data-p="${p.id}" data-id="${id}" title="${isCap ? 'Kapitan' : 'Ustaw jako kapitana'}">C</button>`;
+      ctrl = `<button class="capbtn ${isCap ? 'on' : ''}" data-action="captain" data-p="${p.id}" data-id="${id}" title="${isCap ? 'Kapitan (×2) — kliknij, by zdjąć' : 'Zrób kapitanem (×2)'}" aria-label="Kapitan">C</button>`;
     } else if (isCap) {
       ctrl = '<span class="cap" title="Kapitan — punkty ×2">C</span>';
     }
     if (editable && !starter) {
-      const same = l.starters.filter((s) => byId[s]?.gender === a?.gender);
-      ctrl = `<select class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw do składu"><option value="">⇄ za…</option>${same.map((s) => `<option value="${s}">${esc(prettyName(byId[s]?.name).last)}</option>`).join('')}</select>`;
+      ctrl = `<button class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw tego zawodnika do składu">${icon('swap')}Wstaw</button>`;
     }
     const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
     return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false, photo: true })}
@@ -647,12 +669,13 @@ function teamCard(p, w, drafting) {
       ${drafting ? '' : `<div class="tot"><div class="v">${hasRes ? calc.byWeekend[w.id]?.[p.id] || 0 : calc.totals[p.id]}</div><div class="l">${hasRes ? 'weekend' : 'sezon'}</div></div>`}</div>
     <div class="team-body">
       ${drafting ? (ids.map((id) => line(id, true)).join('') || '<div class="muted small" style="padding:.6rem 0">Jeszcze nikogo nie wybrano</div>') : `
-      <div class="sect">Mężczyźni<span class="spacer"></span></div>${men.map((id) => line(id, true)).join('')}
+      ${editable ? `<div class="hint">${icon('info')}<span>Kliknij <b class="capdot">C</b>, by wybrać kapitana (×2). Przyciskiem <b>Wstaw</b> wprowadzasz rezerwowego do składu.</span></div>` : ''}
+      <div class="sect">Mężczyźni<span class="sect-r">${label}</span></div>${men.map((id) => line(id, true)).join('')}
       <div class="sect">Kobieta</div>${women.map((id) => line(id, true)).join('')}
       <div class="sect">Rezerwowi</div>${reserves.map((id) => line(id, false)).join('') || '<div class="muted small">—</div>'}
-      ${!l.captain ? `<div class="warnline">${icon('info')}Brak kapitana${editable ? ' — kliknij „C” przy zawodniku' : ' na ten weekend'}</div>` : ''}
+      ${!l.captain ? (editable ? `<div class="warnline">${icon('info')}Nie masz kapitana na ten weekend</div>` : '<div class="muted xs" style="margin-top:.6rem">Bez kapitana na ten weekend</div>') : ''}
       ${tripleBox(p, w, (p.id === me()?.id || isAdmin()) && ids.length === TEAM_SIZE)}
-      <div class="muted xs" style="margin-top:.6rem;text-align:right">liczby = ${label}${l.inherited && editable ? ' · skład przeniesiony automatycznie' : ''}</div>`}
+`}
     </div></div>`;
 }
 
@@ -664,21 +687,21 @@ function tripleBox(p, w, editable) {
   const label = (r) => `${raceLabel(r)} · ${esc(r.place)} · ${fmtDow(r.date)}`;
   if (ur && raceStarted(ur) && !isAdmin()) {
     const v = calc.byRace[used]?.[p.id]?.total;
-    return `<div class="triple used">${icon('star')}<span>×${TRIPLE} wykorzystany: <b>${label(ur)}</b>${v != null ? ` (${v > 0 ? '+' : ''}${v} pkt)` : ''}</span></div>`;
+    return `<div class="triple used"><div class="th">${icon('star')}Mnożnik ×${TRIPLE} wykorzystany</div><div class="tv">${label(ur)}${v != null ? ` · <b>${v > 0 ? '+' : ''}${v} pkt</b>` : ''}</div></div>`;
   }
   if (!editable) {
-    return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`
-      : `<div class="triple">${icon('star')}<span>Mnożnik ×${TRIPLE} jeszcze dostępny</span></div>`;
+    return ur ? `<div class="triple on"><div class="th">${icon('star')}Mnożnik ×${TRIPLE} ustawiony</div><div class="tv">${label(ur)}</div></div>`
+      : `<div class="triple"><div class="th">${icon('star')}Mnożnik ×${TRIPLE} jeszcze niewykorzystany</div></div>`;
   }
   const races = w.races.filter((r) => canTriple(r) && (!raceStarted(r) || isAdmin() || r.id === used));
   if (!races.length) {
-    if (ur) return `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`;
-    return w.champ ? `<div class="triple">${icon('star')}<span>Mnożnika ×${TRIPLE} nie można użyć na Mistrzostwach Świata</span></div>` : '';
+    if (ur) return `<div class="triple on"><div class="th">${icon('star')}Mnożnik ×${TRIPLE} ustawiony</div><div class="tv">${label(ur)}</div></div>`;
+    return w.champ ? `<div class="triple"><div class="th">${icon('star')}Mnożnika ×${TRIPLE} nie można użyć na MŚ</div></div>` : '';
   }
-  return `<div class="triple ${ur && uw === w ? 'on' : ''}">${icon('star')}<span>Mnożnik ×${TRIPLE} (raz w sezonie, do startu konkursu)</span>
-    <select class="sm" data-action="triple" data-p="${p.id}"><option value="">${ur && uw !== w ? 'ustawiony na inny weekend' : 'nie używaj'}</option>
+  return `<div class="triple ${ur && uw === w ? 'on' : ''}"><div class="th">${icon('star')}Mnożnik ×${TRIPLE}<span class="muted xs" style="font-weight:600">raz w sezonie · do startu konkursu</span></div>
+    <select data-action="triple" data-p="${p.id}"><option value="">${ur && uw !== w ? '— ustawiony na inny weekend —' : '— nie używam w tym weekendzie —'}</option>
       ${races.map((r) => `<option value="${r.id}" ${r.id === used ? 'selected' : ''}>${label(r)}</option>`).join('')}</select>
-    ${ur && uw !== w ? `<div class="xs muted" style="width:100%">Obecnie: ${label(ur)} — wybór tutaj go przeniesie.</div>` : ''}</div>`;
+    ${ur && uw !== w ? `<div class="xs muted">Obecnie: ${label(ur)}. Wybór tutaj go przeniesie.</div>` : ''}</div>`;
 }
 
 // ================================================================ kalendarz
@@ -781,12 +804,12 @@ function raceView(id) {
           <td>${ath(r.id, { fallback: { ...r, gender: race.gender }, gender: false, photo: true })}</td>
           <td class="num">${r.jumps.map((j) => (j === lj ? `<span class="longest">${j}</span>` : j)).join('<span class="muted"> / </span>')}</td>
           <td class="num hide-sm muted">${r.total ?? ''}</td>
-          <td class="pts">${p?.total ? `${p.total}${p.quali ? '<span class="bonus">Q</span>' : ''}${p.longest ? '<span class="bonus">NS</span>' : ''}${p.record ? '<span class="bonus">RS</span>' : ''}` : ''}</td>
+          <td class="pts">${p?.total ? `${p.quali ? '<span class="bonus">wygrane kwal.</span>' : ''}${p.longest ? '<span class="bonus">najdłuższy</span>' : ''}${p.record ? '<span class="bonus gold">rekord</span>' : ''} ${p.total}` : ''}</td>
           <td>${ownerInfo(r.id)}</td>
           ${ui.editRecord ? `<td><input type="checkbox" data-action="record" data-race="${id}" data-id="${r.id}" ${records.includes(r.id) ? 'checked' : ''}></td>` : ''}
         </tr>`;
       }).join('')}</tbody></table></div></div>
-    <p class="muted xs" style="margin-top:.6rem">Q — zwycięstwo w kwalifikacjach · NS — najdłuższy skok konkursu · RS — rekord skoczni · punkty bez mnożnika kapitana</p></div>`;
+    <p class="muted xs" style="margin-top:.6rem">„Pkt ligi” — punkty zawodnika w tym konkursie, bez kapitana i mnożnika. ${m ? 'Podświetlone wiersze to Twoi zawodnicy. ' : ''}Zielona odległość = najdłuższy skok konkursu.</p></div>`;
 }
 
 function breakdown(b) {
@@ -825,7 +848,7 @@ function puchar() {
         const o = ownerOf(r.id);
         return `<tr class="${m && o === m.id ? 'mine' : ''}">
           <td class="rank">${r.rank <= 3 ? `<span class="medal m${r.rank}">${r.rank}</span>` : r.rank}</td>
-          <td>${ath(r.id, { fallback: { ...r, gender: g }, gender: false })}</td>
+          <td>${ath(r.id, { fallback: { ...r, gender: g }, gender: false, photo: true })}</td>
           <td class="pts">${r.points}</td>
           <td class="num hide-sm muted">${r.points === lead ? '' : `−${lead - r.points}`}</td>
           <td>${o ? owner(o) : '<span class="muted xs">wolny</span>'}</td></tr>`;
@@ -851,7 +874,7 @@ function zawodnicy() {
       <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label></div>
     <div class="card pad0"><div class="tablewrap"><table>
       <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
-      <tbody>${list.map((a) => `<tr><td>${ath(a.id)}</td><td class="pts">${raw[a.id] || 0}</td>
+      <tbody>${list.map((a) => `<tr><td>${ath(a.id, { photo: true })}</td><td class="pts">${raw[a.id] || 0}</td>
         <td class="num hide-sm">${calc.athleteTotals[a.id] || '<span class="muted">–</span>'}</td>
         <td class="num hide-sm muted">${a.wc || '–'}</td><td>${owner(ownerOf(a.id))}</td></tr>`).join('')}</tbody>
     </table></div></div>`;
@@ -1128,11 +1151,17 @@ const actions = {
   wcSeason: (el) => { ui.wcSeason = el.dataset.v; render(); },
   editRecord: () => { ui.editRecord = !ui.editRecord; render(); },
 
-  pick: (el) => {
+  pick: async (el) => {
     const aid = el.dataset.id;
     const cur = snakeOrder(state.draftOrder)[state.picks.length];
     if (!cur) return;
-    const n = prettyName(athInfo(aid).name);
+    const a = athInfo(aid);
+    const n = prettyName(a.name);
+    const forWho = cur.pid !== me()?.id ? ` dla gracza <b>${esc(pname(cur.pid))}</b>` : '';
+    const ok = await confirmModal(`Wybrać ${n.first} ${n.last}?`,
+      `<span class="pick-prev">${portrait(a, 'lg')}<span>${flag(a.nation)} ${esc(a.nation)}${a.wc ? ` · PŚ ${seasonLabel(athSeason - 1)}: ${a.wc} pkt` : ''}</span></span>Wybór jest ostateczny${forWho}.`, 'Wybieram');
+    if (!ok) return;
+    localPick = aid;
     save((s) => {
       const c = snakeOrder(s.draftOrder)[s.picks.length];
       if (!c || c.pid !== cur.pid || s.picks.includes(aid)) fail('Stan draftu się zmienił — spróbuj ponownie');
@@ -1152,9 +1181,17 @@ const actions = {
     const { p, id } = el.dataset;
     save((s) => setLineup(s, p, (l) => ({ ...l, captain: l.captain === id ? null : id })));
   },
-  swap: (el) => {
+  swap: async (el) => {
     const { p, id } = el.dataset;
-    const out = el.value;
+    const ids = calc.teams[p] || [];
+    const l = lineupFor(state, weekends, ui.weekend, p, ids, byId);
+    const inName = prettyName(athInfo(id).name);
+    const out = await choose({
+      title: `Wstaw: ${inName.first} ${inName.last}`,
+      text: 'Za kogo ma wejść do składu?',
+      options: l.starters.filter((s) => byId[s]?.gender === byId[id]?.gender)
+        .map((s) => ({ value: s, html: `${ath(s, { gender: false, photo: true })}${l.captain === s ? '<span class="cap">C</span>' : ''}` })),
+    });
     if (!out) return;
     save((s) => setLineup(s, p, (l) => ({
       starters: l.starters.map((x) => (x === out ? id : x)),

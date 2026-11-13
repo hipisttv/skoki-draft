@@ -116,6 +116,26 @@ export function modal({ title, text = '', fields = [], ok = 'OK', cancel = 'Anul
 
 export const confirmModal = (title, text, ok = 'Tak', danger = false) => modal({ title, text, ok, danger }).then((v) => v !== false);
 
+// Wybór jednej z opcji (duże przyciski). options: [{ value, html }]. Zwraca Promise<value | false>.
+export function choose({ title, text = '', options }) {
+  return new Promise((resolve) => {
+    const bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="modal">
+      <h3>${esc(title)}</h3>${text ? `<p>${text}</p>` : ''}
+      <div class="choices">${options.map((o, i) => `<button type="button" class="choice" data-i="${i}">${o.html}</button>`).join('')}</div>
+      <div class="actions"><button type="button" data-x>Anuluj</button></div>
+    </div>`;
+    const close = (v) => { bg.remove(); resolve(v); };
+    bg.addEventListener('click', (e) => {
+      const c = e.target.closest('.choice');
+      if (c) close(options[+c.dataset.i].value);
+      else if (e.target === bg || e.target.closest('[data-x]')) close(false);
+    });
+    document.body.appendChild(bg);
+  });
+}
+
 // ---------------------------------------------------------------- hasła
 
 export async function hash(salt, secret) {
