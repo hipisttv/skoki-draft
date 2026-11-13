@@ -4,6 +4,7 @@ import {
   FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
   snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
   countsForLeague, isMain, recordIds, scoringSettings,
+  raceStart, lockTime, firstRace,
 } from './scoring.js';
 import {
   esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -97,21 +98,6 @@ const CHAMP = 'Mistrzostwa Świata';
 const champTag = (cls = '') => `<span class="tag champ ${cls}">${icon('star')}${CHAMP}</span>`;
 const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
 
-// FIS podaje godziny startu w czasie lokalnym skoczni.
-const TZ = {
-  NOR: 'Europe/Oslo', SWE: 'Europe/Stockholm', FIN: 'Europe/Helsinki', GER: 'Europe/Berlin', AUT: 'Europe/Vienna',
-  SUI: 'Europe/Zurich', SLO: 'Europe/Ljubljana', POL: 'Europe/Warsaw', ITA: 'Europe/Rome', CZE: 'Europe/Prague',
-  JPN: 'Asia/Tokyo', CHN: 'Asia/Shanghai', USA: 'America/New_York', CAN: 'America/Toronto',
-};
-function raceStart(r) {
-  if (!r.time) return new Date(r.date + 'T00:00:00'); // godzina jeszcze nieznana – blokada od północy
-  const [y, m, d] = r.date.split('-').map(Number);
-  const [hh, mm] = r.time.split(':').map(Number);
-  const utc = new Date(Date.UTC(y, m - 1, d, hh, mm));
-  const tz = TZ[r.nation] || 'Europe/Warsaw';
-  const offset = new Date(utc.toLocaleString('en-US', { timeZone: tz })) - new Date(utc.toLocaleString('en-US', { timeZone: 'UTC' }));
-  return new Date(utc - offset);
-}
 const raceStarted = (r) => new Date() >= raceStart(r);
 
 function weekendStatus(w) {
@@ -122,8 +108,9 @@ function weekendStatus(w) {
 }
 const currentWeekend = () => weekends.find((w) => weekendStatus(w) !== 'past') || weekends[weekends.length - 1];
 const lockLabel = (w) => {
-  const d = new Date(w.start + 'T00:00:00'); d.setMinutes(-1);
-  return d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const d = lockTime(w);
+  const txt = d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return firstRace(w)?.time ? txt : `${txt} (FIS nie podał jeszcze godziny startu)`;
 };
 
 async function save(fn, okMsg) {
@@ -896,7 +883,7 @@ function zasady() {
         'Można go ustawić lub zmienić <b>do startu wybranego konkursu</b> (zakładka Drużyny). Potem jest wykorzystany.',
       ]))}
       ${sec('Terminy', 'clock', li([
-        'Skład i kapitan blokują się o <b>północy przed pierwszym dniem weekendu</b>.',
+        'Skład i kapitan blokują się <b>minutę przed startem pierwszych kwalifikacji weekendu</b> (godzina z FIS; dopóki FIS jej nie poda — o północy przed pierwszym dniem).',
         'Weekend to zawody mężczyzn i kobiet rozgrywane w tych samych dniach (np. Ruka + Hinzenbach).',
         'Mistrzostwa Świata trwają dwa weekendy — to dwie osobne rundy z osobnym kapitanem.',
       ]))}

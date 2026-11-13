@@ -107,9 +107,37 @@ export function buildWeekends(events) {
   return weekends;
 }
 
-// Skład zablokowany od północy pierwszego dnia weekendu (czas lokalny przeglądarki).
+// FIS podaje godziny startu w czasie lokalnym skoczni.
+const TZ = {
+  NOR: 'Europe/Oslo', SWE: 'Europe/Stockholm', FIN: 'Europe/Helsinki', GER: 'Europe/Berlin', AUT: 'Europe/Vienna',
+  SUI: 'Europe/Zurich', SLO: 'Europe/Ljubljana', POL: 'Europe/Warsaw', ITA: 'Europe/Rome', CZE: 'Europe/Prague',
+  JPN: 'Asia/Tokyo', CHN: 'Asia/Shanghai', USA: 'America/New_York', CAN: 'America/Toronto',
+};
+
+// Start konkursu jako moment w czasie. Bez godziny (FIS jeszcze jej nie podał) – północ dnia konkursu.
+export function raceStart(r) {
+  if (!r.time) return new Date(r.date + 'T00:00:00');
+  const [y, m, d] = r.date.split('-').map(Number);
+  const [hh, mm] = r.time.split(':').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d, hh, mm));
+  const tz = TZ[r.nation] || 'Europe/Warsaw';
+  const offset = new Date(utc.toLocaleString('en-US', { timeZone: tz })) - new Date(utc.toLocaleString('en-US', { timeZone: 'UTC' }));
+  return new Date(utc - offset);
+}
+
+// Pierwszy (nieodwołany) start weekendu – zwykle pierwsze kwalifikacje.
+export function firstRace(weekend) {
+  return weekend.races.filter((r) => !r.cancelled).sort((a, b) => raceStart(a) - raceStart(b))[0];
+}
+
+// Skład i kapitan blokują się minutę przed pierwszym startem weekendu.
+export function lockTime(weekend) {
+  const r = firstRace(weekend);
+  return new Date((r ? raceStart(r) : new Date(weekend.start + 'T00:00:00')).getTime() - 60 * 1000);
+}
+
 export function isLocked(weekend, now = new Date()) {
-  return now >= new Date(weekend.start + 'T00:00:00');
+  return now >= lockTime(weekend);
 }
 
 // ---------------------------------------------------------------- drużyny
