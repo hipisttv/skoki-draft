@@ -86,8 +86,8 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
   lokalnym skoczni; dopóki FIS jej nie poda – do północy przed pierwszym dniem), potem są zablokowane.
 - Pełne zasady są w aplikacji w zakładce **Zasady** (dostępnej też przed zalogowaniem).
 - Liczone są tylko konkursy indywidualne – bez drużynówek, duetów i mikstów.
-- Godziny startu pochodzą z Berkutschi (gdy poda program zawodów – zwykle z wyprzedzeniem tygodnia),
-  a wcześniej z PDF „Event Program” w FIS. W aplikacji wyświetlane są w czasie polskim.
+- Dni i godziny startu pochodzą z oficjalnych programów zawodów FIS (PDF „Event Program”) – baza FIS
+  ma kwalifikacje pod datą konkursu, a program ma prawdziwy dzień. W aplikacji wyświetlane są w czasie polskim.
 - Wszystkie wartości punktowe admin może zmienić w Panelu admina → Punktacja (również wyłączyć liczenie MŚ).
 
 ## Lista zawodników

@@ -717,7 +717,7 @@ function tripleBox(p, w, editable) {
 function kalendarz() {
   const cur = currentWeekend();
   const ps = state.participants;
-  return `<div class="page-head"><div><h1>Kalendarz</h1><div class="sub">Puchar Świata ${seasonLabel(calendar.season)} · ${weekends.length} weekendów · godziny czasu polskiego · kliknij konkurs z wynikami, by zobaczyć szczegóły</div></div></div>
+  return `<div class="page-head"><div><h1>Kalendarz</h1><div class="sub">Puchar Świata ${seasonLabel(calendar.season)} · ${weekends.length} weekendów · godziny czasu polskiego · „wstępnie” = FIS nie opublikował jeszcze programu zawodów</div></div></div>
   ${weekends.map((w) => {
     const st = weekendStatus(w);
     const hasRes = w.races.some((r) => results[r.id]);
@@ -740,7 +740,7 @@ function kalendarz() {
           const tag = res ? 'a' : 'div';
           const live = !res && !r.cancelled && r.date === today();
           return `<${tag} class="race ${res ? 'has-res' : ''} ${r.cancelled ? 'off' : ''} ${r.category === 'QUA' ? 'qua' : ''}" ${res ? `href="#race/${r.id}" title="Zobacz wyniki i punkty"` : ''}>
-            <span class="when">${fmtDow(r.date)}<b>${r.time ? localTime(r) : 'godz. —'}</b></span>
+            <span class="when" ${r.time ? '' : 'title="FIS nie opublikował jeszcze programu zawodów – dzień i godzina mogą się zmienić"'}>${fmtDow(r.date)}<b>${r.time ? localTime(r) : '<span class="tbd">wstępnie</span>'}</b></span>
             <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
               <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
               ${win ? `<span class="win">· ${flag(win.nation)}${esc(prettyName(win.name).last)}</span>` : ''}</span>
@@ -942,7 +942,7 @@ function zasady() {
       ]))}
       ${sec('Skąd są wyniki', 'globe', li([
         'Wyniki i odległości pobierane są automatycznie z oficjalnych danych FIS (co 2 h, w weekendy co 30 min).',
-        'Godziny startu: z Berkutschi (gdy opublikuje program zawodów), a wcześniej z programów zawodów FIS. W aplikacji zawsze w czasie polskim.',
+        'Dni i godziny startu pochodzą z oficjalnych programów zawodów FIS. W aplikacji zawsze w czasie polskim.',
         'Rekord skoczni odczytywany jest z oficjalnego protokołu FIS; admin może go poprawić, jeśli skok nie został uznany.',
         'Liczą się tylko konkursy indywidualne — bez drużynówek, duetów i mikstów.',
       ]))}

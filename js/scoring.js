@@ -123,8 +123,7 @@ export function raceStart(r) {
   const [y, m, d] = r.date.split('-').map(Number);
   const [hh, mm] = r.time.split(':').map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, hh, mm));
-  // Berkutschi podaje czas polski (tz), FIS – lokalny czas skoczni
-  const tz = r.tz || TZ[r.nation] || 'Europe/Warsaw';
+  const tz = TZ[r.nation] || 'Europe/Warsaw';
   const offset = new Date(utc.toLocaleString('en-US', { timeZone: tz })) - new Date(utc.toLocaleString('en-US', { timeZone: 'UTC' }));
   return new Date(utc - offset);
 }
@@ -137,7 +136,12 @@ export function firstRace(weekend) {
 // Skład i kapitan blokują się minutę przed pierwszym startem weekendu.
 export function lockTime(weekend) {
   const r = firstRace(weekend);
-  return new Date((r ? raceStart(r) : new Date(weekend.start + 'T00:00:00')).getTime() - 60 * 1000);
+  if (!r) return new Date(new Date(weekend.start + 'T00:00:00').getTime() - 60 * 1000);
+  const start = raceStart(r);
+  // bez programu zawodów baza FIS potrafi mieć kwalifikacje pod datą konkursu (dzień za późno) –
+  // na wszelki wypadek blokujemy od północy dnia wcześniej
+  if (!r.time && r.category === 'QUA') start.setDate(start.getDate() - 1);
+  return new Date(start.getTime() - 60 * 1000);
 }
 
 export function isLocked(weekend, now = new Date()) {

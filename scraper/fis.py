@@ -275,62 +275,6 @@ def parse_event(h, season):
     return races
 
 
-# ---------------------------------------------------------------- Berkutschi (godziny startu)
-
-BERK = "https://berkutschi.com/pl/front"
-
-
-def berkutschi_programs():
-    """Programy zawodów z Berkutschi: [(data, płeć, etykieta, godzina CET)].
-
-    Berkutschi publikuje program z wyprzedzeniem (zwykle od najbliższych zawodów),
-    linki do niego są w kalendarzu PŚ mężczyzn i kobiet.
-    """
-    ids = set()
-    for sort in ("worldcup_men_full", "worldcup_ladies_full"):
-        try:
-            ids |= set(re.findall(r"/front/events/(\d+)/preview", fetch(f"{BERK}/calendars?sort={sort}")))
-        except Exception as e:  # noqa: BLE001
-            print(f"  Berkutschi niedostępne ({sort}): {e}", file=sys.stderr)
-    out = []
-    for eid in sorted(ids):
-        try:
-            t = text(fetch(f"{BERK}/events/{eid}/program"))
-        except Exception as e:  # noqa: BLE001
-            print(f"  brak programu Berkutschi {eid}: {e}", file=sys.stderr)
-            continue
-        # "20.11.2026 Piątek (Panowie) 12:00 Trening 14:00 Kwalifikacje 16:00 Seria 1 21.11.2026 ..."
-        for day in re.finditer(r"(\d{2})\.(\d{2})\.(\d{4}) \w+ \((Panowie|Panie)\)(.*?)(?=\d{2}\.\d{2}\.\d{4} \w+ \(|Wszystkie czasy|$)", t, re.S):
-            d, m, y, g, body = day.groups()
-            date = f"{y}-{m}-{d}"
-            for hhmm, label in re.findall(r"(\d{1,2}:\d{2})\s+(.+?)(?=\s+\d{1,2}:\d{2}\b|$)", body.strip()):
-                out.append((date, "M" if g == "Panowie" else "W", label.strip(), hhmm.zfill(5)))
-    print(f"  Berkutschi: {len(ids)} programów, {len(out)} wpisów")
-    return out
-
-
-def apply_berkutschi(events, programs):
-    """Nadpisuje godziny (i daty kwalifikacji) danymi z Berkutschi – czas CET/CEST."""
-    by_key = {}
-    for date, g, label, hhmm in programs:
-        kind = "QUA" if label.startswith("Kwalifik") else "RUN1" if re.match(r"Seria 1\b", label) else None
-        if kind:
-            by_key.setdefault((date, g, kind), []).append(hhmm)
-    changed = 0
-    for ev in events:
-        for r in ev["races"]:
-            kind = "QUA" if r["category"] == "QUA" else "RUN1"
-            times = sorted(by_key.get((r["date"], r["gender"], kind), []))
-            if not times:
-                continue
-            # przy kilku „Seria 1” jednego dnia (np. konkurs + mikst wieczorem) indywidualny jest pierwszy
-            new = times[0]
-            if r.get("time") != new or r.get("tz") != "Europe/Warsaw":
-                changed += 1
-            r["time"], r["tz"], r["timeSource"] = new, "Europe/Warsaw", "berkutschi"
-    print(f"  Berkutschi: zaktualizowano godziny {changed} startów")
-
-
 def calendar_url(season, category):
     return (f"{BASE}/ski-jumping/calendar-results.html?eventselection=&place=&sectorcode=JP"
             f"&seasoncode={season}&categorycode={category}&disciplinecode=&gendercode=&racedate=&racecodex="
@@ -352,13 +296,20 @@ def split_by_gap(ev, races, gap=2):
 
 
 def program_times(eh, ev_id):
-    """Godziny startu z PDF „Event Program” (czas lokalny skoczni).
+    """Dni i godziny startu z PDF „Event Program” (czas lokalny skoczni).
 
-    Zwraca {(data, kategoria, płeć): [godziny]} – np. {("2026-11-20", "QUA", "W"): ["10:30"]}.
+    Baza FIS przypisuje kwalifikacje do daty konkursu, do którego się kwalifikuje
+    (np. kwalifikacje w piątek mają w bazie datę sobotnią). Program zawodów ma prawdziwy
+    dzień – nagłówek „27.11.2026 Event Location Races” – a przy wpisie etykietę z bazy FIS
+    („28 Nov - QUA Men's IND”).
+
+    Zwraca (tagged, untagged):
+      tagged   = {(data_w_bazie, kategoria, płeć): [(prawdziwa_data, godzina)]}
+      untagged = [(prawdziwa_data, "QUA", płeć, godzina)] – wpisy bez etykiety
     """
     m = re.search(r'href="([^"]+\.pdf)"[^>]*data-ga-download="Event Program"', eh)
     if not m:
-        return {}
+        return {}, []
     try:
         import io
         import pypdf
@@ -366,49 +317,88 @@ def program_times(eh, ev_id):
         t = "\n".join(pg.extract_text() or "" for pg in pypdf.PdfReader(io.BytesIO(data)).pages)
     except Exception as e:  # noqa: BLE001
         print(f"  brak programu zawodów {ev_id}: {e}", file=sys.stderr)
-        return {}
-    # Wpis harmonogramu zaczyna się od godziny, ale opis bywa łamany na kilka linii –
-    # łączymy linie aż do następnej godziny albo nagłówka dnia.
+        return {}, []
+    # Wpis zaczyna się od godziny, opis bywa łamany na kilka linii – łączymy je.
+    # Nagłówek dnia to „DD.MM.RRRR Event …”; stopki stron („28.11.2026 - 29.11.2026”) pomijamy.
     entries = []
-    day_hdr = None
+    day = None
     for line in t.splitlines():
-        d = re.match(r"\s*(\d{2})\.(\d{2})\.(\d{4})\b", line)
+        d = re.match(r"\s*(\d{2})\.(\d{2})\.(\d{4})\s+Event\b", line)
         if d:
-            day_hdr = dt.date(int(d.group(3)), int(d.group(2)), int(d.group(1)))
+            day = dt.date(int(d.group(3)), int(d.group(2)), int(d.group(1)))
             entries.append(None)
             continue
+        if re.match(r"\s*\d{2}\.\d{2}\.\d{4}\s*-\s*\d{2}\.\d{2}\.\d{4}", line):
+            entries.append(None)  # stopka strony – kolejne linie nie należą do poprzedniego wpisu
+            continue
         if re.match(r"\s*\d{1,2}:\d{2}\b", line):
-            entries.append([day_hdr, line])
+            entries.append([day, line])
         elif entries and entries[-1]:
             entries[-1][1] += " " + line
-    out = {}
+    tagged, untagged = {}, []
     for e in entries:
         if not e or not e[0]:
             continue
-        day_hdr, txt = e
+        day, txt = e
         mm = re.match(r"\s*(\d{1,2}:\d{2})\s+(Start Qualification|Competition start|Start Competition)\b", txt)
         if not mm:
             continue
+        hhmm = mm.group(1).zfill(5)
+        is_qua = "Qualification" in mm.group(2)
         tag = re.search(r"(\d{1,2}) (\w{3}) - (QUA|WC|WSC) (Men's|Women's) IND", txt)
         if tag:
-            day, mon, cat, g = tag.groups()
-            if (cat == "QUA") != ("Qualification" in mm.group(2)):
-                continue  # etykieta z innego wpisu (np. łamany opis) – nie zgadzamy godziny
+            dday, mon, cat, g = tag.groups()
+            if is_qua and cat != "QUA":
+                # kwalifikacje opisane etykietą konkursu (np. niedzielne kwalifikacje bez osobnego wpisu w bazie)
+                untagged.append((day.isoformat(), "QUA", "M" if g == "Men's" else "W", hhmm))
+                continue
+            if not is_qua and cat == "QUA":
+                continue
             try:
-                date = dt.date(day_hdr.year, MONTHS[mon], int(day)).isoformat()
+                db_date = dt.date(day.year, MONTHS[mon], int(dday)).isoformat()
             except (KeyError, ValueError):
                 continue
-            g = "M" if g == "Men's" else "W"
-        elif "Qualification" in mm.group(2) and re.search(r"(?i)\b(wom[ae]n|ladies|men)\b", txt):
-            # organizator nie dopisał oznaczenia konkursu – płeć z opisu, dzień z nagłówka
-            cat, date = "QUA", day_hdr.isoformat()
+            tagged.setdefault((db_date, cat, "M" if g == "Men's" else "W"), []).append((day.isoformat(), hhmm))
+        elif is_qua and re.search(r"(?i)\b(wom[ae]n|ladies|men)\b", txt):
             g = "W" if re.search(r"(?i)\b(wom[ae]n|ladies)\b", txt) else "M"
-        else:
-            continue
-        out.setdefault((date, cat, g), []).append(mm.group(1).zfill(5))
-    for v in out.values():
+            untagged.append((day.isoformat(), "QUA", g, hhmm))
+    for v in tagged.values():
         v.sort()
-    return out
+    return tagged, untagged
+
+
+def apply_program(races, tagged, untagged):
+    """Ustawia prawdziwy dzień i godzinę startu z programu zawodów."""
+    for r in sorted(races, key=lambda x: x["codex"]):
+        if r["time"]:
+            continue  # rozegrany – godzina z bazy FIS
+        hits = tagged.get((r["date"], r["category"], r["gender"]))
+        if hits:
+            r["date"], r["time"] = hits.pop(0)
+            continue
+        if r["category"] != "QUA":
+            # literówka w etykiecie programu (np. „19 Mar” pod nagłówkiem 20.03) – ten sam rodzaj
+            # i płeć zaplanowane dokładnie w dniu konkursu z bazy FIS
+            found = False
+            for (_, cat, g), lst in tagged.items():
+                for i, (day, hhmm) in enumerate(lst):
+                    if cat == r["category"] and g == r["gender"] and day == r["date"]:
+                        r["time"] = hhmm
+                        lst.pop(i)
+                        found = True
+                        break
+                if found:
+                    break
+            if found:
+                continue
+        if r["category"] == "QUA":
+            # wpis bez etykiety: kwalifikacje tej płci w dniu konkursu albo dzień wcześniej
+            for i, (day, cat, g, hhmm) in enumerate(untagged):
+                gap = (dt.date.fromisoformat(r["date"]) - dt.date.fromisoformat(day)).days
+                if g == r["gender"] and 0 <= gap <= 1:
+                    r["date"], r["time"] = day, hhmm
+                    untagged.pop(i)
+                    break
 
 
 def build_calendar(season):
@@ -430,13 +420,13 @@ def build_calendar(season):
         if not races:
             continue
         seen.update(r["id"] for r in races)
-        # FIS nie wpisuje godzin do bazy przed zawodami – bierzemy je z programu zawodów
+        # FIS nie wpisuje godzin do bazy przed zawodami, a kwalifikacje ma pod datą konkursu –
+        # prawdziwy dzień i godzinę bierzemy z programu zawodów
         if any(not r["time"] for r in races):
-            times = program_times(eh, ev["id"])
-            for r in sorted(races, key=lambda x: x["codex"]):
-                if not r["time"] and times.get((r["date"], r["category"], r["gender"])):
-                    r["time"] = times[(r["date"], r["category"], r["gender"])].pop(0)
-            races.sort(key=lambda x: (x["date"], x["time"] or "99:99", x["codex"]))
+            apply_program(races, *program_times(eh, ev["id"]))
+        races.sort(key=lambda x: (x["date"], x["time"] or "99:99", x["codex"]))
+        ev["start"] = min([ev["start"]] + [r["date"] for r in races])
+        ev["end"] = max([ev["end"]] + [r["date"] for r in races])
         ev["cancelled"] = all(r["cancelled"] for r in races)
         parts = split_by_gap(ev, races) if ev.get("championship") else [{**ev, "races": races}]
         out.extend(parts)
@@ -593,8 +583,6 @@ def main():
 
     print("Kalendarz...")
     events = build_calendar(args.season)
-    # godziny z Berkutschi mają pierwszeństwo przed programami FIS
-    apply_berkutschi(events, berkutschi_programs())
 
     print("Wyniki...")
     for ev in events:

@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-13T03:20:45+00:00",
+ "updated": "2026-11-13T07:13:32+00:00",
  "events": [
   {
    "id": "63024",
@@ -19,9 +19,7 @@
      "category": "QUA",
      "gender": "W",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "7796",
@@ -32,9 +30,7 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "7799",
@@ -45,9 +41,7 @@
      "category": "WC",
      "gender": "W",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "7795",
@@ -58,9 +52,7 @@
      "category": "WC",
      "gender": "M",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "8011",
@@ -71,9 +63,7 @@
      "category": "QUA",
      "gender": "W",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "7800",
@@ -84,9 +74,7 @@
      "category": "WC",
      "gender": "W",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "8010",
@@ -97,9 +85,7 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     },
     {
      "id": "7797",
@@ -110,9 +96,7 @@
      "category": "WC",
      "gender": "M",
      "team": false,
-     "cancelled": false,
-     "tz": "Europe/Warsaw",
-     "timeSource": "berkutschi"
+     "cancelled": false
     }
    ]
   },
@@ -120,10 +104,21 @@
    "id": "63025",
    "place": "Ruka",
    "nation": "FIN",
-   "start": "2026-11-28",
+   "start": "2026-11-27",
    "end": "2026-11-29",
    "cancelled": false,
    "races": [
+    {
+     "id": "7801",
+     "date": "2026-11-27",
+     "time": "18:15",
+     "codex": "0316",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
     {
      "id": "7802",
      "date": "2026-11-28",
@@ -131,17 +126,6 @@
      "codex": "0317",
      "discipline": "Individual Large Hill",
      "category": "WC",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
-     "id": "7801",
-     "date": "2026-11-28",
-     "time": "18:15",
-     "codex": "0316",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
      "gender": "M",
      "team": false,
      "cancelled": false
@@ -309,6 +293,17 @@
    "cancelled": false,
    "races": [
     {
+     "id": "7824",
+     "date": "2026-12-11",
+     "time": "11:45",
+     "codex": "0019",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7809",
      "date": "2026-12-12",
      "time": "10:00",
@@ -338,17 +333,6 @@
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
-     "id": "7824",
-     "date": "2026-12-12",
-     "time": null,
-     "codex": "0019",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "W",
      "team": false,
      "cancelled": false
     },
@@ -726,10 +710,21 @@
    "id": "63035",
    "place": "Zhangjiakou",
    "nation": "CHN",
-   "start": "2027-01-15",
+   "start": "2027-01-14",
    "end": "2027-01-16",
    "cancelled": false,
    "races": [
+    {
+     "id": "7848",
+     "date": "2027-01-14",
+     "time": "18:00",
+     "codex": "0341",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
     {
      "id": "7849",
      "date": "2027-01-15",
@@ -737,17 +732,6 @@
      "codex": "0342",
      "discipline": "Individual Large Hill",
      "category": "WC",
-     "gender": "W",
-     "team": false,
-     "cancelled": false
-    },
-    {
-     "id": "7848",
-     "date": "2027-01-15",
-     "time": "18:00",
-     "codex": "0341",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
      "gender": "W",
      "team": false,
      "cancelled": false
@@ -1438,7 +1422,7 @@
     {
      "id": "7898",
      "date": "2027-03-20",
-     "time": null,
+     "time": "15:30",
      "codex": "0059",
      "discipline": "Individual Flying Hill",
      "category": "WC",

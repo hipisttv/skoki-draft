@@ -544,3 +544,4 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 @media (max-width: 1240px) { .navbtn svg { display: none; } .navbtn { padding: .45rem .55rem; } }
 .race .when b { display: block; font-size: .95rem; color: var(--text); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .race .when b { display: inline; margin-left: .4rem; } }
+.tbd { font-size: .72rem; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: .04em; }
