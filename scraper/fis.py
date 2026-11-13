@@ -144,6 +144,9 @@ def build_athletes(season):
     athletes = {}
     for a in active_athletes(season).values():
         athletes[a["id"]] = {**a, "wc": 0, "wcRank": None, "coc": 0, "gp": 0}
+    if len(athletes) < 500:
+        raise RuntimeError(f"podejrzanie mało aktywnych zawodników ({len(athletes)}) – FIS zmienił stronę?")
+    skipped = set()
     for gender in ("M", "W"):
         for cup, key, s in (("WC", "wc", prev), ("COC", "coc", prev), ("GP", "gp", season)):
             try:
@@ -153,13 +156,15 @@ def build_athletes(season):
                 rows = []
             print(f"  {cup} {gender}: {len(rows)} z punktami")
             for r in rows:
-                a = athletes.setdefault(r["id"], {
-                    "id": r["id"], "name": r["name"], "nation": r["nation"], "gender": gender,
-                    "born": None, "wc": 0, "wcRank": None, "coc": 0, "gp": 0,
-                })
+                a = athletes.get(r["id"])
+                if not a:  # zakończył karierę / nieaktywny w FIS
+                    skipped.add(r["name"])
+                    continue
                 a[key] = r["points"]
                 if cup == "WC":
                     a["wcRank"] = r["rank"]
+    if skipped:
+        print(f"  pominięci nieaktywni z punktami: {', '.join(sorted(skipped))}")
     return sorted(athletes.values(), key=lambda a: (-a["wc"], -a["coc"], -a["gp"], a["name"]))
 
 
@@ -290,6 +295,66 @@ def split_by_gap(ev, races, gap=2):
             for i, p in enumerate(parts)]
 
 
+def program_times(eh, ev_id):
+    """Godziny startu z PDF „Event Program” (czas lokalny skoczni).
+
+    Zwraca {(data, kategoria, płeć): [godziny]} – np. {("2026-11-20", "QUA", "W"): ["10:30"]}.
+    """
+    m = re.search(r'href="([^"]+\.pdf)"[^>]*data-ga-download="Event Program"', eh)
+    if not m:
+        return {}
+    try:
+        import io
+        import pypdf
+        data, _ = fetch_bytes(m.group(1))
+        t = "\n".join(pg.extract_text() or "" for pg in pypdf.PdfReader(io.BytesIO(data)).pages)
+    except Exception as e:  # noqa: BLE001
+        print(f"  brak programu zawodów {ev_id}: {e}", file=sys.stderr)
+        return {}
+    # Wpis harmonogramu zaczyna się od godziny, ale opis bywa łamany na kilka linii –
+    # łączymy linie aż do następnej godziny albo nagłówka dnia.
+    entries = []
+    day_hdr = None
+    for line in t.splitlines():
+        d = re.match(r"\s*(\d{2})\.(\d{2})\.(\d{4})\b", line)
+        if d:
+            day_hdr = dt.date(int(d.group(3)), int(d.group(2)), int(d.group(1)))
+            entries.append(None)
+            continue
+        if re.match(r"\s*\d{1,2}:\d{2}\b", line):
+            entries.append([day_hdr, line])
+        elif entries and entries[-1]:
+            entries[-1][1] += " " + line
+    out = {}
+    for e in entries:
+        if not e or not e[0]:
+            continue
+        day_hdr, txt = e
+        mm = re.match(r"\s*(\d{1,2}:\d{2})\s+(Start Qualification|Competition start|Start Competition)\b", txt)
+        if not mm:
+            continue
+        tag = re.search(r"(\d{1,2}) (\w{3}) - (QUA|WC|WSC) (Men's|Women's) IND", txt)
+        if tag:
+            day, mon, cat, g = tag.groups()
+            if (cat == "QUA") != ("Qualification" in mm.group(2)):
+                continue  # etykieta z innego wpisu (np. łamany opis) – nie zgadzamy godziny
+            try:
+                date = dt.date(day_hdr.year, MONTHS[mon], int(day)).isoformat()
+            except (KeyError, ValueError):
+                continue
+            g = "M" if g == "Men's" else "W"
+        elif "Qualification" in mm.group(2) and re.search(r"(?i)\b(wom[ae]n|ladies|men)\b", txt):
+            # organizator nie dopisał oznaczenia konkursu – płeć z opisu, dzień z nagłówka
+            cat, date = "QUA", day_hdr.isoformat()
+            g = "W" if re.search(r"(?i)\b(wom[ae]n|ladies)\b", txt) else "M"
+        else:
+            continue
+        out.setdefault((date, cat, g), []).append(mm.group(1).zfill(5))
+    for v in out.values():
+        v.sort()
+    return out
+
+
 def build_calendar(season):
     # cykle (Turniej Czterech Skoczni, Two Nights Tour…) mają kraj "FIS" i zawierają tylko
     # klasyfikacje łączne, które nie są osobnymi konkursami
@@ -309,6 +374,13 @@ def build_calendar(season):
         if not races:
             continue
         seen.update(r["id"] for r in races)
+        # FIS nie wpisuje godzin do bazy przed zawodami – bierzemy je z programu zawodów
+        if any(not r["time"] for r in races):
+            times = program_times(eh, ev["id"])
+            for r in sorted(races, key=lambda x: x["codex"]):
+                if not r["time"] and times.get((r["date"], r["category"], r["gender"])):
+                    r["time"] = times[(r["date"], r["category"], r["gender"])].pop(0)
+            races.sort(key=lambda x: (x["date"], x["time"] or "99:99", x["codex"]))
         ev["cancelled"] = all(r["cancelled"] for r in races)
         parts = split_by_gap(ev, races) if ev.get("championship") else [{**ev, "races": races}]
         out.extend(parts)

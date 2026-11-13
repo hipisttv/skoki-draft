@@ -496,7 +496,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   .brand small { display: none; }
 }
 .top__inner { min-width: 0; }
-.nav { min-width: 0; overflow: hidden; }
+.nav { min-width: 0; align-items: center; }
 
 .todos { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .5rem; position: relative; z-index: 1; }
 .todo { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; font-weight: 700; padding: .3rem .7rem; border-radius: 999px; background: rgba(255, 255, 255, .14); }
@@ -534,3 +534,13 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .toast.warn { background: #ffcf3d; color: #3a2a00; }
 .player .ath .nm { white-space: nowrap; }
 .player .ath { min-width: 0; overflow: hidden; }
+
+.navmore { position: relative; }
+.navbtn { display: flex; align-items: center; gap: .45rem; padding: .45rem .7rem; border-radius: 8px; color: rgba(255, 255, 255, .78); font-weight: 600; font-size: .9rem; background: none; border: 0; }
+.navbtn:hover, .navbtn.active { color: #fff; background: rgba(255, 255, 255, .14); }
+.navbtn:hover:not(:disabled) { border-color: transparent; color: #fff; }
+.navbtn svg { width: 17px; height: 17px; }
+.menu.navmenu { right: auto; left: 0; top: calc(100% + 8px); }
+@media (max-width: 1240px) { .navbtn svg { display: none; } .navbtn { padding: .45rem .55rem; } }
+.race .when b { display: block; font-size: .95rem; color: var(--text); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .race .when b { display: inline; margin-left: .4rem; } }

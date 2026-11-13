@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-12T18:51:18+00:00",
+ "updated": "2026-11-13T03:08:00+00:00",
  "events": [
   {
    "id": "63024",
@@ -11,20 +11,9 @@
    "cancelled": false,
    "races": [
     {
-     "id": "7796",
-     "date": "2026-11-20",
-     "time": null,
-     "codex": "0002",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7798",
      "date": "2026-11-20",
-     "time": null,
+     "time": "10:30",
      "codex": "0004",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -33,12 +22,12 @@
      "cancelled": false
     },
     {
-     "id": "7795",
-     "date": "2026-11-21",
-     "time": null,
-     "codex": "0001",
-     "discipline": "Individual Large Hill",
-     "category": "WC",
+     "id": "7796",
+     "date": "2026-11-20",
+     "time": "14:00",
+     "codex": "0002",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
      "gender": "M",
      "team": false,
      "cancelled": false
@@ -46,7 +35,7 @@
     {
      "id": "7799",
      "date": "2026-11-21",
-     "time": null,
+     "time": "14:35",
      "codex": "0005",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -55,10 +44,10 @@
      "cancelled": false
     },
     {
-     "id": "7797",
-     "date": "2026-11-22",
-     "time": null,
-     "codex": "0003",
+     "id": "7795",
+     "date": "2026-11-21",
+     "time": "16:50",
+     "codex": "0001",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
@@ -66,9 +55,20 @@
      "cancelled": false
     },
     {
+     "id": "8011",
+     "date": "2026-11-22",
+     "time": "10:30",
+     "codex": "0076",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7800",
      "date": "2026-11-22",
-     "time": null,
+     "time": "12:00",
      "codex": "0006",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -79,7 +79,7 @@
     {
      "id": "8010",
      "date": "2026-11-22",
-     "time": null,
+     "time": "14:30",
      "codex": "0075",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -88,13 +88,13 @@
      "cancelled": false
     },
     {
-     "id": "8011",
+     "id": "7797",
      "date": "2026-11-22",
-     "time": null,
-     "codex": "0076",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "W",
+     "time": "16:00",
+     "codex": "0003",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
      "team": false,
      "cancelled": false
     }
@@ -109,20 +109,9 @@
    "cancelled": false,
    "races": [
     {
-     "id": "7801",
-     "date": "2026-11-28",
-     "time": null,
-     "codex": "0316",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7802",
      "date": "2026-11-28",
-     "time": null,
+     "time": "17:30",
      "codex": "0317",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -131,9 +120,20 @@
      "cancelled": false
     },
     {
+     "id": "7801",
+     "date": "2026-11-28",
+     "time": "18:15",
+     "codex": "0316",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7803",
      "date": "2026-11-29",
-     "time": null,
+     "time": "15:20",
      "codex": "0007",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -154,7 +154,7 @@
     {
      "id": "7818",
      "date": "2026-11-28",
-     "time": null,
+     "time": "12:00",
      "codex": "0325",
      "discipline": "Individual Normal Hill Qualification",
      "category": "QUA",
@@ -165,7 +165,7 @@
     {
      "id": "7819",
      "date": "2026-11-28",
-     "time": null,
+     "time": "13:30",
      "codex": "0326",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -176,7 +176,7 @@
     {
      "id": "7820",
      "date": "2026-11-29",
-     "time": null,
+     "time": "10:15",
      "codex": "0015",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -197,7 +197,7 @@
     {
      "id": "7821",
      "date": "2026-12-04",
-     "time": null,
+     "time": "14:15",
      "codex": "0016",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -208,7 +208,7 @@
     {
      "id": "7822",
      "date": "2026-12-04",
-     "time": null,
+     "time": "15:45",
      "codex": "0017",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -219,7 +219,7 @@
     {
      "id": "7804",
      "date": "2026-12-04",
-     "time": null,
+     "time": "18:00",
      "codex": "0318",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -228,20 +228,9 @@
      "cancelled": false
     },
     {
-     "id": "7823",
-     "date": "2026-12-05",
-     "time": null,
-     "codex": "0018",
-     "discipline": "Individual Large Hill",
-     "category": "WC",
-     "gender": "W",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "8014",
      "date": "2026-12-05",
-     "time": null,
+     "time": "11:15",
      "codex": "0079",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -250,21 +239,21 @@
      "cancelled": false
     },
     {
-     "id": "7805",
+     "id": "7823",
      "date": "2026-12-05",
-     "time": null,
-     "codex": "0319",
+     "time": "12:45",
+     "codex": "0018",
      "discipline": "Individual Large Hill",
      "category": "WC",
-     "gender": "M",
+     "gender": "W",
      "team": false,
      "cancelled": false
     },
     {
-     "id": "7806",
-     "date": "2026-12-06",
-     "time": null,
-     "codex": "0008",
+     "id": "7805",
+     "date": "2026-12-05",
+     "time": "16:00",
+     "codex": "0319",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
@@ -274,10 +263,21 @@
     {
      "id": "8015",
      "date": "2026-12-06",
-     "time": null,
+     "time": "14:00",
      "codex": "0080",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7806",
+     "date": "2026-12-06",
+     "time": "15:40",
+     "codex": "0008",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
      "gender": "M",
      "team": false,
      "cancelled": false
@@ -295,7 +295,7 @@
     {
      "id": "7809",
      "date": "2026-12-12",
-     "time": null,
+     "time": "10:00",
      "codex": "0009",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -304,9 +304,20 @@
      "cancelled": false
     },
     {
+     "id": "7825",
+     "date": "2026-12-12",
+     "time": "13:00",
+     "codex": "0020",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7810",
      "date": "2026-12-12",
-     "time": null,
+     "time": "15:40",
      "codex": "0010",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -326,10 +337,10 @@
      "cancelled": false
     },
     {
-     "id": "7825",
-     "date": "2026-12-12",
-     "time": null,
-     "codex": "0020",
+     "id": "7826",
+     "date": "2026-12-13",
+     "time": "13:00",
+     "codex": "0021",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "W",
@@ -339,22 +350,11 @@
     {
      "id": "7811",
      "date": "2026-12-13",
-     "time": null,
+     "time": "15:30",
      "codex": "0011",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
-     "id": "7826",
-     "date": "2026-12-13",
-     "time": null,
-     "codex": "0021",
-     "discipline": "Individual Large Hill",
-     "category": "WC",
-     "gender": "W",
      "team": false,
      "cancelled": false
     }
@@ -371,7 +371,7 @@
     {
      "id": "7812",
      "date": "2026-12-18",
-     "time": null,
+     "time": "12:15",
      "codex": "0322",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -382,7 +382,7 @@
     {
      "id": "7813",
      "date": "2026-12-18",
-     "time": null,
+     "time": "17:00",
      "codex": "0323",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -391,20 +391,9 @@
      "cancelled": false
     },
     {
-     "id": "7815",
-     "date": "2026-12-19",
-     "time": null,
-     "codex": "0012",
-     "discipline": "Individual Large Hill",
-     "category": "WC",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7814",
      "date": "2026-12-19",
-     "time": null,
+     "time": "13:15",
      "codex": "0324",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -413,10 +402,10 @@
      "cancelled": false
     },
     {
-     "id": "7816",
-     "date": "2026-12-20",
-     "time": null,
-     "codex": "0013",
+     "id": "7815",
+     "date": "2026-12-19",
+     "time": "16:00",
+     "codex": "0012",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
@@ -426,11 +415,22 @@
     {
      "id": "7817",
      "date": "2026-12-20",
-     "time": null,
+     "time": "13:30",
      "codex": "0014",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7816",
+     "date": "2026-12-20",
+     "time": "16:00",
+     "codex": "0013",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
+     "gender": "M",
      "team": false,
      "cancelled": false
     }
@@ -447,7 +447,7 @@
     {
      "id": "7827",
      "date": "2026-12-28",
-     "time": null,
+     "time": "13:30",
      "codex": "0327",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -456,20 +456,9 @@
      "cancelled": false
     },
     {
-     "id": "7828",
-     "date": "2026-12-28",
-     "time": null,
-     "codex": "0328",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7829",
      "date": "2026-12-28",
-     "time": null,
+     "time": "15:15",
      "codex": "0329",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -478,9 +467,20 @@
      "cancelled": false
     },
     {
+     "id": "7828",
+     "date": "2026-12-28",
+     "time": "17:45",
+     "codex": "0328",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7830",
      "date": "2026-12-29",
-     "time": null,
+     "time": "16:30",
      "codex": "0022",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -501,7 +501,7 @@
     {
      "id": "7831",
      "date": "2026-12-31",
-     "time": null,
+     "time": "12:15",
      "codex": "0330",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -510,20 +510,9 @@
      "cancelled": false
     },
     {
-     "id": "7832",
-     "date": "2026-12-31",
-     "time": null,
-     "codex": "0331",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7833",
      "date": "2026-12-31",
-     "time": null,
+     "time": "14:00",
      "codex": "0332",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -532,9 +521,20 @@
      "cancelled": false
     },
     {
+     "id": "7832",
+     "date": "2026-12-31",
+     "time": "16:30",
+     "codex": "0331",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7835",
      "date": "2027-01-01",
-     "time": null,
+     "time": "16:30",
      "codex": "0024",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -555,7 +555,7 @@
     {
      "id": "7836",
      "date": "2027-01-02",
-     "time": null,
+     "time": "13:30",
      "codex": "0333",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -564,20 +564,9 @@
      "cancelled": false
     },
     {
-     "id": "7837",
-     "date": "2027-01-02",
-     "time": null,
-     "codex": "0334",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7838",
      "date": "2027-01-02",
-     "time": null,
+     "time": "15:30",
      "codex": "0335",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -586,9 +575,20 @@
      "cancelled": false
     },
     {
+     "id": "7837",
+     "date": "2027-01-02",
+     "time": "17:45",
+     "codex": "0334",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7839",
      "date": "2027-01-03",
-     "time": null,
+     "time": "16:30",
      "codex": "0025",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -609,7 +609,7 @@
     {
      "id": "7840",
      "date": "2027-01-05",
-     "time": null,
+     "time": "12:15",
      "codex": "0336",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -618,20 +618,9 @@
      "cancelled": false
     },
     {
-     "id": "7841",
-     "date": "2027-01-05",
-     "time": null,
-     "codex": "0337",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "M",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7842",
      "date": "2027-01-05",
-     "time": null,
+     "time": "14:15",
      "codex": "0338",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -640,9 +629,20 @@
      "cancelled": false
     },
     {
+     "id": "7841",
+     "date": "2027-01-05",
+     "time": "16:40",
+     "codex": "0337",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7843",
      "date": "2027-01-06",
-     "time": null,
+     "time": "16:30",
      "codex": "0026",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -663,7 +663,7 @@
     {
      "id": "7844",
      "date": "2027-01-09",
-     "time": null,
+     "time": "13:00",
      "codex": "0339",
      "discipline": "Individual Normal Hill Qualification",
      "category": "QUA",
@@ -674,7 +674,7 @@
     {
      "id": "7845",
      "date": "2027-01-09",
-     "time": null,
+     "time": "14:30",
      "codex": "0340",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -685,7 +685,7 @@
     {
      "id": "7846",
      "date": "2027-01-10",
-     "time": null,
+     "time": "13:00",
      "codex": "0027",
      "discipline": "Individual Normal Hill Qualification",
      "category": "QUA",
@@ -696,7 +696,7 @@
     {
      "id": "7847",
      "date": "2027-01-10",
-     "time": null,
+     "time": "14:30",
      "codex": "0028",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -715,20 +715,9 @@
    "cancelled": false,
    "races": [
     {
-     "id": "7848",
-     "date": "2027-01-15",
-     "time": null,
-     "codex": "0341",
-     "discipline": "Individual Large Hill Qualification",
-     "category": "QUA",
-     "gender": "W",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7849",
      "date": "2027-01-15",
-     "time": null,
+     "time": "15:30",
      "codex": "0342",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -737,9 +726,20 @@
      "cancelled": false
     },
     {
+     "id": "7848",
+     "date": "2027-01-15",
+     "time": "18:00",
+     "codex": "0341",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
      "id": "7850",
      "date": "2027-01-16",
-     "time": null,
+     "time": "14:00",
      "codex": "0029",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -750,7 +750,7 @@
     {
      "id": "7851",
      "date": "2027-01-16",
-     "time": null,
+     "time": "15:30",
      "codex": "0030",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -803,7 +803,7 @@
     {
      "id": "7852",
      "date": "2027-01-19",
-     "time": null,
+     "time": "15:00",
      "codex": "0343",
      "discipline": "Individual Normal Hill Qualification",
      "category": "QUA",
@@ -814,7 +814,7 @@
     {
      "id": "7853",
      "date": "2027-01-19",
-     "time": null,
+     "time": "16:15",
      "codex": "0344",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -825,7 +825,7 @@
     {
      "id": "7854",
      "date": "2027-01-20",
-     "time": null,
+     "time": "16:15",
      "codex": "0031",
      "discipline": "Individual Normal Hill",
      "category": "WC",
@@ -846,7 +846,7 @@
     {
      "id": "7859",
      "date": "2027-01-22",
-     "time": null,
+     "time": "10:30",
      "codex": "0034",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -855,20 +855,9 @@
      "cancelled": false
     },
     {
-     "id": "7860",
-     "date": "2027-01-22",
-     "time": null,
-     "codex": "0035",
-     "discipline": "Individual Large Hill",
-     "category": "WC",
-     "gender": "W",
-     "team": false,
-     "cancelled": false
-    },
-    {
      "id": "7861",
      "date": "2027-01-22",
-     "time": null,
+     "time": "14:45",
      "codex": "0036",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -877,21 +866,21 @@
      "cancelled": false
     },
     {
-     "id": "7862",
-     "date": "2027-01-23",
-     "time": null,
-     "codex": "0037",
+     "id": "7860",
+     "date": "2027-01-22",
+     "time": "16:30",
+     "codex": "0035",
      "discipline": "Individual Large Hill",
      "category": "WC",
-     "gender": "M",
+     "gender": "W",
      "team": false,
      "cancelled": false
     },
     {
-     "id": "7863",
-     "date": "2027-01-24",
-     "time": null,
-     "codex": "0038",
+     "id": "7862",
+     "date": "2027-01-23",
+     "time": "16:15",
+     "codex": "0037",
      "discipline": "Individual Large Hill",
      "category": "WC",
      "gender": "M",
@@ -901,10 +890,21 @@
     {
      "id": "8043",
      "date": "2027-01-24",
-     "time": null,
+     "time": "09:30",
      "codex": "0082",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "7863",
+     "date": "2027-01-24",
+     "time": "11:00",
+     "codex": "0038",
+     "discipline": "Individual Large Hill",
+     "category": "WC",
      "gender": "M",
      "team": false,
      "cancelled": false
@@ -922,7 +922,7 @@
     {
      "id": "7866",
      "date": "2027-01-29",
-     "time": null,
+     "time": "14:15",
      "codex": "0040",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -933,7 +933,7 @@
     {
      "id": "7865",
      "date": "2027-01-30",
-     "time": null,
+     "time": "11:45",
      "codex": "0039",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
@@ -944,7 +944,7 @@
     {
      "id": "7867",
      "date": "2027-01-30",
-     "time": null,
+     "time": "13:45",
      "codex": "0041",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -955,7 +955,7 @@
     {
      "id": "7868",
      "date": "2027-01-30",
-     "time": null,
+     "time": "16:10",
      "codex": "0042",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -966,7 +966,7 @@
     {
      "id": "7869",
      "date": "2027-01-31",
-     "time": null,
+     "time": "13:15",
      "codex": "0043",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -977,7 +977,7 @@
     {
      "id": "7870",
      "date": "2027-01-31",
-     "time": null,
+     "time": "16:05",
      "codex": "0044",
      "discipline": "Individual Large Hill",
      "category": "WC",
@@ -1117,7 +1117,7 @@
     {
      "id": "7886",
      "date": "2027-02-18",
-     "time": null,
+     "time": "15:30",
      "codex": "0355",
      "discipline": "Individual Flying Hill",
      "category": "WC",
@@ -1128,7 +1128,7 @@
     {
      "id": "7887",
      "date": "2027-02-19",
-     "time": null,
+     "time": "16:15",
      "codex": "0053",
      "discipline": "Individual Flying Hill Qualification",
      "category": "QUA",
@@ -1139,7 +1139,7 @@
     {
      "id": "7888",
      "date": "2027-02-20",
-     "time": null,
+     "time": "15:30",
      "codex": "0054",
      "discipline": "Individual Flying Hill",
      "category": "WC",
@@ -1150,7 +1150,7 @@
     {
      "id": "7889",
      "date": "2027-02-21",
-     "time": null,
+     "time": "16:15",
      "codex": "0055",
      "discipline": "Individual Flying Hill",
      "category": "WC",
@@ -1400,7 +1400,7 @@
     {
      "id": "7896",
      "date": "2027-03-18",
-     "time": null,
+     "time": "10:00",
      "codex": "0359",
      "discipline": "Individual Flying Hill Qualification",
      "category": "QUA",
@@ -1411,7 +1411,7 @@
     {
      "id": "7897",
      "date": "2027-03-19",
-     "time": null,
+     "time": "15:00",
      "codex": "0360",
      "discipline": "Individual Flying Hill",
      "category": "WC",
@@ -1433,7 +1433,7 @@
     {
      "id": "7900",
      "date": "2027-03-21",
-     "time": null,
+     "time": "10:00",
      "codex": "0061",
      "discipline": "Individual Flying Hill",
      "category": "WC",

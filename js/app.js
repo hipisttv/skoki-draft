@@ -100,6 +100,8 @@ const champTag = (cls = '') => `<span class="tag champ ${cls}">${icon('star')}${
 const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
 
 const raceStarted = (r) => new Date() >= raceStart(r);
+// godzina startu w czasie przeglądarki (FIS podaje czas lokalny skoczni)
+const localTime = (r) => raceStart(r).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
 
 function weekendStatus(w) {
   const t = today();
@@ -168,7 +170,7 @@ async function init() {
     state = s;
     render();
   });
-  window.addEventListener('hashchange', () => { ui.menu = false; ui.editRecord = false; render(true); });
+  window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; render(true); });
 }
 
 // ================================================================ render
@@ -241,7 +243,11 @@ function shell(active, content) {
   const m = me();
   const ph = phase();
   const myTurn = ph === 'draft' && m && snakeOrder(state.draftOrder)[state.picks.length]?.pid === m.id;
-  const nav = NAV.filter(([k]) => k !== 'admin' || isAdmin());
+  // w górnym pasku najważniejsze zakładki + Zasady; reszta pod „Więcej”
+  const MORE = ['zawodnicy', 'admin'];
+  const nav = NAV.filter(([k]) => !MORE.includes(k));
+  const more = NAV.filter(([k]) => MORE.includes(k) && (k !== 'admin' || isAdmin()));
+  const moreActive = MORE.includes(active);
   const dot = (k) => (k === 'draft' && (myTurn || (ph === 'draft' && !m)) ? '<span class="dot"></span>' : '');
   const fifth = ph === 'draft' ? ['draft', 'Draft', 'draft'] : ['wiecej', 'Więcej', 'menu'];
   const tabs = [NAV[0], NAV[1], NAV[2], ['puchar', 'PŚ', 'globe'], fifth];
@@ -250,7 +256,9 @@ function shell(active, content) {
   return `
   <header class="top"><div class="top__inner">
     <a class="brand" href="#ranking">${LOGO}<span>Draft Skoków<small>${esc(state.setup.leagueName)} · sezon ${seasonLabel(calendar.season)}</small></span></a>
-    <nav class="nav">${nav.map(([k, l, i]) => `<a href="#${k}" class="${active === k ? 'active' : ''}">${icon(i)}${l}${dot(k)}</a>`).join('')}</nav>
+    <nav class="nav">${nav.map(([k, l, i]) => `<a href="#${k}" class="${active === k ? 'active' : ''}">${icon(i)}${l}${dot(k)}</a>`).join('')}
+      <span class="navmore"><button type="button" class="navbtn ${moreActive ? 'active' : ''}" data-action="navMore" aria-expanded="${ui.navMore ? 'true' : 'false'}">${icon('menu')}Więcej ▾</button>
+        ${ui.navMore ? `<div class="menu navmenu">${more.map(([k, l, i]) => `<a href="#${k}">${icon(i)}${l}</a>`).join('')}</div>` : ''}</span></nav>
     <span class="spacer-top"></span>
     <button class="userchip" data-action="menu">${avatar(who, 'sm')}<span>${esc(who.name)}</span>${isAdmin() ? '<span class="badge-admin">ADMIN</span>' : ''}</button>
   </div>
@@ -259,7 +267,7 @@ function shell(active, content) {
   ${store.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
-  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
+  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
 }
 
 function userMenu() {
@@ -709,7 +717,7 @@ function tripleBox(p, w, editable) {
 function kalendarz() {
   const cur = currentWeekend();
   const ps = state.participants;
-  return `<div class="page-head"><div><h1>Kalendarz</h1><div class="sub">Puchar Świata ${seasonLabel(calendar.season)} · ${weekends.length} weekendów · kliknij konkurs, by zobaczyć wyniki i punkty</div></div></div>
+  return `<div class="page-head"><div><h1>Kalendarz</h1><div class="sub">Puchar Świata ${seasonLabel(calendar.season)} · ${weekends.length} weekendów · godziny czasu polskiego · kliknij konkurs z wynikami, by zobaczyć szczegóły</div></div></div>
   ${weekends.map((w) => {
     const st = weekendStatus(w);
     const hasRes = w.races.some((r) => results[r.id]);
@@ -732,7 +740,7 @@ function kalendarz() {
           const tag = res ? 'a' : 'div';
           const live = !res && !r.cancelled && r.date === today();
           return `<${tag} class="race ${res ? 'has-res' : ''} ${r.cancelled ? 'off' : ''} ${r.category === 'QUA' ? 'qua' : ''}" ${res ? `href="#race/${r.id}" title="Zobacz wyniki i punkty"` : ''}>
-            <span class="when">${fmtDow(r.date)}${r.time ? ` · ${r.time}` : ''}</span>
+            <span class="when">${fmtDow(r.date)}<b>${r.time ? localTime(r) : 'godz. —'}</b></span>
             <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
               <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
               ${win ? `<span class="win">· ${flag(win.nation)}${esc(prettyName(win.name).last)}</span>` : ''}</span>
@@ -773,7 +781,7 @@ function raceView(id) {
     <div class="hero race-hero ${race.champ ? 'champ' : ''}">${MOUNTAINS}
       <div class="eyebrow">Weekend ${w.no} · ${race.champ ? `${CHAMP} ${calendar.season}${race.category === 'QUA' ? ' · kwalifikacje' : ''}` : race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'}</div>
       <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
-      <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${race.time}` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
+      <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${localTime(race)} (czasu polskiego)` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
         ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
         ${hr ? `<span>${icon('star')}rekord skoczni: <b>${hr.distance} m</b>${records.length ? ' — <b>POBITY!</b>' : ''}</span>` : ''}
         <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
@@ -1091,7 +1099,8 @@ const forms = {
 };
 
 const actions = {
-  menu: () => { ui.menu = !ui.menu; render(); },
+  menu: () => { ui.menu = !ui.menu; ui.navMore = false; render(); },
+  navMore: () => { ui.navMore = !ui.navMore; ui.menu = false; render(); },
   authMode: (el) => { ui.authMode = el.dataset.v || null; render(); },
   logout: async () => {
     if (await confirmModal('Wylogować?', 'Do ponownego zalogowania potrzebny będzie PIN.', 'Wyloguj')) { setSession({}); ui.menu = false; location.hash = ''; render(); }
@@ -1316,7 +1325,7 @@ root.addEventListener('click', (e) => {
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'center' }), 60);
   }
   const el = e.target.closest('[data-action]');
-  if (ui.menu && !e.target.closest('.menu') && el?.dataset.action !== 'menu') { ui.menu = false; render(); }
+  if ((ui.menu || ui.navMore) && !e.target.closest('.menu') && !['menu', 'navMore'].includes(el?.dataset.action)) { ui.menu = false; ui.navMore = false; render(); }
   if (!el || el.tagName === 'SELECT' || el.type === 'checkbox') return;
   actions[el.dataset.action]?.(el);
 });
@@ -1351,6 +1360,6 @@ root.addEventListener('submit', async (e) => {
     if (btn.isConnected) btn.disabled = false;
   }
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.menu) { ui.menu = false; render(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (ui.menu || ui.navMore)) { ui.menu = false; ui.navMore = false; render(); } });
 
 init();

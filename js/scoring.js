@@ -102,9 +102,10 @@ export function buildWeekends(events) {
     w.name = w.events.map((e) => e.place).join(' / ');
     w.champ = w.events.some((e) => e.championship);
     w.races = w.events.flatMap((e) => e.races.map((r) => ({ ...r, place: e.place, nation: e.nation, eventId: e.id, champ: !!e.championship })))
-      // bez godziny (przed zawodami) kwalifikacje danego dnia idą przed konkursem
-      .sort((a, b) => (a.date + (a.time || '') + (a.category === 'QUA' ? 0 : 1))
-        .localeCompare(b.date + (b.time || '') + (b.category === 'QUA' ? 0 : 1)));
+      // według rzeczywistego momentu startu (różne strefy czasowe w jednym weekendzie);
+      // bez godziny kwalifikacje danego dnia idą przed konkursem
+      .sort((a, b) => a.date.localeCompare(b.date) || (a.time && b.time ? raceStart(a) - raceStart(b) : 0)
+        || (a.category === 'QUA' ? 0 : 1) - (b.category === 'QUA' ? 0 : 1));
   });
   return weekends;
 }

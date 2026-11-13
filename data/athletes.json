@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "generated": "2026-11-12",
+ "generated": "2026-11-13",
  "athletes": [
   {
    "id": "222153",
@@ -219,18 +219,6 @@
    "photo": "photos/223150.png"
   },
   {
-   "id": "147756",
-   "name": "SCHMID Katharina",
-   "nation": "GER",
-   "gender": "W",
-   "born": null,
-   "wc": 801,
-   "wcRank": 12,
-   "coc": 0,
-   "gp": 0,
-   "photo": "photos/147756.png"
-  },
-  {
    "id": "197640",
    "name": "HOERL Jan",
    "nation": "AUT",
@@ -313,18 +301,6 @@
    "coc": 0,
    "gp": 44,
    "photo": "photos/212446.png"
-  },
-  {
-   "id": "17013",
-   "name": "FETTNER Manuel",
-   "nation": "AUT",
-   "gender": "M",
-   "born": null,
-   "wc": 589,
-   "wcRank": 13,
-   "coc": 0,
-   "gp": 0,
-   "photo": "photos/17013.png"
   },
   {
    "id": "160506",
@@ -675,18 +651,6 @@
    "photo": "photos/253455.png"
   },
   {
-   "id": "73228",
-   "name": "STOCH Kamil",
-   "nation": "POL",
-   "gender": "M",
-   "born": null,
-   "wc": 186,
-   "wcRank": 31,
-   "coc": 0,
-   "gp": 0,
-   "photo": "photos/73228.png"
-  },
-  {
    "id": "210919",
    "name": "BELSHAW Annika",
    "nation": "USA",
@@ -1033,18 +997,6 @@
    "coc": 311,
    "gp": 81,
    "photo": "photos/111251.png"
-  },
-  {
-   "id": "136810",
-   "name": "KYKKAENEN Julia",
-   "nation": "FIN",
-   "gender": "W",
-   "born": null,
-   "wc": 52,
-   "wcRank": 43,
-   "coc": 0,
-   "gp": 0,
-   "photo": "photos/136810.png"
   },
   {
    "id": "276021",
@@ -1706,18 +1658,6 @@
    "photo": "photos/182815.png"
   },
   {
-   "id": "78803",
-   "name": "BOYD-CLOWES Mackenzie",
-   "nation": "CAN",
-   "gender": "M",
-   "born": null,
-   "wc": 1,
-   "wcRank": 75,
-   "coc": 0,
-   "gp": 0,
-   "photo": "photos/78803.png"
-  },
-  {
    "id": "238611",
    "name": "CHERVET Emma",
    "nation": "FRA",
@@ -1752,30 +1692,6 @@
    "coc": 482,
    "gp": 0,
    "photo": "photos/204073.png"
-  },
-  {
-   "id": "174348",
-   "name": "LEITNER Clemens",
-   "nation": "AUT",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 377,
-   "gp": 0,
-   "photo": "photos/174348.jpg"
-  },
-  {
-   "id": "182349",
-   "name": "VILLUMSTAD Fredrik",
-   "nation": "NOR",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 359,
-   "gp": 0,
-   "photo": "photos/182349.png"
   },
   {
    "id": "212524",
@@ -2367,18 +2283,6 @@
    "photo": "photos/212416.jpg"
   },
   {
-   "id": "199181",
-   "name": "RESINGER Peter",
-   "nation": "AUT",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 21,
-   "gp": 0,
-   "photo": "photos/199181.jpg"
-  },
-  {
    "id": "237825",
    "name": "NAKAMURA Yuto",
    "nation": "JPN",
@@ -2398,7 +2302,8 @@
    "wc": 0,
    "wcRank": null,
    "coc": 19,
-   "gp": 61
+   "gp": 61,
+   "photo": "photos/221384.png"
   },
   {
    "id": "239622",
@@ -2431,7 +2336,8 @@
    "wc": 0,
    "wcRank": null,
    "coc": 17,
-   "gp": 0
+   "gp": 0,
+   "photo": "photos/274961.png"
   },
   {
    "id": "218403",
@@ -2442,7 +2348,8 @@
    "wc": 0,
    "wcRank": null,
    "coc": 15,
-   "gp": 112
+   "gp": 112,
+   "photo": "photos/218403.jpg"
   },
   {
    "id": "196654",
@@ -2453,7 +2360,8 @@
    "wc": 0,
    "wcRank": null,
    "coc": 15,
-   "gp": 0
+   "gp": 0,
+   "photo": "photos/196654.png"
   },
   {
    "id": "239707",
@@ -2475,18 +2383,8 @@
    "wc": 0,
    "wcRank": null,
    "coc": 14,
-   "gp": 0
-  },
-  {
-   "id": "212115",
-   "name": "JUROSZEK Kacper",
-   "nation": "POL",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 14,
-   "gp": 0
+   "gp": 0,
+   "photo": "photos/270266.jpg"
   },
   {
    "id": "196057",
@@ -2665,17 +2563,6 @@
    "gp": 0
   },
   {
-   "id": "236227",
-   "name": "BJOERTOMT Paal Haakon",
-   "nation": "NOR",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 5,
-   "gp": 0
-  },
-  {
    "id": "10064",
    "name": "CHOI Heung Chul",
    "nation": "KOR",
@@ -2753,33 +2640,11 @@
    "gp": 0
   },
   {
-   "id": "139429",
-   "name": "HUBER Daniel",
-   "nation": "AUT",
-   "gender": "M",
-   "born": null,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 2,
-   "gp": 0
-  },
-  {
    "id": "274099",
    "name": "PENNING Mitchell",
    "nation": "CAN",
    "gender": "M",
    "born": 2007,
-   "wc": 0,
-   "wcRank": null,
-   "coc": 2,
-   "gp": 0
-  },
-  {
-   "id": "196003",
-   "name": "PILCH Tomasz",
-   "nation": "POL",
-   "gender": "M",
-   "born": null,
    "wc": 0,
    "wcRank": null,
    "coc": 2,
