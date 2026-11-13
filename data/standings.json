@@ -1024,6 +1024,63 @@
   "weekends": {
    "M": 17,
    "W": 17
-  }
+  },
+  "retired": [
+   {
+    "id": "17013",
+    "name": "FETTNER Manuel",
+    "nation": "AUT",
+    "gender": "M",
+    "born": 1985,
+    "wc": 589,
+    "wcRank": 13,
+    "photo": "photos/17013.png",
+    "retired": true
+   },
+   {
+    "id": "73228",
+    "name": "STOCH Kamil",
+    "nation": "POL",
+    "gender": "M",
+    "born": 1987,
+    "wc": 186,
+    "wcRank": 31,
+    "photo": "photos/73228.png",
+    "retired": true
+   },
+   {
+    "id": "78803",
+    "name": "BOYD-CLOWES Mackenzie",
+    "nation": "CAN",
+    "gender": "M",
+    "born": 1991,
+    "wc": 1,
+    "wcRank": 75,
+    "photo": "photos/78803.png",
+    "retired": true
+   },
+   {
+    "id": "147756",
+    "name": "SCHMID Katharina",
+    "nation": "GER",
+    "gender": "W",
+    "born": 1996,
+    "wc": 801,
+    "wcRank": 12,
+    "photo": "photos/147756.png",
+    "retired": true
+   },
+   {
+    "id": "136810",
+    "name": "KYKKAENEN Julia",
+    "nation": "FIN",
+    "gender": "W",
+    "born": 1994,
+    "wc": 52,
+    "wcRank": 43,
+    "photo": "photos/136810.png",
+    "retired": true
+   }
+  ]
  }
 }

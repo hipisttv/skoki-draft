@@ -458,6 +458,38 @@ def weekend_counts(season):
     return count
 
 
+def retired_scorers(prev, athletes_path, out, cache):
+    """Zawodnicy z punktami PŚ zeszłego sezonu, których nie ma już wśród aktywnych w FIS."""
+    with open(athletes_path, encoding="utf-8") as f:
+        active = {a["id"] for a in json.load(f)["athletes"]}
+    res = []
+    for gender in ("M", "W"):
+        for r in prev.get(gender, []):
+            if r["id"] in active:
+                continue
+            if r["id"] in cache:
+                res.append(cache[r["id"]])
+                continue
+            born, photo = None, None
+            try:
+                h = fetch(f"{BASE}/general/athlete-biography.html?sectorcode=JP&competitorid={r['id']}")
+                m = re.search(r"Birthdate.*?(\d{4})", text(h[h.find("Birthdate"):h.find("Birthdate") + 400]))
+                born = int(m.group(1)) if m else None
+                data, ctype = fetch_bytes(f"{BASE}/general/load-competitor-picture/{r['id']}.html")
+                if ctype.startswith("image/") and len(data) > 1500:
+                    ext = "png" if "png" in ctype else "jpg"
+                    os.makedirs(os.path.join(out, "photos"), exist_ok=True)
+                    with open(os.path.join(out, "photos", f"{r['id']}.{ext}"), "wb") as f:
+                        f.write(data)
+                    photo = f"photos/{r['id']}.{ext}"
+            except Exception as e:  # noqa: BLE001
+                print(f"  biogram {r['name']}: {e}", file=sys.stderr)
+            res.append({"id": r["id"], "name": r["name"], "nation": r["nation"], "gender": gender,
+                        "born": born, "wc": r["points"], "wcRank": r["rank"], "photo": photo, "retired": True})
+    print(f"  emeryci z punktami: {', '.join(x['name'] for x in res) or 'brak'}")
+    return res
+
+
 # ---------------------------------------------------------------- wyniki
 
 def parse_results(h):
@@ -680,6 +712,9 @@ def main():
     if prev_w:
         stand["previous"]["weekends"] = prev_w
         print(f"  weekendy PŚ {args.season - 1}: {prev_w}")
+    # punktujący w zeszłym sezonie, którzy zakończyli karierę (do Skokdle) – z rocznikiem i portretem
+    old_ret = {r["id"]: r for r in old.get("previous", {}).get("retired", [])} if old.get("season") == args.season else {}
+    stand["previous"]["retired"] = retired_scorers(stand["previous"], athletes_path, out, old_ret)
     save(stand, path)
     print("Gotowe.")
 

@@ -153,6 +153,8 @@ async function loadData() {
   byId = Object.fromEntries(athletes.map((x, i) => [x.id, { ...x, idx: i + 1 }]));
   calendar = c;
   standings = s;
+  // emeryci z punktami zeszłego sezonu – nie do draftu, tylko do Skokdle i wyświetlania
+  for (const r of s?.previous?.retired || []) byId[r.id] = byId[r.id] || { ...r, idx: 9999 };
   weekends = buildWeekends(c.events.filter((e) => !e.cancelled));
   const races = weekends.flatMap((w) => w.races).filter((r) => r.hasResults);
   const bundle = await get('results.json').catch(() => ({}));
@@ -1216,11 +1218,17 @@ function skHash(str) {
   return h >>> 0;
 }
 const skNorm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
-const skPool = () => athletes.filter((a) => a.wc > 0);
+// pula: wszyscy punktujący w PŚ zeszłego sezonu (od 14.11.2026 także ci, którzy zakończyli karierę –
+// zmiana od następnego dnia, żeby nie podmienić zagadki komuś w trakcie gry)
+const skPool = () => {
+  const active = athletes.filter((a) => a.wc > 0);
+  if (skDay() < '2026-11-14') return active;
+  return [...active, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
+};
 const skHills = () => Object.keys(hills).sort();
 const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${skDay()}|skoczek`) % pool.length] : null; };
 const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${skDay()}|skocznia`) % pool.length] : null; };
-const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}`; };
+const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}${a.retired ? ' (emeryt)' : ''}`; };
 const skKey = () => `skokdle-${skDay()}`;
 const skLoad = () => LS.get(skKey(), { a: [], h: [] });
 const skSave = (v) => LS.set(skKey(), v);
@@ -1239,6 +1247,7 @@ function skCmp(g, t, close) {
 function skRow(g, t) {
   return [
     { c: g.gender === t.gender ? 'ok' : 'bad', v: g.gender === 'W' ? 'K' : 'M' },
+    { c: !!g.retired === !!t.retired ? 'ok' : 'bad', v: g.retired ? 'emeryt' : 'aktywny' },
     { c: g.nation === t.nation ? 'ok' : 'bad', v: `${flag(g.nation)}${esc(g.nation)}` },
     { ...skCmp(g.born, t.born, (a, b) => Math.abs(a - b) <= 2), v: g.born || '–' },
     { ...skCmp(g.wc, t.wc, (a, b) => Math.abs(a - b) <= Math.max(60, b * 0.15)), v: g.wc },
@@ -1311,12 +1320,12 @@ function skAthlete(prog, t, done) {
   if (!t) return '';
   const guesses = prog.a.map((id) => byId[id]).filter(Boolean);
   const won = prog.a.includes(t.id);
-  const head = ['Zawodnik', 'Płeć', 'Kraj', 'Rocznik', `Pkt PŚ ${seasonLabel(athSeason - 1)}`, 'Miejsce PŚ'];
-  return `<p class="muted small" style="margin:.6rem 0">Zgadnij zawodnika z Pucharu Świata ${seasonLabel(athSeason - 1)}. Po każdej próbie widzisz, co się zgadza:
+  const head = ['Zawodnik', 'Płeć', 'Status', 'Kraj', 'Rocznik', `Pkt PŚ ${seasonLabel(athSeason - 1)}`, 'Miejsce PŚ'];
+  return `<p class="muted small" style="margin:.6rem 0">Zgadnij zawodnika lub zawodniczkę z punktami w PŚ ${seasonLabel(athSeason - 1)} (także tych, którzy już zakończyli karierę). Po każdej próbie widzisz, co się zgadza:
       <span class="skc ok">trafione</span> <span class="skc close">blisko</span> <span class="skc bad">pudło</span>, ↑ szukany ma więcej, ↓ mniej.</p>
     ${done ? `<div class="sk-done ${won ? 'win' : 'lose'}">${portrait(t, 'lg')}<div><div class="eyebrow">${won ? `Brawo! Zgadnięte w ${prog.a.length}/${SK_A_MAX}` : 'Tym razem się nie udało'}</div>
         <div class="sk-name">${esc(prettyName(t.name).first)} <b>${esc(prettyName(t.name).last)}</b></div>
-        <div class="muted small">${flag(t.nation)} ${esc(t.nation)} · ur. ${t.born || '?'} · ${t.wc} pkt w PŚ ${seasonLabel(athSeason - 1)}${t.wcRank ? ` (${t.wcRank}.)` : ''}</div></div>
+        <div class="muted small">${flag(t.nation)} ${esc(t.nation)} · ur. ${t.born || '?'} · ${t.wc} pkt w PŚ ${seasonLabel(athSeason - 1)}${t.wcRank ? ` (${t.wcRank}.)` : ''}${t.retired ? ' · zakończył(a) karierę' : ''}</div></div>
         <button class="sm" data-action="skShare" data-v="a">${icon('upload')}Udostępnij wynik</button></div>`
       : `<form data-form="skokA" class="sk-form" autocomplete="off">
         <input name="g" list="sk-athletes" placeholder="Wpisz nazwisko skoczka/skoczkini…" required>
