@@ -278,11 +278,11 @@ function render(scrollTop = false) {
   const sel = focusId && document.activeElement.selectionStart;
 
   const weeksScroll = document.getElementById('weeks')?.scrollLeft;
-  const skY = document.querySelector('.skpanel')?.scrollTop;
+  const skY = document.querySelector('.skwin > .skok')?.scrollTop;
   root.innerHTML = shell(active, fn(arg));
   restoreInputs(kept);
   document.body.classList.toggle('sk-lock', !!document.querySelector('.skpanel'));
-  const skp = document.querySelector('.skpanel');
+  const skp = document.querySelector('.skwin > .skok');
   if (skp && skY) skp.scrollTop = skY;
   const weeks = document.getElementById('weeks');
   if (weeks) {
@@ -1308,10 +1308,10 @@ function skokdleCard() {
   const solvers = state.skokdle?.[skDay()] || {};
   const solved = Object.entries(solvers).filter(([pid]) => P(pid));
   return `<div class="card skok">
-    <div class="row"><div><h2>🎯 Skokdle</h2><div class="muted small">Codzienna zagadka · ${fmtLong(skDay())} · nowa o północy</div></div><span class="spacer"></span>
-      <button class="icon ghost sk-close" data-action="skToggle" title="Zwiń" aria-label="Zwiń Skokdle">✕</button>
+    <div class="sk-head"><div><h2>🎯 Skokdle</h2><div class="muted">Codzienna zagadka · ${fmtLong(skDay())} · nowa o północy</div></div>
       <div class="seg">${[['a', 'Skoczek dnia', doneA], ['h', 'Skocznia dnia', doneH], ['r', '🏆 Ranking', false]].map(([k, l, d]) =>
-        `<button data-action="skTab" data-v="${k}" class="${tab === k ? 'on' : ''}">${l}${d ? ' ✓' : ''}</button>`).join('')}</div></div>
+        `<button data-action="skTab" data-v="${k}" class="${tab === k ? 'on' : ''}">${l}${d ? ' ✓' : ''}</button>`).join('')}</div>
+      <button class="sk-close" data-action="skToggle" title="Zamknij (Esc)" aria-label="Zamknij Skokdle">✕</button></div>
     ${tab === 'a' ? skAthlete(prog, tA, doneA) : tab === 'h' ? skHill(prog, tH, doneH) : skRanking()}
     ${solved.length ? `<div class="sk-solvers"><span class="muted xs">Dziś w lidze:</span>${solved.map(([pid, v]) => `<span class="chip">${avatar(P(pid), 'sm')}${esc(P(pid).name)}
       ${v.a ? `<b>🧑 ${v.a === 'x' ? '✗' : `${v.a}/${SK_A_MAX}`}</b>` : ''}${v.h ? `<b>🏔 ${v.h === 'x' ? '✗' : `${v.h}/${SK_H_MAX}`}</b>` : ''}</span>`).join('')}</div>` : ''}
@@ -1321,7 +1321,7 @@ function skokdleCard() {
 // Skokdle jako dymek w prawym dolnym rogu; po kliknięciu rozwija się panel z grą.
 function skBubble() {
   if (!athletes.length || !me()) return '';
-  if (ui.skOpen) return `<div class="skpanel" role="dialog" aria-label="Skokdle">${skokdleCard()}</div>`;
+  if (ui.skOpen) return `<div class="skpanel" role="dialog" aria-modal="true" aria-label="Skokdle"><div class="skwin">${skokdleCard()}</div></div>`;
   const prog = skLoad();
   const tA = skTargetA();
   const tH = skTargetH();
@@ -2308,6 +2308,8 @@ root.addEventListener('click', (e) => {
     const id = 'w-' + link.dataset.week;
     setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'center' }), 60);
   }
+  // klik w przyciemnione tło zamyka okno Skokdle
+  if (e.target.classList?.contains('skpanel')) { ui.skOpen = false; render(); return; }
   const el = e.target.closest('[data-action]');
   if ((ui.menu || ui.navMore) && !e.target.closest('.menu') && !['menu', 'navMore'].includes(el?.dataset.action)) { ui.menu = false; ui.navMore = false; render(); }
   if (!el || el.tagName === 'SELECT' || el.type === 'checkbox') return;
