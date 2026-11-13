@@ -70,6 +70,11 @@ każdy może też zmienić swoje hasło w menu pod swoim loginem.
 - **Puchar Świata** – klasyfikacja generalna mężczyzn i kobiet (bieżąca liczona z wyników FIS, zeszłoroczna z FIS) z informacją, kto ma zawodnika.
 - **Draft** – tablica draftu na żywo i lista zawodników z filtrami.
 - **Zawodnicy** – ile punktów ligi zdobywa każdy skoczek, także wolni.
+- **Skokdle** (na stronie głównej) – codzienna zagadka: skoczek dnia (podpowiedzi: płeć, kraj, rocznik, punkty i miejsce
+  w PŚ zeszłego sezonu) i skocznia dnia (rozmyte zdjęcie, które się wyostrza), z rankingiem punktów i serii dni.
+- **Analityka** – wykresy punktów i pozycji, skąd biorą się punkty, MVP, kapitanowie, punkty na ławce, draft z perspektywy
+  sezonu, wiek, siła wg zeszłego sezonu, kraje w składach.
+- **Komentarze i reakcje** pod wynikami konkursów oraz reakcje emotkami pod składami drużyn.
 - **Panel admina** – konta graczy i hasła, kod zaproszenia, start draftu (z automatycznym losowaniem kolejności), cofanie wyborów, punktacja, kopia zapasowa.
 
 ## Zasady zaimplementowane w aplikacji

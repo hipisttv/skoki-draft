@@ -16,6 +16,7 @@ export const EMPTY_STATE = {
   reactions: {},        // { weekendId: { pid: { emoji: [pid, …] } } } – reakcje pod składami
   raceReactions: {},    // { raceId: { emoji: [pid, …] } } – reakcje pod wynikami konkursu
   raceComments: {},     // { raceId: [{ id, pid, text, at }] } – komentarze pod wynikami
+  skokdle: {},          // { 'RRRR-MM-DD': { pid: { a: próby | 'x', h: próby | 'x' } } } – wyniki codziennej zagadki
   settings: {},
 };
 
