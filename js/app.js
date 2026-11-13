@@ -281,6 +281,7 @@ function render(scrollTop = false) {
   const skY = document.querySelector('.skpanel')?.scrollTop;
   root.innerHTML = shell(active, fn(arg));
   restoreInputs(kept);
+  document.body.classList.toggle('sk-lock', !!document.querySelector('.skpanel'));
   const skp = document.querySelector('.skpanel');
   if (skp && skY) skp.scrollTop = skY;
   const weeks = document.getElementById('weeks');
@@ -497,10 +498,12 @@ function ranking() {
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
         <div class="pts">${calc.totals[p.id]}<small>pkt</small></div>
         <div class="gap">${i === 0 ? (top ? 'lider' : '&nbsp;') : `−${top - calc.totals[p.id]} do lidera`}</div>
-        <div class="avgline">śr. <b>${fmt1(calc.playedW.all ? calc.totals[p.id] / calc.playedW.all : null)}</b> pkt/weekend · śr. wiek <b>${fmt1(avgAge(calc.teams[p.id] || []))}</b></div></div>
+        <div class="avgline">śr. <b>${fmt1(calc.playedW.all ? calc.totals[p.id] / calc.playedW.all : null)}</b> pkt/weekend · śr. wiek <b>${fmt1(avgAge(calc.teams[p.id] || []))}</b></div>
+        <button class="sm ghost squadbtn ${ui.rankOpen === p.id ? 'on' : ''}" data-action="toggleRankSquad" data-p="${p.id}"><span class="chev">${icon('chevron')}</span>${ui.rankOpen === p.id ? 'Zwiń skład' : 'Pokaż skład'}</button></div>
       <div class="bar" style="background:${p.color};width:${top ? (calc.totals[p.id] / top) * 100 : 0}%"></div>
     </div>`;
-  }).join('')}</div></div>`;
+  }).join('')}</div>
+  ${ui.rankOpen && P(ui.rankOpen) ? rankSquad(ui.rankOpen) : ''}</div>`;
 
 
   // wykres narastająco
@@ -619,6 +622,36 @@ function strengthCard() {
         <td class="hide-sm">${r.best ? `<div class="bestath">${ath(r.best, { photo: true, gender: false })}<span class="ptspill">${byId[r.best]?.wc || 0} pkt</span></div>` : ''}</td>
       </tr>${open ? `<tr class="sdetail"><td colspan="7">${squadList(r.p.id, w)}</td></tr>` : ''}`;
       }).join('')}</tbody></table></div></div>`;
+}
+
+// Rozwinięty skład pod kartami rankingu: ile każdy zawodnik dał drużynie w tym sezonie.
+function rankSquad(pid) {
+  const p = P(pid);
+  const ids = calc.teams[pid] || [];
+  const w = currentWeekend();
+  const l = w ? lineupFor(state, weekends, w.id, pid, ids, byId) : { starters: ids, captain: null };
+  const forTeam = {}; const asCap = {};
+  for (const byP of Object.values(calc.byRace)) {
+    for (const a of byP[pid]?.athletes || []) {
+      forTeam[a.id] = (forTeam[a.id] || 0) + a.pts;
+      if (a.captain) asCap[a.id] = (asCap[a.id] || 0) + a.pts / 2;
+    }
+  }
+  const sorted = [...ids].sort((a, b) => (forTeam[b] || 0) - (forTeam[a] || 0) || (calc.raw[b] || 0) - (calc.raw[a] || 0));
+  const pen = calc.penalties[pid] || 0;
+  return `<div class="card ranksquad" style="border-top:3px solid ${p.color}">
+    <div class="row"><div>${owner(pid)}<div class="muted xs">Skład w sezonie ${seasonLabel(calendar.season)} · punkty, które zawodnik dał drużynie (z kapitanem i ×${TRIPLE})${pen ? ` · kary za kapitana: <b style="color:var(--bad)">${pen}</b>` : ''}</div></div>
+      <span class="spacer"></span><button class="icon ghost" data-action="toggleRankSquad" data-p="${pid}" title="Zwiń skład" aria-label="Zwiń skład">✕</button></div>
+    <div class="squad">${sorted.map((id) => {
+      const a = byId[id] || {};
+      const starter = l.starters.includes(id);
+      const raw = calc.raw[id] || 0;
+      const bench = Math.max(0, raw - ((forTeam[id] || 0) - (asCap[id] || 0)));
+      return `<div class="sq ${starter ? '' : 'res'}">${ath(id, { photo: true, gender: true })}
+        <span class="sq-tags">${l.captain === id ? '<span class="cap" title="Kapitan w tym weekendzie">C</span>' : ''}${starter ? '' : '<span class="tag">rezerwa</span>'}</span>
+        <span class="ptspill">${forTeam[id] || 0} pkt</span><span class="muted xs sq-rank">${asCap[id] ? `w tym +${asCap[id]} jako kapitan` : 'dla drużyny'}</span>
+        <span class="sq-avg">${ageOf(id) != null ? `${ageOf(id)} lat · ` : ''}śr. <b>${fmt1(avgNow(id))}</b> pkt/weekend${bench ? ` · ${bench} pkt na ławce` : ''} · ${seasonLabel(athSeason - 1)}: ${a.wc || 0} pkt</span></div>`;
+    }).join('') || '<div class="muted small">Brak zawodników</div>'}</div></div>`;
 }
 
 // Rozwinięty skład w tabeli siły: wszyscy zawodnicy z punktami PŚ zeszłego sezonu.
@@ -1953,6 +1986,7 @@ const actions = {
     try { await navigator.clipboard.writeText(text); toast('Skopiowano — wklej na grupę!', 'ok'); }
     catch { await modal({ title: 'Twój wynik', text: `<pre class="sk-pre">${esc(text)}</pre>Skopiuj i wklej na grupę.`, ok: 'OK', cancel: '' }); }
   },
+  toggleRankSquad: (el) => { ui.rankOpen = ui.rankOpen === el.dataset.p ? null : el.dataset.p; render(); },
   toggleStrength: (el) => {
     ui.strengthOpen = ui.strengthOpen || new Set();
     const id = el.dataset.p;
@@ -2308,5 +2342,6 @@ root.addEventListener('submit', async (e) => {
   }
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (ui.menu || ui.navMore)) { ui.menu = false; ui.navMore = false; render(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.skOpen && !document.querySelector('.modal-bg')) { ui.skOpen = false; render(); } });
 
 init();

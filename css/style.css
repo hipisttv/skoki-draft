@@ -826,3 +826,22 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   .skpanel { right: 8px; left: 8px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100vh - 150px); }
 }
 @media (max-width: 520px) { .skfab { font-size: .85rem; } }
+
+/* ranking: rozwijany skład pod kartami */
+.squadbtn { margin-top: .55rem; gap: .3rem; padding: .3rem .6rem .3rem .4rem; }
+.squadbtn .chev { display: inline-flex; transition: transform .15s ease; }
+.squadbtn .chev svg { width: 15px; height: 15px; }
+.squadbtn.on { color: var(--accent); }
+.squadbtn.on .chev { transform: rotate(90deg); }
+.ranksquad { margin-top: 1rem; animation: skIn .18s ease-out; }
+.ranksquad > .row { margin-bottom: .6rem; align-items: flex-start; }
+
+/* skokdle – rozwinięte na cały ekran */
+.skpanel, .skpanel.skpanel {
+  inset: 0; width: auto; max-height: none; border-radius: 0; z-index: 90;
+  background: var(--bg); overflow: auto; box-shadow: none;
+  padding: 1.2rem 1rem calc(1.2rem + env(safe-area-inset-bottom));
+}
+.skpanel > .skok { max-width: 1000px; margin: 0 auto; }
+body.sk-lock { overflow: hidden; }
+@media (max-width: 1150px) { .skpanel, .skpanel.skpanel { left: 0; right: 0; bottom: 0; max-height: none; padding: .6rem .5rem calc(.8rem + env(safe-area-inset-bottom)); } }
