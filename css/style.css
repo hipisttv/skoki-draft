@@ -825,4 +825,4 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   .skfab { right: 14px; bottom: calc(80px + env(safe-area-inset-bottom)); padding: .6rem .9rem; }
   .skpanel { right: 8px; left: 8px; width: auto; bottom: calc(76px + env(safe-area-inset-bottom)); max-height: calc(100vh - 150px); }
 }
-@media (max-width: 520px) { .skfab span { display: none; } }
+@media (max-width: 520px) { .skfab { font-size: .85rem; } }

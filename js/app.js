@@ -1290,7 +1290,7 @@ function skBubble() {
   const tA = skTargetA();
   const tH = skTargetH();
   const left = (prog.a.includes(tA?.id) || prog.a.length >= SK_A_MAX ? 0 : 1) + (prog.h.includes(tH) || prog.h.length >= SK_H_MAX ? 0 : 1);
-  return `<button class="skfab" data-action="skToggle" title="Skokdle — codzienna zagadka">🎯<span>Skokdle</span>${left ? `<b class="skfab-n">${left}</b>` : '<b class="skfab-ok">✓</b>'}</button>`;
+  return `<button class="skfab" data-action="skToggle" title="Skokdle — codzienna zagadka">🎯<span>Zagraj w codzienną grę</span>${left ? `<b class="skfab-n">${left}</b>` : '<b class="skfab-ok">✓</b>'}</button>`;
 }
 
 // Ranking Skokdle: punkty za szybkość (skoczek 8…1, skocznia 6…1, nieodgadnięte 0), seria dni z rzędu.
