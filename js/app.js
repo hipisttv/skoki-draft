@@ -566,12 +566,28 @@ function draft() {
   }
   return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Kolejność: ${state.draftOrder.map((pid) => esc(pname(pid))).join(' → ')} → i z powrotem</div></div></div>
     ${hero}
+    ${drawCard()}
     <div class="section"><div class="row"><h2>Tablica</h2></div>
     <div class="boardwrap"><div class="board" style="grid-template-columns:repeat(${Pn}, minmax(150px, 1fr))">
       ${state.draftOrder.map((pid, c) => `<div class="head" style="grid-column:${c + 1};grid-row:1">${avatar(P(pid), 'sm')}<span>${esc(pname(pid))}</span></div>`).join('')}
       ${cells.join('')}
     </div></div></div>
     ${done ? '' : athleteTable(true)}`;
+}
+
+// Wynik losowania kolejności – widoczny dla wszystkich, razem z historią ewentualnych ponownych losowań.
+function drawCard() {
+  const draws = state.draws || [];
+  const last = draws[draws.length - 1];
+  if (!last) return '';
+  const when = (d) => new Date(d.at).toLocaleString('pl-PL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `<div class="section card draw">
+    <div class="row"><span class="dice">${icon('shuffle')}</span><div><h3>Kolejność wylosowana przez aplikację</h3>
+      <div class="muted small">${when(last)}${draws.length > 1 ? ` · losowanie nr ${draws.length}` : ''}</div></div></div>
+    <ol class="draworder">${last.order.map((pid) => `<li>${avatar(P(pid), 'sm')}<span>${esc(pname(pid))}</span></li>`).join('')}</ol>
+    ${draws.length > 1 ? `<details class="small"><summary>Wcześniejsze losowania (${draws.length - 1}) — draft był resetowany</summary>
+      <ul class="drawhist">${draws.slice(0, -1).map((d, i) => `<li><b>nr ${i + 1}</b> · ${when(d)} · ${d.order.map((pid) => esc(pname(pid))).join(' → ')}</li>`).join('')}</ul></details>` : ''}
+  </div>`;
 }
 
 function athleteTable(picking) {
@@ -916,6 +932,7 @@ function zasady() {
       ${sec('Drużyna i draft', 'team', li([
         `Każdy gracz ma <b>${TEAM_SIZE} zawodników</b>: ${TEAM.men} mężczyzn i ${TEAM.women} kobietę w składzie + ${TEAM.reserves} rezerwowych (dowolnej płci).`,
         'Draft metodą <b>snake</b>: kolejność 1–2–3, potem 3–2–1 i tak na zmianę.',
+        '<b>Kolejność losuje aplikacja</b> w chwili startu draftu. Wynik z godziną losowania widzą wszyscy, a każde ponowne losowanie (po resecie draftu) zostaje w historii.',
         'Każdy zawodnik może trafić tylko do jednej drużyny. Do wyboru są wszyscy aktywni skoczkowie z bazy FIS.',
         'Punkty zdobywają tylko zawodnicy ze składu — rezerwowi nie. Przed każdym weekendem możesz wstawić rezerwowego za zawodnika tej samej płci.',
       ]))}
@@ -990,14 +1007,11 @@ function adminView() {
   <div class="grid-2">
     <div class="stack">
       <div class="card">
-        <div class="row" style="margin-bottom:.6rem"><h3>Gracze i kolejność draftu</h3><span class="spacer"></span>
-          ${ph === 'signup' ? `<button class="sm" data-action="shuffle" ${state.draftOrder.length < 2 ? 'disabled' : ''}>${icon('shuffle')}Losuj</button>` : ''}</div>
-        ${state.draftOrder.map((pid, i) => {
+        <div class="row" style="margin-bottom:.6rem"><h3>Gracze</h3><span class="spacer"></span><span class="muted small">${state.participants.length}</span></div>
+        ${(ph === 'signup' ? state.participants.map((p) => p.id) : state.draftOrder).map((pid, i) => {
           const p = P(pid);
-          return `<div class="player"><b class="muted" style="width:1.2rem">${i + 1}.</b>${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(p.name)}</span></span>
+          return `<div class="player">${ph === 'signup' ? '' : `<b class="muted" style="width:1.2rem">${i + 1}.</b>`}${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(p.name)}</span></span>
             <span class="spacer"></span>
-            ${ph === 'signup' ? `<button class="icon ghost" data-action="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="W górę">▲</button>
-              <button class="icon ghost" data-action="down" data-i="${i}" ${i === state.draftOrder.length - 1 ? 'disabled' : ''} title="W dół">▼</button>` : ''}
             <button class="icon ghost" data-action="resetPass" data-id="${p.id}" title="Ustaw nowe hasło">${icon('key')}</button>
             ${ph === 'signup' ? `<button class="icon ghost danger" data-action="removeP" data-id="${p.id}" title="Usuń">${icon('trash')}</button>` : ''}
           </div>`;
@@ -1008,7 +1022,7 @@ function adminView() {
       </div>
       <div class="card">
         <h3 style="margin-bottom:.4rem">Draft</h3>
-        ${ph === 'signup' ? `<p class="muted small" style="margin-bottom:1rem">Rozpoczęcie draftu zamyka zapisy. Kolejność jak na liście powyżej (snake: 1→${state.draftOrder.length || 'N'}, potem z powrotem).</p>
+        ${ph === 'signup' ? `<p class="muted small" style="margin-bottom:1rem">Rozpoczęcie draftu zamyka zapisy. <b>Kolejność wylosuje aplikacja</b> w chwili startu — wynik i godzinę losowania zobaczą wszyscy gracze.</p>
           <button class="primary" data-action="startDraft" ${state.draftOrder.length < 2 ? 'disabled' : ''}>${icon('play')}Rozpocznij draft</button>`
         : `<p class="muted small" style="margin-bottom:1rem">${ph === 'draft' ? `Wybrano ${state.picks.length} z ${total}.` : 'Draft zakończony.'} Jako admin możesz wybierać za innych w zakładce Draft.</p>
           <div class="row"><button data-action="undo" ${state.picks.length ? '' : 'disabled'}>${icon('undo')}Cofnij ostatni wybór</button>
@@ -1081,7 +1095,7 @@ const forms = {
     const ok = await save((s) => {
       if (s.setup?.adminUser) fail('Liga została już założona');
       return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), created: new Date().toISOString() },
-        draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, triples: {}, hillRecords: {} };
+        draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {} };
     });
     if (ok) {
       setSession({ role: 'admin', h: adminHash });
@@ -1273,20 +1287,21 @@ const actions = {
     const v = await modal({ title: 'Kod zaproszenia', fields: [{ name: 'c', label: 'Nowy kod', value: state.setup.invite || '', attrs: 'maxlength="20" required' }], ok: 'Zapisz' });
     if (v) save((s) => { s.setup.invite = v.c.trim(); return s; }, 'Kod zmieniony');
   },
-  up: (el) => moveP(+el.dataset.i, -1),
-  down: (el) => moveP(+el.dataset.i, 1),
-  shuffle: () => save((s) => {
-    const o = s.draftOrder;
-    for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; }
-    return s;
-  }, 'Kolejność wylosowana'),
   startDraft: async () => {
-    const names = state.draftOrder.map((pid) => esc(pname(pid))).join(' → ');
-    if (!await confirmModal('Rozpocząć draft?', `Kolejność: <b>${names}</b>.<br>Zapisy zostaną zamknięte.`, 'Start')) return;
-    if (await save((s) => { if (s.draftOrder.length < 2) fail('Potrzeba co najmniej 2 graczy'); s.draftStarted = true; s.picks = []; return s; }, 'Draft wystartował!')) location.hash = '#draft';
+    const names = state.participants.map((p) => esc(p.name)).join(', ');
+    if (!await confirmModal('Rozpocząć draft?', `Gracze: <b>${names}</b>.<br>Aplikacja wylosuje teraz kolejność — wynik zobaczą wszyscy. Zapisy zostaną zamknięte.`, 'Losuj i zaczynaj')) return;
+    if (await save((s) => {
+      if (s.participants.length < 2) fail('Potrzeba co najmniej 2 graczy');
+      if (s.draftStarted) fail('Draft już wystartował');
+      s.draftOrder = drawOrder(s.participants.map((p) => p.id));
+      s.draws = [...(s.draws || []), { at: new Date().toISOString(), order: s.draftOrder }];
+      s.draftStarted = true;
+      s.picks = [];
+      return s;
+    }, 'Kolejność wylosowana — draft wystartował!')) location.hash = '#draft';
   },
   resetDraft: async () => {
-    if (await confirmModal('Zresetować draft?', 'Wszystkie wybory i składy zostaną usunięte, a zapisy otwarte ponownie. Tego nie da się cofnąć.', 'Resetuj', true)) {
+    if (await confirmModal('Zresetować draft?', 'Wszystkie wybory i składy zostaną usunięte, a zapisy otwarte ponownie. Przy kolejnym starcie kolejność zostanie wylosowana od nowa, a obecne losowanie zostaje w historii widocznej dla wszystkich. Tego nie da się cofnąć.', 'Resetuj', true)) {
       save((s) => { s.picks = []; s.lineups = {}; s.triples = {}; s.draftStarted = false; return s; }, 'Draft zresetowany');
     }
   },
@@ -1313,14 +1328,25 @@ const actions = {
   },
   deleteLeague: async () => {
     if (!await confirmModal('Usunąć całą ligę?', 'Znikną konta graczy, draft, składy i konto admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
-    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, settings: {} }))) {
+    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, settings: {} }))) {
       setSession({}); location.hash = ''; render();
     }
   },
 };
 
-function moveP(i, d) {
-  save((s) => { const o = s.draftOrder; [o[i], o[i + d]] = [o[i + d], o[i]]; return s; });
+// Losowanie kolejności draftu (Fisher–Yates na kryptograficznym generatorze przeglądarki).
+function drawOrder(ids) {
+  const o = [...ids];
+  for (let i = o.length - 1; i > 0; i--) {
+    const buf = new Uint32Array(1);
+    let x;
+    // odrzucanie wartości z „ogona”, żeby każdy wynik był dokładnie tak samo prawdopodobny
+    const lim = Math.floor(2 ** 32 / (i + 1)) * (i + 1);
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= lim);
+    const j = x % (i + 1);
+    [o[i], o[j]] = [o[j], o[i]];
+  }
+  return o;
 }
 
 function setLineup(s, pid, fn) {

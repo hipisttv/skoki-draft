@@ -47,7 +47,8 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 2. Admin wylogowuje się i **zakłada swoje konto gracza** tak jak wszyscy (login, hasło, kod zaproszenia).
 3. Wysyłasz znajomym link i kod zaproszenia. **Bez kodu nikt nie założy konta**, a po starcie draftu konta zakłada już
    tylko admin (Panel admina → „Załóż konto graczowi”).
-4. Admin w **Panelu admina** ustawia kolejność (albo **Losuj**) i klika **Rozpocznij draft** – zapisy się zamykają.
+4. Admin w **Panelu admina** klika **Rozpocznij draft** – **aplikacja sama losuje kolejność**, a wynik z godziną
+   losowania widzą wszyscy (zakładka Draft). Zapisy się zamykają. Każde ponowne losowanie po resecie draftu zostaje w historii.
 5. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
 6. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
 
@@ -63,7 +64,7 @@ każdy może też zmienić swoje hasło w menu pod swoim loginem.
 - **Puchar Świata** – klasyfikacja generalna mężczyzn i kobiet (bieżąca liczona z wyników FIS, zeszłoroczna z FIS) z informacją, kto ma zawodnika.
 - **Draft** – tablica draftu na żywo i lista zawodników z filtrami.
 - **Zawodnicy** – ile punktów ligi zdobywa każdy skoczek, także wolni.
-- **Panel admina** – konta graczy i hasła, kod zaproszenia, kolejność i start draftu, cofanie wyborów, punktacja, kopia zapasowa.
+- **Panel admina** – konta graczy i hasła, kod zaproszenia, start draftu (z automatycznym losowaniem kolejności), cofanie wyborów, punktacja, kopia zapasowa.
 
 ## Zasady zaimplementowane w aplikacji
 

@@ -11,6 +11,7 @@ export const EMPTY_STATE = {
   picks: [],
   lineups: {},
   triples: {},          // { pid: raceId } – mnożnik ×3, raz w sezonie
+  draws: [],            // [{ at, order }] – historia losowań kolejności draftu (jawna dla wszystkich)
   hillRecords: {},
   settings: {},
 };
