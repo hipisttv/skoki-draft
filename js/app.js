@@ -4,7 +4,7 @@ import {
   FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
   snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
   countsForLeague, isMain, recordIds, scoringSettings,
-  raceStart, lockTime, firstRace,
+  raceStart, lockTime, firstRace, canTriple,
 } from './scoring.js';
 import {
   esc, icon, flag, avatar, toast, modal, confirmModal, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -670,8 +670,11 @@ function tripleBox(p, w, editable) {
     return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`
       : `<div class="triple">${icon('star')}<span>Mnożnik ×${TRIPLE} jeszcze dostępny</span></div>`;
   }
-  const races = w.races.filter((r) => isMain(r) && (!raceStarted(r) || isAdmin() || r.id === used));
-  if (!races.length) return ur ? `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>` : '';
+  const races = w.races.filter((r) => canTriple(r) && (!raceStarted(r) || isAdmin() || r.id === used));
+  if (!races.length) {
+    if (ur) return `<div class="triple on">${icon('star')}<span>×${TRIPLE} na: <b>${label(ur)}</b></span></div>`;
+    return w.champ ? `<div class="triple">${icon('star')}<span>Mnożnika ×${TRIPLE} nie można użyć na Mistrzostwach Świata</span></div>` : '';
+  }
   return `<div class="triple ${ur && uw === w ? 'on' : ''}">${icon('star')}<span>Mnożnik ×${TRIPLE} (raz w sezonie, do startu konkursu)</span>
     <select class="sm" data-action="triple" data-p="${p.id}"><option value="">${ur && uw !== w ? 'ustawiony na inny weekend' : 'nie używaj'}</option>
       ${races.map((r) => `<option value="${r.id}" ${r.id === used ? 'selected' : ''}>${label(r)}</option>`).join('')}</select>
@@ -874,12 +877,12 @@ function zasady() {
       ${sec('Kapitan', 'star', li([
         'Przed każdym weekendem wybierasz <b>kapitana</b> spośród zawodników w składzie.',
         'Kapitan zdobywa <b>×2</b> punkty za wszystko w danym weekendzie.',
-        `<b>Kara −${c.penalty} pkt</b>, gdy kapitan skończy konkurs poza czołową 30 — także gdy odpadnie w kwalifikacjach lub nie wystartuje. Dotyczy tylko konkursów Pucharu Świata jego płci — nie kwalifikacji i nie Mistrzostw Świata.`,
+        `<b>Kara −${c.penalty} pkt</b>, gdy kapitan skończy konkurs poza czołową 30 — także gdy odpadnie w kwalifikacjach lub nie wystartuje. Dotyczy konkursów jego płci (PŚ i MŚ), nie kwalifikacji.`,
         'Kapitana nie można zmienić w trakcie weekendu; w każdym weekendzie może być inny.',
       ]))}
       ${sec(`Mnożnik ×${TRIPLE}`, 'star', li([
         `<b>Raz w sezonie</b> wybierasz jeden konkurs, w którym wszystkie punkty Twojej drużyny są mnożone <b>×${TRIPLE}</b> (razem z kapitanem i karą).`,
-        'Nie działa na kwalifikacje.',
+        'Tylko konkursy Pucharu Świata — nie działa na kwalifikacje ani na Mistrzostwa Świata.',
         'Można go ustawić lub zmienić <b>do startu wybranego konkursu</b> (zakładka Drużyny). Potem jest wykorzystany.',
       ]))}
       ${sec('Terminy', 'clock', li([
@@ -894,7 +897,7 @@ function zasady() {
       ${sec('Mistrzostwa Świata', 'star', `${li([
         `🥇 Złoto <b>${c.champ.gold}</b> · 🥈 Srebro <b>${c.champ.silver}</b> · 🥉 Brąz <b>${c.champ.bronze}</b>`,
         `Miejsca 4–10: <b>${c.champ.top10}</b> pkt`,
-        'Bonusy, kapitan i mnożnik działają tak samo jak w PŚ. <b>Kary za kapitana poza top 30 na MŚ nie ma.</b>',
+        'Bonusy, kapitan i kara za kapitana poza top 30 działają tak samo jak w PŚ. <b>Mnożnika ×3 na MŚ nie można użyć.</b>',
       ])}${champsOn ? '' : '<div class="warnline">W tej lidze MŚ nie liczą się do punktacji (ustawienie admina).</div>'}`)}
       ${sec('Bonusy', 'ruler', `${li([
         `Zwycięstwo w kwalifikacjach: <b>+${c.bonus.quali}</b>`,
@@ -1112,6 +1115,7 @@ const actions = {
       const cw = cur && weekends.find((x) => x.races.some((r) => r.id === cur));
       if (cur && raceStarted(find(cur)) && !isAdmin()) fail('Mnożnik ×3 został już wykorzystany w tym sezonie');
       if (raceId && raceStarted(find(raceId)) && !isAdmin()) fail('Ten konkurs już się rozpoczął');
+      if (raceId && !canTriple(find(raceId))) fail('Mnożnika ×3 nie można użyć na Mistrzostwach Świata ani w kwalifikacjach');
       if (raceId) s.triples[p] = raceId;
       else if (!cw || cw.id === ui.weekend) delete s.triples[p];
       return s;

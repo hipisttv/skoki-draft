@@ -16,6 +16,8 @@ export const TEAM = { men: 6, women: 1, reserves: 2 };
 export const TEAM_SIZE = TEAM.men + TEAM.women + TEAM.reserves;
 
 export const isMain = (race) => race.category !== 'QUA';
+// mnożnik ×3: tylko konkursy PŚ (nie kwalifikacje, nie Mistrzostwa Świata)
+export const canTriple = (race) => isMain(race) && !race.champ;
 // Mistrzostwa Świata liczą się do ligi, chyba że admin to wyłączy.
 export const countsForLeague = (race, settings) => !race.champ || settings.countChamps !== false;
 
@@ -229,7 +231,7 @@ export function computeAll(state, weekends, results, athletesById) {
       byRace[race.id] = {};
       for (const p of state.participants || []) {
         const l = lineups[p.id];
-        const triple = isMain(race) && state.triples?.[p.id] === race.id;
+        const triple = canTriple(race) && state.triples?.[p.id] === race.id;
         const mult = triple ? TRIPLE : 1;
         const entry = { total: 0, athletes: [], penalty: 0, triple };
         for (const aid of l.starters) {
@@ -241,9 +243,9 @@ export function computeAll(state, weekends, results, athletesById) {
           entry.athletes.push({ id: aid, pts: v, base: ap, captain: cap });
           athleteTotals[aid] = (athleteTotals[aid] || 0) + v;
         }
-        // kara za kapitana poza top 30 – tylko w konkursach PŚ jego płci (nie na MŚ)
+        // kara za kapitana poza top 30 – w konkursach jego płci (PŚ i MŚ, nie w kwalifikacjach)
         const c = l.captain;
-        if (c && race.category === 'WC' && athletesById[c]?.gender === race.gender) {
+        if (c && isMain(race) && athletesById[c]?.gender === race.gender) {
           const rank = rankOf[c];
           if (!rank || rank > 30) {
             entry.penalty = -cfg.penalty * mult;
