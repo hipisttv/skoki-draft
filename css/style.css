@@ -394,14 +394,22 @@ label.field > span { display: block; font-size: .8rem; font-weight: 600; color: 
 .wk .wh { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .wk .wh .t { font-weight: 800; font-size: 1.05rem; }
 .wk.past { opacity: 1; }
-.races { margin-top: .5rem; }
-.race { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: .75rem; align-items: center; padding: .45rem .5rem; margin: 0 -.5rem; border-radius: 8px; color: var(--text); }
-a.race:hover { background: var(--card-2); color: var(--text); }
+.races { margin-top: .7rem; display: grid; gap: .45rem; }
+.race { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto auto; gap: .75rem; align-items: center; padding: .55rem .75rem; border-radius: 10px; color: var(--text); background: var(--card); border: 1px solid var(--line); transition: border-color .12s, box-shadow .12s, transform .08s; }
+.race.qua { background: var(--card-2); }
+.race.off { opacity: .55; }
+.race.off .l { text-decoration: line-through; }
+a.race.has-res { border-left: 3px solid var(--accent); cursor: pointer; background: linear-gradient(90deg, var(--accent-soft), var(--card) 45%); }
+a.race.has-res:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(31, 111, 235, .15); color: var(--text); text-decoration: none; transform: translateY(-1px); }
 .race .when { font-size: .78rem; color: var(--muted); font-weight: 600; }
 .race .what { display: flex; align-items: center; gap: .5rem; min-width: 0; }
-.race .what .l { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.race .what .l { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .race .what .h { color: var(--muted); font-size: .8rem; white-space: nowrap; }
 .race .win { font-size: .8rem; color: var(--text-2); white-space: nowrap; display: inline-flex; gap: .35rem; align-items: center; }
+.race .go { display: inline-flex; align-items: center; gap: .15rem; font-size: .78rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: .25rem .4rem .25rem .65rem; border-radius: 999px; white-space: nowrap; }
+.race .go svg { width: 14px; height: 14px; }
+a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); }
+.race .soon { font-size: .72rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .chips { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
 .chip { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; padding: .1rem .5rem .1rem .25rem; font-weight: 600; }
 .chip b { font-variant-numeric: tabular-nums; }
@@ -412,7 +420,10 @@ a.race:hover { background: var(--card-2); color: var(--text); }
   .wk .date .dd { font-size: 1.15rem; }
   .wk .date .no { margin: 0 0 0 auto; }
   .wk .body { padding: .7rem 1rem; }
-  .race { grid-template-columns: 1fr; gap: .3rem; padding: .6rem .5rem; border-top: 1px solid var(--line-2); border-radius: 0; }
+  .race { grid-template-columns: 1fr auto; gap: .3rem .5rem; padding: .6rem .7rem; }
+  .race .when { grid-column: 1; }
+  .race .go, .race .soon { grid-column: 2; grid-row: 1; justify-self: end; }
+  .race .what, .race .chips { grid-column: 1 / -1; }
   .race .what { flex-wrap: wrap; row-gap: .15rem; }
   .race .what .l { white-space: normal; }
   .race .chips { justify-content: flex-start; }

@@ -717,7 +717,8 @@ function kalendarz() {
           const res = results[r.id];
           const win = res?.results.find((x) => x.rank === 1);
           const tag = res ? 'a' : 'div';
-          return `<${tag} class="race" ${res ? `href="#race/${r.id}"` : ''}>
+          const live = !res && !r.cancelled && r.date === today();
+          return `<${tag} class="race ${res ? 'has-res' : ''} ${r.cancelled ? 'off' : ''} ${r.category === 'QUA' ? 'qua' : ''}" ${res ? `href="#race/${r.id}" title="Zobacz wyniki i punkty"` : ''}>
             <span class="when">${fmtDow(r.date)}${r.time ? ` · ${r.time}` : ''}</span>
             <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
               <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
@@ -725,7 +726,9 @@ function kalendarz() {
             <span class="chips">${res && ps.length ? ps.map((p) => {
               const v = calc.byRace[r.id]?.[p.id]?.total || 0;
               return v ? `<span class="chip">${avatar(p, 'sm')}<b>+${v}</b></span>` : '';
-            }).join('') : !res && st === 'past' ? '<span class="muted xs">brak wyników</span>' : ''}</span>
+            }).join('') : ''}</span>
+            ${res ? `<span class="go">Wyniki${icon('chevron')}</span>`
+              : `<span class="soon">${r.cancelled ? 'odwołany' : live ? 'dziś' : st === 'past' ? 'brak wyników' : 'wyniki po konkursie'}</span>`}
           </${tag}>`;
         }).join('')}</div>
       </div></div>`;
@@ -884,7 +887,7 @@ function zasady() {
       ${sec('Kapitan', 'star', li([
         'Przed każdym weekendem wybierasz <b>kapitana</b> spośród zawodników w składzie.',
         'Kapitan zdobywa <b>×2</b> punkty za wszystko w danym weekendzie.',
-        `<b>Kara −${c.penalty} pkt</b>, gdy kapitan skończy konkurs poza czołową 30 — także gdy odpadnie w kwalifikacjach lub nie wystartuje. Dotyczy tylko konkursów jego płci, nie kwalifikacji.`,
+        `<b>Kara −${c.penalty} pkt</b>, gdy kapitan skończy konkurs poza czołową 30 — także gdy odpadnie w kwalifikacjach lub nie wystartuje. Dotyczy tylko konkursów Pucharu Świata jego płci — nie kwalifikacji i nie Mistrzostw Świata.`,
         'Kapitana nie można zmienić w trakcie weekendu; w każdym weekendzie może być inny.',
       ]))}
       ${sec(`Mnożnik ×${TRIPLE}`, 'star', li([
@@ -904,7 +907,7 @@ function zasady() {
       ${sec('Mistrzostwa Świata', 'star', `${li([
         `🥇 Złoto <b>${c.champ.gold}</b> · 🥈 Srebro <b>${c.champ.silver}</b> · 🥉 Brąz <b>${c.champ.bronze}</b>`,
         `Miejsca 4–10: <b>${c.champ.top10}</b> pkt`,
-        'Bonusy, kapitan, kara i mnożnik działają tak samo jak w PŚ.',
+        'Bonusy, kapitan i mnożnik działają tak samo jak w PŚ. <b>Kary za kapitana poza top 30 na MŚ nie ma.</b>',
       ])}${champsOn ? '' : '<div class="warnline">W tej lidze MŚ nie liczą się do punktacji (ustawienie admina).</div>'}`)}
       ${sec('Bonusy', 'ruler', `${li([
         `Zwycięstwo w kwalifikacjach: <b>+${c.bonus.quali}</b>`,

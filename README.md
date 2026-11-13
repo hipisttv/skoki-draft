@@ -74,7 +74,8 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
 - **Bonusy** (sumują się z punktami za miejsce): najdłuższy skok konkursu +10 (tylko konkurs główny, wszystkie serie,
   remis = obaj), rekord skoczni +15.
 - **Kapitan** ×2 za wszystko w danym weekendzie. Wybierany przed weekendem, nie można go zmienić w trakcie.
-- **Kara −20 pkt**, gdy kapitan skończy konkurs (swojej płci) poza czołową 30 – także gdy odpadnie w kwalifikacjach lub nie wystartuje.
+- **Kara −20 pkt**, gdy kapitan skończy konkurs PŚ (swojej płci) poza czołową 30 – także gdy odpadnie w kwalifikacjach lub nie wystartuje.
+  Na Mistrzostwach Świata kary nie ma.
 - **Mnożnik ×3 raz w sezonie:** każdy wybiera jeden konkurs (nie kwalifikacje) i wszystkie punkty jego drużyny w tym
   konkursie – razem z kapitanem i karą – są mnożone przez 3. Ustawia się go w zakładce Drużyny i można zmieniać
   aż do startu wybranego konkursu (godzina z FIS w czasie lokalnym skoczni; dopóki FIS jej nie poda – do północy w dniu konkursu).

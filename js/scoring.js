@@ -213,9 +213,9 @@ export function computeAll(state, weekends, results, athletesById) {
           entry.athletes.push({ id: aid, pts: v, base: ap, captain: cap });
           athleteTotals[aid] = (athleteTotals[aid] || 0) + v;
         }
-        // kara za kapitana poza top 30 – tylko w konkursach jego płci
+        // kara za kapitana poza top 30 – tylko w konkursach PŚ jego płci (nie na MŚ)
         const c = l.captain;
-        if (c && isMain(race) && athletesById[c]?.gender === race.gender) {
+        if (c && race.category === 'WC' && athletesById[c]?.gender === race.gender) {
           const rank = rankOf[c];
           if (!rank || rank > 30) {
             entry.penalty = -cfg.penalty * mult;
