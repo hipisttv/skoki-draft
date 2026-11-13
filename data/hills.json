@@ -1,0 +1,156 @@
+{
+ "Bischofshofen": {
+  "file": "hills/bischofshofen.jpg",
+  "hill": "Paul-Außerleitner-Schanze",
+  "author": "junafani",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Paul-Ausserleitner-Schanze.JPG"
+ },
+ "Engelberg": {
+  "file": "hills/engelberg.jpg",
+  "hill": "Gross-Titlis-Schanze",
+  "author": "Samuel Weitzbauer",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Engelberg_HS140_(2).jpg"
+ },
+ "Falun": {
+  "file": "hills/falun.jpg",
+  "hill": "Lugnet ski jump Falun",
+  "author": "Matthias Wilke",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Lugnet_Falun.jpg"
+ },
+ "Garmisch-Partenkirchen": {
+  "file": "hills/garmisch-partenkirchen.jpg",
+  "hill": "Große Olympiaschanze",
+  "author": "Garmisch",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Neujahrsskispringen2008.jpg"
+ },
+ "Hinzenbach": {
+  "file": "hills/hinzenbach.jpg",
+  "hill": "Aigner-Schanze",
+  "author": "Ailura",
+  "license": "CC BY-SA 3.0 at",
+  "source": "https://commons.wikimedia.org/wiki/File:20150207_Skispringen_Hinzenbach_4194.jpg"
+ },
+ "Innsbruck": {
+  "file": "hills/innsbruck.jpg",
+  "hill": "Bergisel Ski Jump",
+  "author": "Daniel Wagner at de.wikipedia",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Bergiselschanze04.jpg"
+ },
+ "Lahti": {
+  "file": "hills/lahti.jpg",
+  "hill": "Salpausselän hyppyrimäet",
+  "author": "kallerna",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Lahti_Ski_Jumping_Hills_2.jpg"
+ },
+ "Lake Placid": {
+  "file": "hills/lake-placid.jpg",
+  "hill": "Lake Placid Olympic Ski Jumping Complex",
+  "author": "Mwanner",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Lake_Placid_Olympic_Ski_Jumping_Complex_from_below.jpg"
+ },
+ "Lillehammer": {
+  "file": "hills/lillehammer.jpg",
+  "hill": "Lysgårdsbakken",
+  "author": "Tokle",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Lysg%C3%A5rd.JPG"
+ },
+ "Ljubno": {
+  "file": "hills/ljubno.jpg",
+  "hill": "Savina Ski Jumping Center",
+  "author": "Zoran Kurelić Rabko",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Ljubno_ob_Savinji_-_Ski_Jump.jpg"
+ },
+ "Oberstdorf": {
+  "file": "hills/oberstdorf.jpg",
+  "hill": "ORLEN Arena Oberstdorf",
+  "author": "Arne Müseler",
+  "license": "CC BY-SA 3.0 de",
+  "source": "https://commons.wikimedia.org/wiki/File:Ski_jumping_hill_oberstdorf_germany_2.jpg"
+ },
+ "Oslo": {
+  "file": "hills/oslo.jpg",
+  "hill": "Holmenkollbakken",
+  "author": "Gislus",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Bakken2.jpg"
+ },
+ "Planica": {
+  "file": "hills/planica.jpg",
+  "hill": "Letalnica bratov Gorišek",
+  "author": "Borut Podgoršek",
+  "license": "CC BY 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Slovenska_vojska_je_tudi_letos_podprla_Smu%C4%8Darsko_zvezo_Slovenije_pri_izvedbi_zaklju%C4%8Dka_svetovnega_pokala_v_smu%C4%8Darskih_poletih_v_Planici_7.jpg"
+ },
+ "Ruka": {
+  "file": "hills/ruka.jpg",
+  "hill": "Rukatunturi ski jumping hill",
+  "author": "Nelinjo",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Kuusamo_Rukatunturi_K-120.jpg"
+ },
+ "Sapporo": {
+  "file": "hills/sapporo.jpg",
+  "hill": "大倉山ジャンプ競技場",
+  "author": "Hwoarang17",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Okurayama_August_2007.jpg"
+ },
+ "Titisee-Neustadt": {
+  "file": "hills/titisee-neustadt.jpg",
+  "hill": "Hochfirst Ski Jump",
+  "author": "Taxiarchos228",
+  "license": "FAL",
+  "source": "https://commons.wikimedia.org/wiki/File:Hochfirstschanze3.jpg"
+ },
+ "Vikersund": {
+  "file": "hills/vikersund.jpg",
+  "hill": "Vikersundbakken",
+  "author": "Geir A Granviken",
+  "license": "CC BY 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:VikersundbakkenWorld_Cup_Ski_flying_2011.jpg"
+ },
+ "Villach": {
+  "file": "hills/villach.jpg",
+  "hill": "Villacher Alpenarena",
+  "author": "Eggermanuel",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:VillacherAlpenarena2.jpg"
+ },
+ "Willingen": {
+  "file": "hills/willingen.jpg",
+  "hill": "Mühlenkopfschanze",
+  "author": "Bjoern klipp",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:M%C3%BChlenkopfschanze_Winter2008.jpg"
+ },
+ "Wisla": {
+  "file": "hills/wisla.jpg",
+  "hill": "Skocznia narciarska im. Adama Małysza",
+  "author": "D T G",
+  "license": "CC BY 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:POL_Wis%C5%82a_Malinka_DW942_pod_skoczni%C4%85_3.JPG"
+ },
+ "Zakopane": {
+  "file": "hills/zakopane.jpg",
+  "hill": "Wielka Krokiew",
+  "author": "Kapitel",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Zakopane_Wielka_Krokiew_dron_(1).jpg"
+ },
+ "Zao": {
+  "file": "hills/zao.jpg",
+  "hill": "Kuraray Zao Schanze",
+  "author": "Suz-b",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Zao_Ski-jump_Schanze_Winter.JPG"
+ }
+}

@@ -47,6 +47,7 @@ jobs:
           else
             python scraper/fis.py --skip-athletes
           fi
+          python scraper/hills.py || echo "zdjęcia skoczni pominięte"
 
       - name: Zapisz zmiany w repozytorium
         if: github.event_name != 'push'

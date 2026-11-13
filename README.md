@@ -42,26 +42,28 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 4. Strona będzie pod adresem `https://<twoj-login>.github.io/<nazwa-repo>/`.
 
 ### 3. Liga
-1. **Admin otwiera ligę:** pierwsza osoba, która wejdzie na stronę, podaje nazwę ligi i **hasło administratora**.
-   Do tego czasu nikt inny nie może się zapisać.
-2. Admin klika u góry swoje imię → **Dołącz jako gracz** (jeśli też gra) i wysyła znajomym link.
-3. **Gracze się zapisują:** każdy wpisuje imię i wymyśla PIN (4–8 cyfr) – PIN-em loguje się potem na telefonie i komputerze.
+1. **Konto administratora:** pierwsza osoba, która wejdzie na stronę, zakłada ligę – nazwa, **login i hasło admina**
+   oraz **kod zaproszenia**. Konto admina służy tylko do zarządzania ligą (nie gra).
+2. Admin wylogowuje się i **zakłada swoje konto gracza** tak jak wszyscy (login, hasło, kod zaproszenia).
+3. Wysyłasz znajomym link i kod zaproszenia. **Bez kodu nikt nie założy konta**, a po starcie draftu konta zakłada już
+   tylko admin (Panel admina → „Załóż konto graczowi”).
 4. Admin w **Panelu admina** ustawia kolejność (albo **Losuj**) i klika **Rozpocznij draft** – zapisy się zamykają.
 5. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
 6. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
 
-Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
+Logowanie: login + hasło (bez maila). Zapomniane hasło gracza admin ustawia na nowo w Panelu admina (ikona klucza),
+każdy może też zmienić swoje hasło w menu pod swoim loginem.
 
 ## Co jest w aplikacji
 
 - **Ranking** – tabela ligi, wykres przebiegu sezonu, punkty w każdym weekendzie, najlepsi zawodnicy, statystyki kapitanów.
 - **Drużyny** – składy wszystkich graczy na wybrany weekend, kapitanowie, punkty; edycja własnego składu.
-- **Kalendarz** – wszystkie weekendy PŚ; po kliknięciu konkursu: pełne wyniki z odległościami, kto ma którego zawodnika,
+- **Kalendarz** – wszystkie weekendy PŚ i MŚ ze zdjęciami skoczni; po kliknięciu konkursu: pełne wyniki z odległościami, kto ma którego zawodnika,
   punkty każdej drużyny i rozbicie na miejsce / bonusy / kapitana.
 - **Puchar Świata** – klasyfikacja generalna mężczyzn i kobiet (bieżąca liczona z wyników FIS, zeszłoroczna z FIS) z informacją, kto ma zawodnika.
 - **Draft** – tablica draftu na żywo i lista zawodników z filtrami.
 - **Zawodnicy** – ile punktów ligi zdobywa każdy skoczek, także wolni.
-- **Panel admina** – gracze, kolejność i start draftu, cofanie wyborów, punktacja, kopia zapasowa.
+- **Panel admina** – konta graczy i hasła, kod zaproszenia, kolejność i start draftu, cofanie wyborów, punktacja, kopia zapasowa.
 
 ## Zasady zaimplementowane w aplikacji
 
@@ -96,6 +98,11 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
 PŚ z zeszłego sezonu, potem Pucharu Kontynentalnego i Letniego Grand Prix. `data/photos/` – portrety ok. 190 najlepszych
 zawodników z FIS (pozostali mają inicjały). Listę odświeża się ręcznie (Actions → Run workflow → „Odśwież też listę
 zawodników”) – najlepiej tylko przed draftem.
+
+## Zdjęcia skoczni
+
+`data/hills/` – zdjęcia skoczni z Wikimedia Commons (wolne licencje, np. CC BY-SA); autor i licencja są w
+`data/hills.json` i wyświetlają się pod każdym zdjęciem. Brakujące pobiera `python scraper/hills.py`.
 
 ## Lokalnie
 

@@ -22,6 +22,7 @@ let athSeason = 0;       // sezon, dla którego zbudowano listę (ranking = sezo
 let byId = {};
 let calendar = null;
 let standings = null;    // data/standings.json (końcowa klasyfikacja zeszłego sezonu)
+let hills = {};         // data/hills.json – zdjęcia skoczni z Wikimedia Commons
 let weekends = [];
 let results = {};        // raceId -> wyniki
 let calc = null;
@@ -38,7 +39,7 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* tryb prywatny */ } },
 };
 const SESSION_KEY = `skoki-session-${leagueId || 'main'}`;
-let session = LS.get(SESSION_KEY, {});   // { pid, pinHash, adminHash }
+let session = LS.get(SESSION_KEY, {});   // { role: 'admin' | 'player', id, h }
 
 // ================================================================ pomocnicze
 
@@ -62,8 +63,13 @@ const seasonLabel = (s) => `${s - 1}/${String(s).slice(2)}`;
 
 const P = (pid) => state.participants.find((p) => p.id === pid);
 const pname = (pid) => P(pid)?.name ?? '?';
-const me = () => (session.pid && P(session.pid)?.pinHash === session.pinHash ? P(session.pid) : null);
-const isAdmin = () => !!state.setup && session.adminHash === state.setup.adminHash;
+// gracz i administrator to osobne konta; sesja pamięta skrót hasła, więc zmiana hasła wylogowuje
+const me = () => (session.role === 'player' && P(session.id)?.passHash === session.h ? P(session.id) : null);
+const isAdmin = () => session.role === 'admin' && !!state.setup?.adminHash && session.h === state.setup.adminHash;
+const leagueReady = () => !!state.setup?.adminUser;
+const USER_RE = /^[\p{L}\d_.-]{3,20}$/u;
+const userHash = (username, password) => hash(state.setup.salt, `u:${username.toLowerCase()}:${password}`);
+const adminHashOf = (salt, username, password) => hash(salt, `a:${username.toLowerCase()}:${password}`);
 const phase = () => (!state.draftStarted ? 'signup' : state.picks.length < state.draftOrder.length * TEAM_SIZE ? 'draft' : 'season');
 
 const prettyName = (full) => {
@@ -136,7 +142,8 @@ async function loadData() {
     if (!r.ok) throw new Error(`${p}: ${r.status}`);
     return r.json();
   };
-  const [a, c, s] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null)]);
+  const [a, c, s, h] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null), get('hills.json').catch(() => ({}))]);
+  hills = h || {};
   athletes = a.athletes;
   athSeason = a.season;
   byId = Object.fromEntries(athletes.map((x, i) => [x.id, { ...x, idx: i + 1 }]));
@@ -164,7 +171,7 @@ async function init() {
       const pid = snakeOrder(s.draftOrder)[i]?.pid;
       const p = s.participants.find((x) => x.id === pid);
       const n = prettyName(athInfo(s.picks[i]).name);
-      if (pid !== session.pid && s.picks[i] !== localPick) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
+      if (pid !== session.id && s.picks[i] !== localPick) toast(`${p?.name ?? '?'} wybiera: ${n.first} ${n.last}`);
     }
     lastPicks = s.picks.length;
     state = s;
@@ -190,7 +197,7 @@ function render(scrollTop = false) {
   if (!state) return;
   calc = computeAll(state, weekends, results, byId);
   const kept = keepInputs();
-  if (!state.setup) { root.innerHTML = screenCreate(); restoreInputs(kept); return; }
+  if (!leagueReady()) { root.innerHTML = screenCreate(); restoreInputs(kept); return; }
   if (!me() && !isAdmin()) {
     if (location.hash === '#zasady') { root.innerHTML = `<main class="wrap"><a class="back" href="#">${icon('back')}Logowanie</a>${zasady()}</main>`; return; }
     root.innerHTML = screenAuth(); restoreInputs(kept); return;
@@ -251,7 +258,7 @@ function shell(active, content) {
   const dot = (k) => (k === 'draft' && (myTurn || (ph === 'draft' && !m)) ? '<span class="dot"></span>' : '');
   const fifth = ph === 'draft' ? ['draft', 'Draft', 'draft'] : ['wiecej', 'Więcej', 'menu'];
   const tabs = [NAV[0], NAV[1], NAV[2], ['puchar', 'PŚ', 'globe'], fifth];
-  const who = m || { name: 'Admin', color: '#64748b' };
+  const who = m || { name: state.setup.adminUser, color: '#64748b' };
 
   return `
   <header class="top"><div class="top__inner">
@@ -273,11 +280,10 @@ function shell(active, content) {
 function userMenu() {
   const m = me();
   return `<div class="menu">
-    <div class="who"><b>${esc(m?.name || 'Administrator')}</b><div class="muted xs">${m ? (isAdmin() ? 'gracz · administrator' : 'gracz') : 'tylko administrator'}</div></div>
+    <div class="who"><b>${esc(m?.name || state.setup.adminUser)}</b><div class="muted xs">${m ? 'konto gracza' : 'konto administratora'}</div></div>
     <hr>
-    ${m ? `<button data-action="changePin">${icon('key')}Zmień PIN</button>` : `<button data-action="joinAsAdmin">${icon('plus')}Dołącz jako gracz</button>`}
-    ${isAdmin() ? `<a href="#admin">${icon('settings')}Panel admina</a><button data-action="adminOff">${icon('lock')}Wyjdź z trybu admina</button>`
-      : `<button data-action="adminOn">${icon('unlock')}Tryb administratora</button>`}
+    ${isAdmin() ? `<a href="#admin">${icon('settings')}Panel admina</a>` : ''}
+    <button data-action="changePass">${icon('key')}Zmień hasło</button>
     <hr>
     <button data-action="logout">${icon('logout')}Wyloguj</button>
   </div>`;
@@ -294,60 +300,53 @@ function authFrame(inner) {
 
 function screenCreate() {
   return authFrame(`
-    <h2>Otwórz ligę</h2>
-    <p class="lead">Jesteś tu pierwszy. Administrator zakłada ligę i ustawia hasło — potem pozostali gracze mogą się zapisać.</p>
+    <h2>Załóż ligę</h2>
+    <p class="lead">Najpierw konto administratora — służy tylko do zarządzania ligą. Swoje konto gracza założysz potem osobno, jak wszyscy.</p>
     <form data-form="create" autocomplete="off">
       <label class="field"><span>Nazwa ligi</span><input name="league" maxlength="40" placeholder="np. Liga u Krystiana" required></label>
-      <label class="field"><span>Hasło administratora</span><input name="pass" type="password" minlength="4" required autocomplete="new-password"></label>
-      <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="4" required autocomplete="new-password"></label>
+      <label class="field"><span>Login administratora</span><input name="user" maxlength="20" value="admin" required autocomplete="username"></label>
+      <div class="grid-2" style="gap:.75rem">
+        <label class="field"><span>Hasło</span><input name="pass" type="password" minlength="6" required autocomplete="new-password"></label>
+        <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="6" required autocomplete="new-password"></label>
+      </div>
+      <label class="field"><span>Kod zaproszenia dla znajomych</span><input name="invite" maxlength="20" value="${randomId(6).toUpperCase()}" required>
+        <small class="muted">Bez tego kodu nikt nie założy konta. Wyślij go znajomym razem z linkiem.</small></label>
       <div class="formerr"></div>
-      <button class="primary block" type="submit">${icon('unlock')}Otwórz ligę</button>
+      <button class="primary block" type="submit">${icon('unlock')}Załóż ligę</button>
     </form>`);
 }
 
 function screenAuth() {
   const open = phase() === 'signup';
-  const mode = ui.authMode || (open ? 'join' : 'login');
-  const players = state.participants;
-  const tabs = !open ? '' : `<div class="seg tabs">
-    ${open ? `<button type="button" data-action="authMode" data-v="join" class="${mode === 'join' ? 'on' : ''}">Dołącz</button>` : ''}
-    <button type="button" data-action="authMode" data-v="login" class="${mode === 'login' ? 'on' : ''}" ${!players.length ? 'disabled' : ''}>Zaloguj się</button>
-  </div>`;
-  let body = '';
-  if (mode === 'admin') {
-    body = `<h2>Administrator</h2><p class="lead">Podaj hasło administratora ligi.</p>
-      <form data-form="adminLogin" autocomplete="off">
-        <label class="field"><span>Hasło</span><input name="pass" type="password" required></label>
-        <div class="formerr"></div>
-        <button class="primary block" type="submit">${icon('unlock')}Wejdź</button>
-      </form>`;
-  } else if (mode === 'join') {
-    body = `${tabs}<p class="lead">Wpisz swoje imię i wymyśl PIN — będzie potrzebny, żeby zalogować się na innym urządzeniu.</p>
-      <form data-form="join" autocomplete="off">
-        <label class="field"><span>Imię / ksywka</span><input name="name" maxlength="20" required></label>
+  const mode = open && ui.authMode === 'register' ? 'register' : 'login';
+  const tabs = open ? `<div class="seg tabs">
+    <button type="button" data-action="authMode" data-v="login" class="${mode === 'login' ? 'on' : ''}">Zaloguj się</button>
+    <button type="button" data-action="authMode" data-v="register" class="${mode === 'register' ? 'on' : ''}">Załóż konto</button>
+  </div>` : '';
+  const body = mode === 'register'
+    ? `${tabs}<p class="lead">Wymyśl login i hasło. Kod zaproszenia dostaniesz od administratora ligi.</p>
+      <form data-form="register" autocomplete="off">
+        <label class="field"><span>Login (widoczny dla innych)</span><input name="user" maxlength="20" required autocomplete="username" placeholder="np. Krystian"></label>
         <div class="grid-2" style="gap:.75rem">
-          <label class="field"><span>PIN (4–8 cyfr)</span><input name="pin" class="pinput" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" type="password" required autocomplete="new-password"></label>
-          <label class="field"><span>Powtórz PIN</span><input name="pin2" class="pinput" inputmode="numeric" pattern="[0-9]{4,8}" maxlength="8" type="password" required autocomplete="new-password"></label>
+          <label class="field"><span>Hasło</span><input name="pass" type="password" minlength="6" required autocomplete="new-password"></label>
+          <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="6" required autocomplete="new-password"></label>
         </div>
+        <label class="field"><span>Kod zaproszenia</span><input name="invite" maxlength="20" required autocomplete="off"></label>
         <div class="formerr"></div>
-        <button class="primary block" type="submit">${icon('plus')}Dołącz do ligi</button>
-      </form>`;
-  } else {
-    body = `${tabs}${!open ? '<p class="lead">Draft już wystartował — zapisy są zamknięte. Zaloguj się na swoje konto.</p>' : ''}
-      <form data-form="login" autocomplete="off">
-        <label class="field"><span>Kim jesteś?</span><select name="pid" required>${players.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label>
-        <label class="field"><span>PIN</span><input name="pin" class="pinput" inputmode="numeric" maxlength="8" type="password" required></label>
+        <button class="primary block" type="submit">${icon('plus')}Załóż konto i dołącz</button>
+      </form>`
+    : `${tabs}${!open ? '<p class="lead">Draft już wystartował — nowe konta zakłada tylko administrator.</p>' : ''}
+      <form data-form="login">
+        <label class="field"><span>Login</span><input name="user" maxlength="20" required autocomplete="username"></label>
+        <label class="field"><span>Hasło</span><input name="pass" type="password" required autocomplete="current-password"></label>
         <div class="formerr"></div>
-        <button class="primary block" type="submit">Zaloguj</button>
+        <button class="primary block" type="submit">Zaloguj się</button>
       </form>`;
-  }
   return authFrame(`${body}
-    ${players.length ? `<div class="af" style="text-align:left"><div class="muted xs" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">W lidze (${players.length})</div>
-      <div class="joined">${players.map((p) => `<span class="chip">${avatar(p, 'sm')}${esc(p.name)}</span>`).join('')}</div></div>` : ''}
-    <div class="af">${mode === 'admin' ? '<button data-action="authMode" data-v="">← Wróć</button>' : '<button data-action="authMode" data-v="admin">Jestem administratorem</button> · <a href="#zasady">Zasady gry</a>'}</div>`);
+    <div class="af"><a href="#zasady">Zasady gry</a></div>`);
 }
 
-// ================================================================ ranking
+// ================================================================ ranking// ================================================================ ranking
 
 function nextWeekendHero() {
   const w = currentWeekend();
@@ -727,7 +726,7 @@ function kalendarz() {
     return `<div class="card wk ${w.champ ? 'champ' : ''} ${st === 'live' ? 'live' : w === cur && st === 'next' ? 'next' : ''}" id="w-${w.id}">
       <div class="date"><div class="dd">${d.getDate()}${w.end !== w.start ? `<span style="font-size:.7em">–${new Date(w.end + 'T12:00:00').getDate()}</span>` : ''}</div>
         <div class="mm">${d.toLocaleDateString('pl-PL', { month: 'short' }).replace('.', '')}</div><div class="no">#${w.no}</div></div>
-      <div class="body">
+      <div class="body">${hillPhotos(w.events)}
         <div class="wh">${w.events.map((e) => `<span class="row nowrap" style="gap:.4rem">${flag(e.nation)}<span class="t">${esc(e.place)}</span></span>`).join('<span class="muted">·</span>')}
           ${w.champ ? champTag() : ''}
           ${st === 'live' ? '<span class="tag warn live">trwa</span>' : st === 'past' ? '<span class="tag">zakończony</span>' : w === cur ? `<span class="tag acc">${inDays(daysTo(w.start))}</span>` : ''}
@@ -778,13 +777,14 @@ function raceView(id) {
   const m = me();
 
   return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a>
-    <div class="hero race-hero ${race.champ ? 'champ' : ''}">${MOUNTAINS}
+    <div class="hero race-hero ${race.champ ? 'champ' : ''} ${hills[race.place] ? 'has-photo' : ''}" ${hills[race.place] ? `style="--photo:url('${new URL(`${DATA}/${hills[race.place].file}`, location.href).href}')"` : ''}>${hills[race.place] ? '' : MOUNTAINS}
       <div class="eyebrow">Weekend ${w.no} · ${race.champ ? `${CHAMP} ${calendar.season}${race.category === 'QUA' ? ' · kwalifikacje' : ''}` : race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'}</div>
       <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
       <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${localTime(race)} (czasu polskiego)` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
         ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
         ${hr ? `<span>${icon('star')}rekord skoczni: <b>${hr.distance} m</b>${records.length ? ' — <b>POBITY!</b>' : ''}</span>` : ''}
         <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
+      ${hills[race.place] ? `<div class="photo-credit">${esc(hills[race.place].hill)} · ${photoCredit(hills[race.place])}</div>` : ''}
     </div>
     ${!countsForLeague(race, state.settings) ? `<div class="warnline" style="margin-top:1rem">${icon('info')}Mistrzostwa Świata nie liczą się do punktacji ligi (ustawienie admina).</div>` : ''}
     ${ps.length && countsForLeague(race, state.settings) ? `<div class="section grid">${ps.map((p) => {
@@ -818,6 +818,20 @@ function raceView(id) {
         </tr>`;
       }).join('')}</tbody></table></div></div>
     <p class="muted xs" style="margin-top:.6rem">„Pkt ligi” — punkty zawodnika w tym konkursie, bez kapitana i mnożnika. ${m ? 'Podświetlone wiersze to Twoi zawodnicy. ' : ''}Zielona odległość = najdłuższy skok konkursu.</p></div>`;
+}
+
+// Zdjęcie skoczni z podpisem autora (licencje Wikimedia Commons wymagają uznania autorstwa).
+function photoCredit(h) {
+  return `fot. <a href="${esc(h.source)}" target="_blank" rel="noopener">${esc(h.author)}</a>, ${esc(h.license)}`;
+}
+function hillPhotos(events) {
+  const list = events.filter((e) => hills[e.place]);
+  if (!list.length) return '';
+  return `<div class="hillpics">${list.map((e) => {
+    const h = hills[e.place];
+    return `<figure class="hillpic"><img src="${DATA}/${esc(h.file)}" alt="${esc(h.hill)}" loading="lazy">
+      <figcaption><b>${esc(h.hill)}</b><span>${photoCredit(h)}</span></figcaption></figure>`;
+  }).join('')}</div>`;
 }
 
 function breakdown(b) {
@@ -959,8 +973,7 @@ function wiecej() {
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">
       ${items.map(([k, l, i]) => `<a href="#${k}">${icon(i)}${l}</a>`).join('')}
       <hr>
-      ${me() ? `<button data-action="changePin">${icon('key')}Zmień PIN</button>` : `<button data-action="joinAsAdmin">${icon('plus')}Dołącz jako gracz</button>`}
-      ${isAdmin() ? `<button data-action="adminOff">${icon('lock')}Wyjdź z trybu admina</button>` : `<button data-action="adminOn">${icon('unlock')}Tryb administratora</button>`}
+      <button data-action="changePass">${icon('key')}Zmień hasło</button>
       <button data-action="logout">${icon('logout')}Wyloguj</button>
     </div>`;
 }
@@ -982,16 +995,15 @@ function adminView() {
         ${state.draftOrder.map((pid, i) => {
           const p = P(pid);
           return `<div class="player"><b class="muted" style="width:1.2rem">${i + 1}.</b>${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(p.name)}</span></span>
-            ${p.id === session.pid ? '<span class="tag acc">Ty</span>' : ''}<span class="spacer"></span>
+            <span class="spacer"></span>
             ${ph === 'signup' ? `<button class="icon ghost" data-action="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} title="W górę">▲</button>
               <button class="icon ghost" data-action="down" data-i="${i}" ${i === state.draftOrder.length - 1 ? 'disabled' : ''} title="W dół">▼</button>` : ''}
-            <button class="icon ghost" data-action="resetPin" data-id="${p.id}" title="Ustaw nowy PIN">${icon('key')}</button>
+            <button class="icon ghost" data-action="resetPass" data-id="${p.id}" title="Ustaw nowe hasło">${icon('key')}</button>
             ${ph === 'signup' ? `<button class="icon ghost danger" data-action="removeP" data-id="${p.id}" title="Usuń">${icon('trash')}</button>` : ''}
           </div>`;
-        }).join('') || '<div class="muted small">Nikt jeszcze nie dołączył. Wyślij znajomym link do strony.</div>'}
+        }).join('') || '<div class="muted small">Nikt jeszcze nie dołączył. Wyślij znajomym link do strony i kod zaproszenia.</div>'}
         <div class="row" style="margin-top:1rem">
-          <button class="sm" data-action="addP">${icon('plus')}Dodaj gracza</button>
-          ${!me() ? `<button class="sm" data-action="joinAsAdmin">${icon('user')}Dołącz sam jako gracz</button>` : ''}
+          <button class="sm" data-action="addP">${icon('plus')}Załóż konto graczowi</button>
         </div>
       </div>
       <div class="card">
@@ -1025,7 +1037,10 @@ function adminView() {
       </div>
       <div class="card">
         <h3 style="margin-bottom:.8rem">Liga</h3>
-        <div class="row"><button data-action="renameLeague">Zmień nazwę</button><button data-action="changeAdminPass">${icon('key')}Zmień hasło admina</button></div>
+        <div class="invite"><span class="muted small">Kod zaproszenia</span><b>${esc(state.setup.invite || '—')}</b>
+          <button class="sm" data-action="changeInvite">Zmień</button></div>
+        <p class="muted xs" style="margin:.4rem 0 .9rem">Bez kodu nikt nie założy konta. Po starcie draftu konta zakłada już tylko admin.</p>
+        <div class="row"><button data-action="renameLeague">Zmień nazwę ligi</button><button data-action="changePass">${icon('key')}Zmień hasło admina</button></div>
       </div>
       <div class="card">
         <h3 style="margin-bottom:.3rem">Kopia zapasowa</h3>
@@ -1042,13 +1057,14 @@ function adminView() {
 
 function setSession(s) { session = s; LS.set(SESSION_KEY, s); }
 
-function newParticipant(s, name, pinHash) {
-  const n = name.trim();
-  if (!n) fail('Podaj imię');
-  if (s.participants.some((p) => p.name.toLowerCase() === n.toLowerCase())) fail('Ktoś o tym imieniu już jest w lidze');
+function newParticipant(s, username, passHash) {
+  const n = username.trim();
+  if (!USER_RE.test(n)) fail('Login: 3–20 znaków, litery, cyfry, kropka, myślnik lub podkreślnik');
+  if (n.toLowerCase() === s.setup.adminUser.toLowerCase()) fail('Ten login jest zajęty');
+  if (s.participants.some((p) => p.name.toLowerCase() === n.toLowerCase())) fail('Ten login jest zajęty');
   const used = new Set(s.participants.map((p) => p.color));
   const color = COLORS.find((c) => !used.has(c)) || COLORS[s.participants.length % COLORS.length];
-  const p = { id: 'p' + randomId(6), name: n, pinHash, color, joined: new Date().toISOString() };
+  const p = { id: 'p' + randomId(6), name: n, passHash, color, joined: new Date().toISOString() };
   s.participants.push(p);
   s.draftOrder.push(p.id);
   return p;
@@ -1056,45 +1072,54 @@ function newParticipant(s, name, pinHash) {
 
 const forms = {
   async create(f, err) {
+    if (!USER_RE.test(f.user.trim())) return err('Login: 3–20 znaków, litery, cyfry, kropka, myślnik lub podkreślnik');
+    if (f.pass.length < 6) return err('Hasło musi mieć co najmniej 6 znaków');
     if (f.pass !== f.pass2) return err('Hasła się różnią');
     const salt = randomId(12);
-    const adminHash = await hash(salt, f.pass);
+    const adminUser = f.user.trim();
+    const adminHash = await adminHashOf(salt, adminUser, f.pass);
     const ok = await save((s) => {
-      if (s.setup) fail('Liga została już otwarta');
-      s.setup = { leagueName: f.league.trim(), salt, adminHash, created: new Date().toISOString() };
-      return s;
+      if (s.setup?.adminUser) fail('Liga została już założona');
+      return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), created: new Date().toISOString() },
+        draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, triples: {}, hillRecords: {} };
     });
-    if (ok) { setSession({ adminHash }); location.hash = '#admin'; render(); toast('Liga otwarta! Teraz dołącz jako gracz i wyślij link znajomym.', 'ok'); }
+    if (ok) {
+      setSession({ role: 'admin', h: adminHash });
+      location.hash = '#admin';
+      render();
+      toast('Liga założona! Teraz wyloguj się i załóż swoje konto gracza z kodem zaproszenia.', 'ok');
+    }
   },
-  async join(f, err) {
-    if (!/^\d{4,8}$/.test(f.pin)) return err('PIN musi mieć 4–8 cyfr');
-    if (f.pin !== f.pin2) return err('PINy się różnią');
-    const pinHash = await hash(state.setup.salt, f.pin);
+  async register(f, err) {
+    if (f.pass.length < 6) return err('Hasło musi mieć co najmniej 6 znaków');
+    if (f.pass !== f.pass2) return err('Hasła się różnią');
+    if (f.invite.trim().toUpperCase() !== String(state.setup.invite || '').toUpperCase()) return err('Zły kod zaproszenia');
+    const passHash = await userHash(f.user.trim(), f.pass);
     let created;
     try {
       await store.update((s) => {
-        if (s.draftStarted) fail('Draft już się zaczął — zapisy są zamknięte');
-        created = newParticipant(s, f.name, pinHash);
+        if (s.draftStarted) fail('Draft już się zaczął — konto założy Ci administrator');
+        created = newParticipant(s, f.user, passHash);
         return s;
       });
     } catch (e) { return err(e.message); }
-    setSession({ ...session, pid: created.id, pinHash });
+    setSession({ role: 'player', id: created.id, h: passHash });
     ui.authMode = null;
     render();
     toast(`Witaj w lidze, ${created.name}!`, 'ok');
   },
   async login(f, err) {
-    const p = P(f.pid);
-    const h = await hash(state.setup.salt, f.pin);
-    if (!p || p.pinHash !== h) return err('Zły PIN');
-    setSession({ ...session, pid: p.id, pinHash: h });
-    render();
-  },
-  async adminLogin(f, err) {
-    const h = await hash(state.setup.salt, f.pass);
-    if (h !== state.setup.adminHash) return err('Złe hasło');
-    setSession({ ...session, adminHash: h });
-    ui.authMode = null;
+    const user = f.user.trim().toLowerCase();
+    if (user === state.setup.adminUser.toLowerCase()) {
+      const h = await adminHashOf(state.setup.salt, state.setup.adminUser, f.pass);
+      if (h !== state.setup.adminHash) return err('Zły login lub hasło');
+      setSession({ role: 'admin', h });
+      return render();
+    }
+    const p = state.participants.find((x) => x.name.toLowerCase() === user);
+    const h = p && await userHash(p.name, f.pass);
+    if (!p || p.passHash !== h) return err('Zły login lub hasło');
+    setSession({ role: 'player', id: p.id, h });
     render();
   },
 };
@@ -1104,36 +1129,35 @@ const actions = {
   navMore: () => { ui.navMore = !ui.navMore; ui.menu = false; render(); },
   authMode: (el) => { ui.authMode = el.dataset.v || null; render(); },
   logout: async () => {
-    if (await confirmModal('Wylogować?', 'Do ponownego zalogowania potrzebny będzie PIN.', 'Wyloguj')) { setSession({}); ui.menu = false; location.hash = ''; render(); }
+    ui.menu = false;
+    if (await confirmModal('Wylogować?', 'Do ponownego zalogowania potrzebny będzie login i hasło.', 'Wyloguj')) { setSession({}); location.hash = ''; render(); }
   },
-  adminOff: () => { setSession({ ...session, adminHash: null }); ui.menu = false; if (!me()) location.hash = ''; render(); },
-  adminOn: async () => {
+  changePass: async () => {
     ui.menu = false; render();
-    const v = await modal({ title: 'Tryb administratora', fields: [{ name: 'pass', label: 'Hasło administratora', type: 'password' }], ok: 'Odblokuj' });
+    const v = await modal({ title: isAdmin() ? 'Hasło administratora' : 'Zmień hasło',
+      fields: [{ name: 'old', label: 'Obecne hasło', type: 'password', attrs: 'required autocomplete="current-password"' },
+        { name: 'p1', label: 'Nowe hasło (min. 6 znaków)', type: 'password', attrs: 'minlength="6" required autocomplete="new-password"' },
+        { name: 'p2', label: 'Powtórz nowe hasło', type: 'password', attrs: 'minlength="6" required autocomplete="new-password"' }], ok: 'Zmień' });
     if (!v) return;
-    const h = await hash(state.setup.salt, v.pass);
-    if (h !== state.setup.adminHash) return toast('Złe hasło', 'err');
-    setSession({ ...session, adminHash: h }); render(); toast('Tryb administratora włączony', 'ok');
-  },
-  joinAsAdmin: async () => {
-    ui.menu = false; render();
-    const v = await modal({ title: 'Dołącz jako gracz', text: 'Wpisz imię i PIN (4–8 cyfr) — będziesz w lidze tak jak pozostali.', ok: 'Dołącz',
-      fields: [{ name: 'name', label: 'Imię', attrs: 'maxlength="20" required' }, { name: 'pin', label: 'PIN', type: 'password', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }] });
-    if (!v) return;
-    const pinHash = await hash(state.setup.salt, v.pin);
-    let created;
-    const ok = await save((s) => { if (s.draftStarted) fail('Draft już trwa — dodaj gracza przed draftem'); created = newParticipant(s, v.name, pinHash); return s; });
-    if (ok) { setSession({ ...session, pid: created.id, pinHash }); render(); toast(`Dołączono jako ${created.name}`, 'ok'); }
-  },
-  changePin: async () => {
-    ui.menu = false; render();
-    const v = await modal({ title: 'Zmień PIN', fields: [{ name: 'old', label: 'Obecny PIN', type: 'password', attrs: 'inputmode="numeric" required' },
-      { name: 'pin', label: 'Nowy PIN (4–8 cyfr)', type: 'password', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }], ok: 'Zapisz' });
-    if (!v) return;
+    if (v.p1 !== v.p2) return toast('Nowe hasła się różnią', 'err');
+    if (isAdmin()) {
+      const { salt, adminUser } = state.setup;
+      if (await adminHashOf(salt, adminUser, v.old) !== state.setup.adminHash) return toast('Złe obecne hasło', 'err');
+      const h = await adminHashOf(salt, adminUser, v.p1);
+      // sesję ustawiamy przed zapisem – odświeżenie po zapisie nie może wylogować
+      const prev = session;
+      setSession({ role: 'admin', h });
+      if (!await save((s) => { s.setup.adminHash = h; return s; }, 'Hasło zmienione')) setSession(prev);
+      render();
+      return;
+    }
     const m = me();
-    if (await hash(state.setup.salt, v.old) !== m.pinHash) return toast('Zły obecny PIN', 'err');
-    const pinHash = await hash(state.setup.salt, v.pin);
-    if (await save((s) => { s.participants.find((p) => p.id === m.id).pinHash = pinHash; return s; }, 'PIN zmieniony')) setSession({ ...session, pinHash });
+    if (await userHash(m.name, v.old) !== m.passHash) return toast('Złe obecne hasło', 'err');
+    const h = await userHash(m.name, v.p1);
+    const prev = session;
+    setSession({ role: 'player', id: m.id, h });
+    if (!await save((s) => { s.participants.find((p) => p.id === m.id).passHash = h; return s; }, 'Hasło zmienione')) setSession(prev);
+    render();
   },
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
@@ -1222,11 +1246,11 @@ const actions = {
 
   // admin
   addP: async () => {
-    const v = await modal({ title: 'Dodaj gracza', text: 'Dla kogoś, kto nie może zapisać się sam. Przekaż mu PIN.', ok: 'Dodaj',
-      fields: [{ name: 'name', label: 'Imię', attrs: 'maxlength="20" required' }, { name: 'pin', label: 'PIN (4–8 cyfr)', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }] });
+    const v = await modal({ title: 'Załóż konto graczowi', text: 'Przekaż mu login i hasło — po zalogowaniu może zmienić hasło.', ok: 'Załóż',
+      fields: [{ name: 'user', label: 'Login', attrs: 'maxlength="20" required' }, { name: 'pass', label: 'Hasło (min. 6 znaków)', attrs: 'minlength="6" required' }] });
     if (!v) return;
-    const pinHash = await hash(state.setup.salt, v.pin);
-    save((s) => { if (s.draftStarted) fail('Draft już trwa'); newParticipant(s, v.name, pinHash); return s; }, `Dodano: ${v.name}`);
+    const passHash = await userHash(v.user.trim(), v.pass);
+    save((s) => { if (s.draftStarted) fail('Draft już trwa — nowych graczy można dodać tylko przed draftem'); newParticipant(s, v.user, passHash); return s; }, `Założono konto: ${v.user}`);
   },
   removeP: async (el) => {
     const p = P(el.dataset.id);
@@ -1238,13 +1262,16 @@ const actions = {
       return s;
     });
   },
-  resetPin: async (el) => {
+  resetPass: async (el) => {
     const p = P(el.dataset.id);
-    const v = await modal({ title: `Nowy PIN dla ${p.name}`, fields: [{ name: 'pin', label: 'PIN (4–8 cyfr)', attrs: 'inputmode="numeric" pattern="[0-9]{4,8}" required' }], ok: 'Ustaw' });
+    const v = await modal({ title: `Nowe hasło: ${p.name}`, text: 'Np. gdy gracz zapomniał hasła. Przekaż mu nowe.', fields: [{ name: 'pass', label: 'Nowe hasło (min. 6 znaków)', attrs: 'minlength="6" required' }], ok: 'Ustaw' });
     if (!v) return;
-    const pinHash = await hash(state.setup.salt, v.pin);
-    save((s) => { s.participants.find((x) => x.id === p.id).pinHash = pinHash; return s; }, 'PIN zmieniony');
-    if (p.id === session.pid) setSession({ ...session, pinHash });
+    const passHash = await userHash(p.name, v.pass);
+    save((s) => { s.participants.find((x) => x.id === p.id).passHash = passHash; return s; }, 'Hasło ustawione');
+  },
+  changeInvite: async () => {
+    const v = await modal({ title: 'Kod zaproszenia', fields: [{ name: 'c', label: 'Nowy kod', value: state.setup.invite || '', attrs: 'maxlength="20" required' }], ok: 'Zapisz' });
+    if (v) save((s) => { s.setup.invite = v.c.trim(); return s; }, 'Kod zmieniony');
   },
   up: (el) => moveP(+el.dataset.i, -1),
   down: (el) => moveP(+el.dataset.i, 1),
@@ -1277,13 +1304,6 @@ const actions = {
     const v = await modal({ title: 'Nazwa ligi', fields: [{ name: 'n', label: 'Nazwa', value: state.setup.leagueName, attrs: 'maxlength="40" required' }], ok: 'Zapisz' });
     if (v) save((s) => { s.setup.leagueName = v.n.trim(); return s; });
   },
-  changeAdminPass: async () => {
-    const v = await modal({ title: 'Nowe hasło admina', fields: [{ name: 'p1', label: 'Nowe hasło', type: 'password', attrs: 'minlength="4" required' }, { name: 'p2', label: 'Powtórz', type: 'password', attrs: 'minlength="4" required' }], ok: 'Zmień' });
-    if (!v) return;
-    if (v.p1 !== v.p2) return toast('Hasła się różnią', 'err');
-    const h = await hash(state.setup.salt, v.p1);
-    if (await save((s) => { s.setup.adminHash = h; return s; }, 'Hasło zmienione')) setSession({ ...session, adminHash: h });
-  },
   export: () => {
     const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1292,7 +1312,7 @@ const actions = {
     a.click();
   },
   deleteLeague: async () => {
-    if (!await confirmModal('Usunąć całą ligę?', 'Znikną gracze, draft, składy i hasło admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
+    if (!await confirmModal('Usunąć całą ligę?', 'Znikną konta graczy, draft, składy i konto admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
     if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, settings: {} }))) {
       setSession({}); location.hash = ''; render();
     }

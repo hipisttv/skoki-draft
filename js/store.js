@@ -4,9 +4,9 @@
 import { firebaseConfig, leagueId } from '../firebase-config.js';
 
 export const EMPTY_STATE = {
-  setup: null,          // { leagueName, salt, adminHash, created } – liga otwarta przez admina
+  setup: null,          // { leagueName, salt, adminUser, adminHash, invite, created } – konto admina i kod zaproszenia
   draftStarted: false,
-  participants: [],     // { id, name, pinHash, color, joined }
+  participants: [],     // { id, name (login), passHash, color, joined }
   draftOrder: [],
   picks: [],
   lineups: {},
