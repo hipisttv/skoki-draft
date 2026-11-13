@@ -576,3 +576,38 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .draw details { margin-top: .8rem; color: var(--muted); }
 .draw summary { cursor: pointer; font-weight: 600; }
 .drawhist { margin: .5rem 0 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
+
+/* ============================================================ logo */
+.logo { display: inline-block; width: 34px; height: 34px; border-radius: 9px; overflow: hidden; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, .18); }
+.logo img { display: block; width: 120.5%; height: 120.5%; margin: -10.25%; max-width: none; }
+.auth-logo .logo { width: 48px; height: 48px; border-radius: 12px; box-shadow: none; }
+
+/* ============================================================ profil */
+.av.has-photo { background: var(--card-2); box-shadow: 0 0 0 2px var(--c); overflow: hidden; }
+.av.has-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pcard .login { font-size: .72rem; color: var(--muted); font-weight: 600; margin-top: -.1rem; }
+.modal.profile .stack > * + * { margin-top: .5rem; }
+.modal.profile .btn { display: inline-flex; }
+
+/* ============================================================ draft – czytelność */
+.draft-tabs { margin: 1.4rem 0 .2rem; }
+.draft-tabs button { padding: .45rem 1rem; font-size: .9rem; }
+.nextpick { position: relative; z-index: 1; font-size: .85rem; opacity: .9; margin: .1rem 0 .45rem; }
+.recent { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+.recent .rp { display: inline-flex; align-items: center; gap: .4rem; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: .2rem .65rem .2rem .25rem; font-size: .8rem; }
+.recent .rp small { color: var(--muted); font-weight: 700; }
+.recent .rp.new { border-color: var(--accent); background: var(--accent-soft); }
+.board .head { flex-direction: row; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: .45rem .6rem; }
+.board .head span { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.board .head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .head small { font-size: .68rem; color: var(--muted); font-weight: 600; }
+.board .head.mine { border-color: var(--accent); background: var(--accent-soft); }
+.board .cell { min-height: 3.4rem; }
+.board .cell.mine:not(.now) { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.board .cell.last { box-shadow: 0 0 0 2px var(--good); }
+.board .cell .ph { width: 24px; height: 24px; }
+.picking { font-size: .8rem; font-weight: 800; color: var(--accent); animation: pulse 1.4s infinite; }
+@media (max-width: 640px) {
+  .recent { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .3rem; scrollbar-width: none; }
+  .recent > * { flex: none; }
+}

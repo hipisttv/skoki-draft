@@ -62,7 +62,9 @@ const pl = (n, one, few, many) => {
 const seasonLabel = (s) => `${s - 1}/${String(s).slice(2)}`;
 
 const P = (pid) => state.participants.find((p) => p.id === pid);
-const pname = (pid) => P(pid)?.name ?? '?';
+// Nazwa drużyny (osobna od loginu); dla starszych kont – login.
+const tname = (p) => (p ? p.team || p.name : '?');
+const pname = (pid) => tname(P(pid));
 // gracz i administrator to osobne konta; sesja pamięta skrót hasła, więc zmiana hasła wylogowuje
 const me = () => (session.role === 'player' && P(session.id)?.passHash === session.h ? P(session.id) : null);
 const isAdmin = () => session.role === 'admin' && !!state.setup?.adminHash && session.h === state.setup.adminHash;
@@ -98,7 +100,7 @@ const ownerOf = (aid) => Object.entries(calc.teams).find(([, ids]) => ids.includ
 function owner(pid, extra = '') {
   const p = P(pid);
   if (!p) return '<span class="muted xs">wolny</span>';
-  return `<span class="owner"><span class="sw" style="background:${p.color}"></span>${esc(p.name)}${extra}</span>`;
+  return `<span class="owner"><span class="sw" style="background:${p.color}"></span>${esc(tname(p))}${extra}</span>`;
 }
 const raceLabel = (r) => `${r.category === 'QUA' ? 'Kwalifikacje' : 'Konkurs'} ${r.gender === 'W' ? 'kobiet' : 'mężczyzn'}`;
 const CHAMP = 'Mistrzostwa Świata';
@@ -283,6 +285,7 @@ function userMenu() {
     <div class="who"><b>${esc(m?.name || state.setup.adminUser)}</b><div class="muted xs">${m ? 'konto gracza' : 'konto administratora'}</div></div>
     <hr>
     ${isAdmin() ? `<a href="#admin">${icon('settings')}Panel admina</a>` : ''}
+    ${m ? `<button data-action="profile">${icon('user')}Moja drużyna i zdjęcie</button>` : ''}
     <button data-action="changePass">${icon('key')}Zmień hasło</button>
     <hr>
     <button data-action="logout">${icon('logout')}Wyloguj</button>
@@ -326,7 +329,10 @@ function screenAuth() {
   const body = mode === 'register'
     ? `${tabs}<p class="lead">Wymyśl login i hasło. Kod zaproszenia dostaniesz od administratora ligi.</p>
       <form data-form="register" autocomplete="off">
-        <label class="field"><span>Login (widoczny dla innych)</span><input name="user" maxlength="20" required autocomplete="username" placeholder="np. Krystian"></label>
+        <div class="grid-2" style="gap:.75rem">
+          <label class="field"><span>Login</span><input name="user" maxlength="20" required autocomplete="username" placeholder="np. krystian"></label>
+          <label class="field"><span>Nazwa drużyny</span><input name="team" maxlength="30" required placeholder="np. Orły z Wisły"></label>
+        </div>
         <div class="grid-2" style="gap:.75rem">
           <label class="field"><span>Hasło</span><input name="pass" type="password" minlength="6" required autocomplete="new-password"></label>
           <label class="field"><span>Powtórz hasło</span><input name="pass2" type="password" minlength="6" required autocomplete="new-password"></label>
@@ -357,7 +363,7 @@ function nextWeekendHero() {
   let cta = '';
   if (ph === 'signup') {
     return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Zapisy trwają</div><div class="big">Czekamy na graczy</div>
-      <p>W lidze: ${state.participants.map((p) => esc(p.name)).join(', ') || 'nikt jeszcze'}. ${isAdmin() ? 'Gdy wszyscy dołączą, rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}</p>
+      <p>W lidze: ${state.participants.map((p) => esc(tname(p))).join(', ') || 'nikt jeszcze'}. ${isAdmin() ? 'Gdy wszyscy dołączą, rozpocznij draft w panelu admina.' : 'Administrator rozpocznie draft, gdy wszyscy dołączą.'}</p>
       ${isAdmin() ? '<div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#admin">Panel admina</a></div>' : ''}</div>`;
   }
   if (ph === 'draft') {
@@ -384,7 +390,7 @@ function nextWeekendHero() {
   if (st === 'past') {
     const champ = [...state.participants].sort((a, b) => calc.totals[b.id] - calc.totals[a.id])[0];
     return `<div class="hero">${MOUNTAINS}<div class="eyebrow">Sezon ${seasonLabel(calendar.season)} zakończony</div>
-      <div class="big">🏆 Mistrz ligi: ${esc(champ?.name ?? '—')}</div><p>${champ ? `${calc.totals[champ.id]} pkt po ${weekends.length} weekendach.` : ''}</p></div>`;
+      <div class="big">🏆 Mistrz ligi: ${esc(champ ? tname(champ) : '—')}</div><p>${champ ? `${calc.totals[champ.id]} pkt po ${weekends.length} weekendach.` : ''}</p></div>`;
   }
   return `<div class="hero ${w.champ ? 'champ' : ''}">${MOUNTAINS}
     <div class="eyebrow">${w.champ ? `${CHAMP} · ` : ''}${st === 'live' ? 'Trwa weekend' : `Następny weekend · ${inDays(d)}`}</div>
@@ -405,7 +411,7 @@ function ranking() {
   if (!ps.length) return html;
   if (!played.length) {
     return html + `<div class="section"><div class="row"><h2>Gracze</h2></div><div class="podium">${ps.map((p) => `<div class="pcard">${avatar(p, 'lg')}
-      <div class="who"><div class="nm">${esc(p.name)}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div>
+      <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
       <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników</div></div>
       <div class="bar" style="background:${p.color};width:100%"></div></div>`).join('')}</div></div>
       <div class="section card empty">${icon('snow')}<b>Sezon jeszcze nie wystartował</b>
@@ -415,7 +421,7 @@ function ranking() {
     const pos = i > 0 && calc.totals[ps[i - 1].id] === calc.totals[p.id] ? '=' : i + 1;
     return `<div class="pcard p${i + 1}">
       <div class="pos">${pos}</div>${avatar(p, 'lg')}
-      <div class="who"><div class="nm">${esc(p.name)}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div>
+      <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
         <div class="pts">${calc.totals[p.id]}<small>pkt</small></div>
         <div class="gap">${i === 0 ? (top ? 'lider' : '&nbsp;') : `−${top - calc.totals[p.id]} do lidera`}</div></div>
       <div class="bar" style="background:${p.color};width:${top ? (calc.totals[p.id] / top) * 100 : 0}%"></div>
@@ -425,7 +431,7 @@ function ranking() {
 
   // wykres narastająco
   html += `<div class="section card"><div class="row" style="margin-bottom:.6rem"><h2>Przebieg sezonu</h2><span class="spacer"></span>
-    <div class="legend">${ps.map((p) => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('')}</div></div>
+    <div class="legend">${ps.map((p) => `<span><i style="background:${p.color}"></i>${esc(tname(p))}</span>`).join('')}</div></div>
     ${chart(ps, played)}</div>`;
 
   // tabela weekendów
@@ -536,16 +542,17 @@ function draft() {
       ui.autoGender = n;
       ui.gender = must;
       ui.limit = 150;
-      toast(mine ? `Teraz musisz wybrać ${mustTxt} — pokazuję tylko ${must === 'W' ? 'kobiety' : 'mężczyzn'}` : `${p.name} musi teraz wybrać ${mustTxt}`, 'warn');
+      toast(mine ? `Teraz musisz wybrać ${mustTxt} — pokazuję tylko ${must === 'W' ? 'kobiety' : 'mężczyzn'}` : `${tname(p)} musi teraz wybrać ${mustTxt}`, 'warn');
     }
     const alert = must
-      ? `<div class="mustline">${icon('info')}<span>${mine ? `<b>Teraz musisz wybrać ${mustTxt}</b> — inaczej nie skompletujesz składu (${TEAM.men} M + ${TEAM.women} K).` : `<b>${esc(p.name)} musi teraz wybrać ${mustTxt}.</b>`}</span></div>`
+      ? `<div class="mustline">${icon('info')}<span>${mine ? `<b>Teraz musisz wybrać ${mustTxt}</b> — inaczej nie skompletujesz składu (${TEAM.men} M + ${TEAM.women} K).` : `<b>${esc(tname(p))} musi teraz wybrać ${mustTxt}.</b>`}</span></div>`
       : wom < TEAM.women && left <= 3
-        ? `<div class="mustline soft">${icon('info')}<span>${mine ? 'Pamiętaj' : esc(p.name)}: w drużynie nie ma jeszcze kobiety — zostały ${left} ${pl(left, 'wybór', 'wybory', 'wyborów')}.</span></div>`
+        ? `<div class="mustline soft">${icon('info')}<span>${mine ? 'Pamiętaj' : esc(tname(p))}: w drużynie nie ma jeszcze kobiety — zostały ${left} ${pl(left, 'wybór', 'wybory', 'wyborów')}.</span></div>`
         : '';
     hero = `<div class="hero"><div class="clock">${avatar(p, 'xl')}
       <div class="who"><div class="eyebrow">Wybór ${n + 1} z ${seq.length} · runda ${cur.round}</div>
-        <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(p.name)}`}</div>
+        <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(tname(p))}`}</div>
+        ${!mine && m ? nextPickInfo(seq, n, m.id) : ''}
         <div class="needs"><span class="need ${men >= TEAM.men ? 'done' : ''}">Mężczyźni ${Math.min(men, TEAM.men)}/${TEAM.men}</span>
           <span class="need ${wom >= TEAM.women ? 'done' : ''}">Kobieta ${Math.min(wom, TEAM.women)}/${TEAM.women}</span>
           <span class="need">Rezerwa ${Math.max(0, t.length - Math.min(men, TEAM.men) - Math.min(wom, TEAM.women))}/${TEAM.reserves}</span></div></div>
@@ -560,19 +567,50 @@ function draft() {
       const s = seq[i];
       const col = state.draftOrder.indexOf(s.pid);
       const aid = state.picks[i];
-      cells.push(`<div class="cell ${i === n ? 'now' : ''} ${!aid && i !== n ? 'empty-c' : ''}" style="grid-column:${col + 1};grid-row:${r + 2}">
-        <span class="r">${r + 1}.${col + 1} · #${i + 1}</span>${aid ? ath(aid) : i === n ? '<span class="xs" style="color:var(--accent);font-weight:700">wybiera…</span>' : ''}</div>`);
+      const cls = [i === n ? 'now' : '', !aid && i !== n ? 'empty-c' : '', s.pid === m?.id ? 'mine' : '', aid && i === n - 1 ? 'last' : ''].join(' ');
+      cells.push(`<div class="cell ${cls}" style="grid-column:${col + 1};grid-row:${r + 2}">
+        <span class="r">Runda ${r + 1} · wybór ${i + 1}${aid && i === n - 1 ? ' · <b>ostatni</b>' : ''}</span>
+        ${aid ? ath(aid, { photo: true, gender: false }) : i === n ? '<span class="picking">wybiera teraz…</span>' : ''}</div>`);
     }
   }
+  // zakładka: gdy przychodzi moja kolej – lista zawodników, inaczej to, co wybrał gracz
+  const myTurn = !done && cur && (cur.pid === m?.id || isAdmin());
+  // po każdym wyborze: moja kolej → lista zawodników, inaczej tablica (ręczny wybór zakładki trwa do następnego ruchu)
+  if (ui.draftTurn !== n) { ui.draftTurn = n; ui.draftTab = myTurn ? 'list' : 'board'; }
+  const tab = done && ui.draftTab === 'list' ? 'board' : ui.draftTab || (myTurn ? 'list' : 'board');
+  const tabs = [!done && ['list', 'Zawodnicy'], ['board', 'Tablica draftu'], ['draw', 'Losowanie']].filter(Boolean);
+  const board = `<div class="boardwrap"><div class="board" style="grid-template-columns:repeat(${Pn}, minmax(160px, 1fr))">
+      ${state.draftOrder.map((pid, c) => `<div class="head ${pid === m?.id ? 'mine' : ''}" style="grid-column:${c + 1};grid-row:1">${avatar(P(pid), 'sm')}
+        <span><b>${esc(pname(pid))}</b><small>${esc(P(pid)?.name || '')}${pid === m?.id ? ' · Ty' : ''}</small></span></div>`).join('')}
+      ${cells.join('')}
+    </div></div>`;
   return `<div class="page-head"><div><h1>Draft</h1><div class="sub">Kolejność: ${state.draftOrder.map((pid) => esc(pname(pid))).join(' → ')} → i z powrotem</div></div></div>
     ${hero}
-    ${drawCard()}
-    <div class="section"><div class="row"><h2>Tablica</h2></div>
-    <div class="boardwrap"><div class="board" style="grid-template-columns:repeat(${Pn}, minmax(150px, 1fr))">
-      ${state.draftOrder.map((pid, c) => `<div class="head" style="grid-column:${c + 1};grid-row:1">${avatar(P(pid), 'sm')}<span>${esc(pname(pid))}</span></div>`).join('')}
-      ${cells.join('')}
-    </div></div></div>
-    ${done ? '' : athleteTable(true)}`;
+    ${recentPicks(seq, n)}
+    <div class="seg draft-tabs">${tabs.map(([k, l]) => `<button data-action="draftTab" data-v="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${tab === 'list' ? athleteTable(true) : tab === 'draw' ? drawCard() : `<div class="section">${board}</div>`}`;
+}
+
+// „N. Prevc” – krótko, ale bez pomyłek przy zawodnikach o tym samym nazwisku
+function shortAth(id) {
+  const a = athInfo(id);
+  const n = prettyName(a.name);
+  return `<span class="ath">${flag(a.nation)}<span class="nm">${esc(n.first.charAt(0))}. <b>${esc(n.last)}</b></span></span>`;
+}
+
+function nextPickInfo(seq, n, pid) {
+  const next = seq.findIndex((x, i) => i > n && x.pid === pid);
+  if (next < 0) return '';
+  const k = next - n;
+  return `<div class="nextpick">Twój następny wybór: <b>nr ${next + 1}</b> — ${k === 1 ? 'zaraz po tym' : `za ${k} ${pl(k, 'ruch', 'ruchy', 'ruchów')}`}</div>`;
+}
+
+// Ostatnie wybory – szybki podgląd, co się dzieje, bez przewijania tablicy.
+function recentPicks(seq, n) {
+  if (!n) return '';
+  const last = state.picks.slice(-6).map((aid, k) => ({ aid, i: n - Math.min(6, n) + k })).reverse();
+  return `<div class="recent"><span class="muted xs" style="font-weight:800;text-transform:uppercase;letter-spacing:.06em">Ostatnie wybory</span>
+    ${last.map(({ aid, i }) => `<span class="rp ${i === n - 1 ? 'new' : ''}">${avatar(P(seq[i].pid), 'sm')}${shortAth(aid)}<small>#${i + 1}</small></span>`).join('')}</div>`;
 }
 
 // Wynik losowania kolejności – widoczny dla wszystkich, razem z historią ewentualnych ponownych losowań.
@@ -601,7 +639,8 @@ function athleteTable(picking) {
     (!ui.hideTaken || !taken.has(a.id)) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)));
   const list = all.slice(0, ui.limit);
   return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="muted small">${all.length} ${pl(all.length, 'aktywny', 'aktywnych', 'aktywnych')} w FIS</span><span class="spacer"></span>
-      ${picking && cur && !myTurn ? `<span class="tag">czekasz na swoją kolej</span>` : ''}
+      ${picking && cur && !myTurn ? `<span class="tag">przeglądasz — „Wybierz” pojawi się, gdy przyjdzie Twoja kolej</span>` : ''}
+      ${picking && myTurn && cur.pid === me()?.id ? '<span class="tag good">Twoja kolej — wybierz zawodnika</span>' : ''}
       ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))}</span>` : ''}</div>
     <div class="row" style="margin-bottom:.8rem">
       ${genderSeg()}
@@ -609,7 +648,7 @@ function athleteTable(picking) {
       ${picking ? `<label class="check small"><input type="checkbox" data-action="hideTaken" ${ui.hideTaken ? 'checked' : ''}>ukryj wybranych</label>` : ''}
     </div>
     <div class="card pad0"><div class="tablewrap"><table>
-      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num hide-sm">Rocznik</th><th class="num">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce</th><th class="num hide-sm">PK ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">LGP ${athSeason - 1}</th><th></th></tr></thead>
+      <thead><tr><th class="num">#</th><th>Zawodnik</th><th class="num hide-sm">Rocznik</th><th class="num" title="Punkty Pucharu Świata w sezonie ${seasonLabel(athSeason - 1)}">Pkt PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm">Miejsce w PŚ</th><th class="num hide-sm" title="Puchar Kontynentalny">Pkt PK</th><th class="num hide-sm" title="Letnie Grand Prix">Pkt LGP ${athSeason - 1}</th><th></th></tr></thead>
       <tbody>${list.map((a) => {
         const t = taken.get(a.id);
         const ok = !t && myTurn && canPick(team, a.gender, byId);
@@ -621,7 +660,7 @@ function athleteTable(picking) {
           <td class="num hide-sm">${a.wcRank ? `${a.wcRank}.` : '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.coc || '<span class="muted">–</span>'}</td>
           <td class="num hide-sm">${a.gp || '<span class="muted">–</span>'}</td>
-          <td class="num">${t ? owner(t) : picking ? `<button class="sm ${ok ? 'primary' : ''}" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled'}>Wybierz</button>` : ''}</td>
+          <td class="num">${t ? owner(t) : picking && myTurn ? `<button class="sm ${ok ? 'primary' : ''}" data-action="pick" data-id="${a.id}" ${ok ? '' : 'disabled title="Ta płeć nie zmieści się już w składzie"'}>Wybierz</button>` : ''}</td>
         </tr>`;
       }).join('') || '<tr><td colspan="8" class="empty">Brak zawodników dla tego filtra</td></tr>'}</tbody></table></div></div>
     ${all.length > list.length ? `<div class="row" style="justify-content:center;margin-top:.8rem"><button data-action="more">Pokaż kolejnych ${Math.min(150, all.length - list.length)} (zostało ${all.length - list.length})</button></div>` : ''}</div>`;
@@ -687,8 +726,8 @@ function teamCard(p, w, drafting) {
   const women = l.starters.filter((id) => byId[id]?.gender === 'W');
   const label = hasRes ? 'pkt w weekendzie' : 'pkt w sezonie';
   return `<div class="card team">
-    <div class="team-head" style="--c:${p.color}">${avatar(p)}<div><div class="nm">${esc(p.name)}</div>
-      <div class="muted xs">${p.id === me()?.id ? 'Twoja drużyna' : `${ids.length}/${TEAM_SIZE} zawodników`}</div></div><span class="spacer"></span>
+    <div class="team-head" style="--c:${p.color}">${avatar(p)}<div><div class="nm">${esc(tname(p))}</div>
+      <div class="muted xs">${esc(p.name)}${p.id === me()?.id ? ' · Twoja drużyna' : ''}</div></div><span class="spacer"></span>
       ${drafting ? '' : `<div class="tot"><div class="v">${hasRes ? calc.byWeekend[w.id]?.[p.id] || 0 : calc.totals[p.id]}</div><div class="l">${hasRes ? 'weekend' : 'sezon'}</div></div>`}</div>
     <div class="team-body">
       ${drafting ? (ids.map((id) => line(id, true)).join('') || '<div class="muted small" style="padding:.6rem 0">Jeszcze nikogo nie wybrano</div>') : `
@@ -805,7 +844,7 @@ function raceView(id) {
     ${!countsForLeague(race, state.settings) ? `<div class="warnline" style="margin-top:1rem">${icon('info')}Mistrzostwa Świata nie liczą się do punktacji ligi (ustawienie admina).</div>` : ''}
     ${ps.length && countsForLeague(race, state.settings) ? `<div class="section grid">${ps.map((p) => {
       const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [], penalty: 0 };
-      return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(p.name)}</div><span class="spacer"></span>
+      return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(tname(p))}</div><span class="spacer"></span>
           <div class="tot"><div class="v">+${e.total}</div><div class="l">pkt</div></div></div>
         <div class="team-body">${e.triple ? `<div class="triple on" style="margin:.6rem 0 .2rem">${icon('star')}<span>Mnożnik ×${TRIPLE} — wszystkie punkty potrojone</span></div>` : ''}
           ${e.athletes.sort((a, b) => b.pts - a.pts).map((a) => `<div class="player">${ath(a.id, { gender: false, photo: true })}
@@ -990,6 +1029,7 @@ function wiecej() {
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">
       ${items.map(([k, l, i]) => `<a href="#${k}">${icon(i)}${l}</a>`).join('')}
       <hr>
+      ${me() ? `<button data-action="profile">${icon('user')}Moja drużyna i zdjęcie</button>` : ''}
       <button data-action="changePass">${icon('key')}Zmień hasło</button>
       <button data-action="logout">${icon('logout')}Wyloguj</button>
     </div>`;
@@ -1010,7 +1050,7 @@ function adminView() {
         <div class="row" style="margin-bottom:.6rem"><h3>Gracze</h3><span class="spacer"></span><span class="muted small">${state.participants.length}</span></div>
         ${(ph === 'signup' ? state.participants.map((p) => p.id) : state.draftOrder).map((pid, i) => {
           const p = P(pid);
-          return `<div class="player">${ph === 'signup' ? '' : `<b class="muted" style="width:1.2rem">${i + 1}.</b>`}${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(p.name)}</span></span>
+          return `<div class="player">${ph === 'signup' ? '' : `<b class="muted" style="width:1.2rem">${i + 1}.</b>`}${avatar(p, 'sm')}<span class="ath"><span class="nm">${esc(tname(p))} <span class="muted xs">· ${esc(p.name)}</span></span></span>
             <span class="spacer"></span>
             <button class="icon ghost" data-action="resetPass" data-id="${p.id}" title="Ustaw nowe hasło">${icon('key')}</button>
             ${ph === 'signup' ? `<button class="icon ghost danger" data-action="removeP" data-id="${p.id}" title="Usuń">${icon('trash')}</button>` : ''}
@@ -1071,14 +1111,16 @@ function adminView() {
 
 function setSession(s) { session = s; LS.set(SESSION_KEY, s); }
 
-function newParticipant(s, username, passHash) {
+function newParticipant(s, username, passHash, team = '') {
   const n = username.trim();
   if (!USER_RE.test(n)) fail('Login: 3–20 znaków, litery, cyfry, kropka, myślnik lub podkreślnik');
   if (n.toLowerCase() === s.setup.adminUser.toLowerCase()) fail('Ten login jest zajęty');
   if (s.participants.some((p) => p.name.toLowerCase() === n.toLowerCase())) fail('Ten login jest zajęty');
   const used = new Set(s.participants.map((p) => p.color));
   const color = COLORS.find((c) => !used.has(c)) || COLORS[s.participants.length % COLORS.length];
-  const p = { id: 'p' + randomId(6), name: n, passHash, color, joined: new Date().toISOString() };
+  const t = String(team || '').trim().slice(0, 30) || n;
+  if (s.participants.some((p) => tname(p).toLowerCase() === t.toLowerCase())) fail('Drużyna o tej nazwie już jest w lidze');
+  const p = { id: 'p' + randomId(6), name: n, team: t, passHash, color, joined: new Date().toISOString() };
   s.participants.push(p);
   s.draftOrder.push(p.id);
   return p;
@@ -1113,14 +1155,14 @@ const forms = {
     try {
       await store.update((s) => {
         if (s.draftStarted) fail('Draft już się zaczął — konto założy Ci administrator');
-        created = newParticipant(s, f.user, passHash);
+        created = newParticipant(s, f.user, passHash, f.team);
         return s;
       });
     } catch (e) { return err(e.message); }
     setSession({ role: 'player', id: created.id, h: passHash });
     ui.authMode = null;
     render();
-    toast(`Witaj w lidze, ${created.name}!`, 'ok');
+    toast(`Witaj w lidze, ${created.team}!`, 'ok');
   },
   async login(f, err) {
     const user = f.user.trim().toLowerCase();
@@ -1146,6 +1188,7 @@ const actions = {
     ui.menu = false;
     if (await confirmModal('Wylogować?', 'Do ponownego zalogowania potrzebny będzie login i hasło.', 'Wyloguj')) { setSession({}); location.hash = ''; render(); }
   },
+  profile: () => { ui.menu = false; render(); profileModal(); },
   changePass: async () => {
     ui.menu = false; render();
     const v = await modal({ title: isAdmin() ? 'Hasło administratora' : 'Zmień hasło',
@@ -1176,6 +1219,7 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  draftTab: (el) => { ui.draftTab = el.dataset.v; render(); },
   triple: (el) => {
     const { p } = el.dataset;
     const raceId = el.value;
@@ -1261,10 +1305,11 @@ const actions = {
   // admin
   addP: async () => {
     const v = await modal({ title: 'Załóż konto graczowi', text: 'Przekaż mu login i hasło — po zalogowaniu może zmienić hasło.', ok: 'Załóż',
-      fields: [{ name: 'user', label: 'Login', attrs: 'maxlength="20" required' }, { name: 'pass', label: 'Hasło (min. 6 znaków)', attrs: 'minlength="6" required' }] });
+      fields: [{ name: 'user', label: 'Login', attrs: 'maxlength="20" required' }, { name: 'team', label: 'Nazwa drużyny', attrs: 'maxlength="30" required' },
+        { name: 'pass', label: 'Hasło (min. 6 znaków)', attrs: 'minlength="6" required' }] });
     if (!v) return;
     const passHash = await userHash(v.user.trim(), v.pass);
-    save((s) => { if (s.draftStarted) fail('Draft już trwa — nowych graczy można dodać tylko przed draftem'); newParticipant(s, v.user, passHash); return s; }, `Założono konto: ${v.user}`);
+    save((s) => { if (s.draftStarted) fail('Draft już trwa — nowych graczy można dodać tylko przed draftem'); newParticipant(s, v.user, passHash, v.team); return s; }, `Założono konto: ${v.user}`);
   },
   removeP: async (el) => {
     const p = P(el.dataset.id);
@@ -1288,7 +1333,7 @@ const actions = {
     if (v) save((s) => { s.setup.invite = v.c.trim(); return s; }, 'Kod zmieniony');
   },
   startDraft: async () => {
-    const names = state.participants.map((p) => esc(p.name)).join(', ');
+    const names = state.participants.map((p) => esc(tname(p))).join(', ');
     if (!await confirmModal('Rozpocząć draft?', `Gracze: <b>${names}</b>.<br>Aplikacja wylosuje teraz kolejność — wynik zobaczą wszyscy. Zapisy zostaną zamknięte.`, 'Losuj i zaczynaj')) return;
     if (await save((s) => {
       if (s.participants.length < 2) fail('Potrzeba co najmniej 2 graczy');
@@ -1333,6 +1378,64 @@ const actions = {
     }
   },
 };
+
+// Zdjęcie profilowe: kwadrat 192 px, JPEG – kilkanaście KB, trzymane razem z danymi ligi.
+async function photoFromFile(file) {
+  if (!file.type.startsWith('image/')) throw new Error('To nie jest obrazek');
+  const img = await createImageBitmap(file);
+  const size = 192;
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const side = Math.min(img.width, img.height);
+  c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+function profileModal() {
+  const m = me();
+  if (!m) return;
+  let photo = m.photo || null;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  const preview = () => avatar({ ...m, photo }, 'xl');
+  bg.innerHTML = `<form class="modal profile" autocomplete="off">
+    <h3>Moja drużyna</h3>
+    <div class="row" style="margin:1rem 0">
+      <span id="pp">${preview()}</span>
+      <div class="stack" style="flex:1">
+        <label class="btn sm">${icon('upload')}Wybierz zdjęcie<input type="file" accept="image/*" hidden id="ppFile"></label>
+        <button type="button" class="sm ghost" id="ppDel" ${photo ? '' : 'hidden'}>Usuń zdjęcie</button>
+      </div>
+    </div>
+    <label class="field"><span>Nazwa drużyny</span><input name="team" maxlength="30" required value="${esc(tname(m))}"></label>
+    <p class="muted xs">Login (${esc(m.name)}) zostaje bez zmian – nim się logujesz.</p>
+    <div class="formerr"></div>
+    <div class="actions"><button type="button" data-x>Anuluj</button><button type="submit" class="primary">Zapisz</button></div>
+  </form>`;
+  const form = bg.querySelector('form');
+  const err = form.querySelector('.formerr');
+  const refresh = () => { bg.querySelector('#pp').innerHTML = preview(); bg.querySelector('#ppDel').hidden = !photo; };
+  bg.querySelector('#ppFile').addEventListener('change', async (e) => {
+    err.textContent = '';
+    try { photo = await photoFromFile(e.target.files[0]); refresh(); } catch (x) { err.textContent = x.message; }
+  });
+  bg.querySelector('#ppDel').addEventListener('click', () => { photo = null; refresh(); });
+  bg.addEventListener('click', (e) => { if (e.target === bg || e.target.closest('[data-x]')) bg.remove(); });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const team = form.team.value.trim();
+    if (!team) { err.textContent = 'Podaj nazwę drużyny'; return; }
+    const ok = await save((s) => {
+      if (s.participants.some((x) => x.id !== m.id && tname(x).toLowerCase() === team.toLowerCase())) fail('Drużyna o tej nazwie już jest w lidze');
+      const me_ = s.participants.find((x) => x.id === m.id);
+      me_.team = team;
+      if (photo) me_.photo = photo; else delete me_.photo;
+      return s;
+    }, 'Zapisano');
+    if (ok) bg.remove();
+  });
+  document.body.appendChild(bg);
+}
 
 // Losowanie kolejności draftu (Fisher–Yates na kryptograficznym generatorze przeglądarki).
 function drawOrder(ids) {

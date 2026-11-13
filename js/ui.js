@@ -41,8 +41,9 @@ export function icon(name, cls = '') {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 }
 
-export const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="rgba(255,255,255,.14)"/><path d="M8 52 L56 26" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/><circle cx="39" cy="15" r="5.5" fill="#ffcf3d"/><path d="M21 41 L38 25 L45 31" stroke="#ffcf3d" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-export const LOGO_DARK = LOGO.replace('rgba(255,255,255,.14)', '#0b2a55');
+// Logo ligi (img/logo.png ma przezroczysty margines – przycinamy go w CSS, klasa .logo)
+export const LOGO = '<span class="logo"><img src="img/logo.png" alt=""></span>';
+export const LOGO_DARK = LOGO;
 
 export const MOUNTAINS = `<svg class="mountains" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
   <path d="M0 300 L0 210 L120 150 L210 190 L330 90 L450 170 L560 120 L700 200 L820 80 L960 180 L1080 130 L1200 170 L1200 300Z" fill="rgba(255,255,255,.07)"/>
@@ -73,7 +74,9 @@ export function initials(name) {
 
 export function avatar(p, cls = '') {
   if (!p) return '';
-  return `<span class="av ${cls}" style="background:${p.color}" title="${esc(p.name)}">${esc(initials(p.name))}</span>`;
+  const label = p.team || p.name;
+  if (p.photo) return `<span class="av ${cls} has-photo" style="--c:${p.color}" title="${esc(label)}"><img src="${p.photo}" alt=""></span>`;
+  return `<span class="av ${cls}" style="background:${p.color}" title="${esc(label)}">${esc(initials(label))}</span>`;
 }
 
 // ---------------------------------------------------------------- powiadomienia

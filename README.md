@@ -52,6 +52,9 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 5. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
 6. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
 
+Każdy gracz ma **login** (do logowania) i osobną **nazwę drużyny** (widoczną w rankingu, drafcie i tabelach). Nazwę drużyny
+i **zdjęcie profilowe** zmienia się w menu pod swoim loginem → „Moja drużyna i zdjęcie”.
+
 Logowanie: login + hasło (bez maila). Zapomniane hasło gracza admin ustawia na nowo w Panelu admina (ikona klucza),
 każdy może też zmienić swoje hasło w menu pod swoim loginem.
 
