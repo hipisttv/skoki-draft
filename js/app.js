@@ -251,6 +251,7 @@ const NAV = [
   ['draft', 'Draft', 'draft'],
   ['zawodnicy', 'Zawodnicy', 'list'],
   ['zasady', 'Zasady', 'info'],
+  ['nagrody', 'Nagrody', 'trophy'],
   ['admin', 'Admin', 'settings'],
 ];
 
@@ -265,7 +266,7 @@ function render(scrollTop = false) {
   }
 
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, zasady, admin: adminView, wiecej };
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej };
   const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
   const active = view === 'race' ? 'kalendarz' : views[view] ? view : 'ranking';
   const y = window.scrollY;
@@ -335,7 +336,7 @@ function shell(active, content) {
   ${store?.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
-  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
+  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
 }
 
 function userMenu() {
@@ -1070,6 +1071,26 @@ function zawodnicy() {
 
 // ================================================================ zasady
 
+// ================================================================ nagrody
+
+function nagrody() {
+  const ps = [...state.participants].sort((a, b) => calc.totals[b.id] - calc.totals[a.id]);
+  const played = weekends.some((w) => w.races.some((r) => results[r.id]));
+  const leader = played && ps.length ? ps[0] : null;
+  return `<div class="page-head"><div><h1>Nagrody</h1><div class="sub">O co gramy w sezonie ${seasonLabel(calendar.season)}</div></div></div>
+  <div class="card prize">
+    <figure><img src="img/nagroda.webp" alt="Uścisk dłoni prezesa"></figure>
+    <div class="prize-body">
+      <div class="eyebrow">🏆 Nagroda główna</div>
+      <div class="prize-title">Uścisk dłoni prezesa</div>
+      <p class="muted">Dla zwycięzcy ligi po ostatnim konkursie sezonu. Wręczenie osobiste, uścisk mocny, bez zbędnych formalności.</p>
+      <div class="prize-now">${leader
+        ? `${avatar(leader)}<div><span class="muted xs">Na dziś po nagrodę jedzie</span><b>${esc(tname(leader))}</b><small>${esc(leader.name)} · ${calc.totals[leader.id]} pkt</small></div>`
+        : `${icon('clock')}<div><span class="muted xs">Na dziś po nagrodę jedzie</span><b>jeszcze nikt</b><small>wszystko rozstrzygnie się na skoczniach</small></div>`}</div>
+    </div>
+  </div>`;
+}
+
 function zasady() {
   const c = scoringSettings(state?.settings || {});
   const champsOn = state?.settings?.countChamps !== false;
@@ -1136,7 +1157,7 @@ function zasady() {
 // ================================================================ więcej (telefon)
 
 function wiecej() {
-  const items = [['zasady', 'Zasady', 'info'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
+  const items = [['zasady', 'Zasady', 'info'], ['nagrody', 'Nagrody', 'trophy'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
   if (isAdmin()) items.push(['admin', 'Panel admina', 'settings']);
   return `<div class="page-head"><h1>Więcej</h1></div>
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">

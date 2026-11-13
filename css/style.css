@@ -648,3 +648,23 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .athsub b { color: var(--text); }
 .athsub span { color: var(--muted); }
 @media (max-width: 640px) { .show-sm { display: block; } }
+
+/* ============================================================ nagrody */
+.prize { padding: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+.prize figure { margin: 0; background: var(--card-2); }
+.prize figure img { width: 100%; height: 100%; max-height: 640px; object-fit: cover; display: block; }
+.prize-body { padding: 2rem 1.8rem; display: flex; flex-direction: column; justify-content: center; gap: .8rem; }
+.prize .eyebrow { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); }
+.prize-title { font: 800 2.6rem/1 var(--font-d); text-transform: uppercase; }
+.prize-now { display: flex; align-items: center; gap: .8rem; margin-top: .6rem; padding: .8rem 1rem; border-radius: 12px; background: var(--gold-soft); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); }
+.prize-now > div { display: flex; flex-direction: column; line-height: 1.25; }
+.prize-now b { font-size: 1.1rem; }
+.prize-now small { color: var(--muted); font-size: .78rem; }
+.prize-now svg { width: 28px; height: 28px; color: var(--gold); }
+@media (max-width: 760px) {
+  .prize { grid-template-columns: 1fr; }
+  .prize figure img { max-height: 460px; }
+  .prize-body { padding: 1.3rem 1.2rem; }
+  .prize-title { font-size: 2rem; }
+}
+.userchip > span:nth-child(2) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
