@@ -140,7 +140,7 @@ code { font-size: .9em; background: var(--card-2); padding: .1em .35em; border-r
 
 /* dolny pasek na telefonie */
 .tabbar { display: none; }
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
   .nav { display: none; }
   .top__inner { height: 54px; }
   .brand small { display: none; }
@@ -448,7 +448,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .toast { background: #101b2c; color: #fff; padding: .7rem 1rem; border-radius: 12px; box-shadow: var(--shadow-lg); font-weight: 600; font-size: .9rem; animation: pop .15s; display: flex; gap: .55rem; align-items: center; }
 .toast.err { background: var(--bad); }
 .toast.ok { background: #0f7a48; }
-@media (max-width: 1000px) { .toasts { bottom: 84px; } }
+@media (max-width: 1100px) { .toasts { bottom: 84px; } }
 
 .foot { max-width: 1160px; margin: 0 auto; padding: 0 16px 2rem; color: var(--muted); font-size: .78rem; display: flex; gap: 1rem; flex-wrap: wrap; }
 .loading { min-height: 70vh; display: grid; place-items: center; color: var(--muted); }
@@ -668,3 +668,4 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   .prize-title { font-size: 2rem; }
 }
 .userchip > span:nth-child(2) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.userchip { flex: none; }
