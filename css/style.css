@@ -116,7 +116,7 @@ code { font-size: .9em; background: var(--card-2); padding: .1em .35em; border-r
   color: #fff;
   box-shadow: 0 2px 12px rgba(5, 20, 45, .25);
 }
-.top__inner { max-width: 1160px; margin: 0 auto; padding: 0 16px; height: 60px; display: flex; align-items: center; gap: 1.25rem; }
+.top__inner { max-width: none; margin: 0; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 1.25rem; }
 .brand { display: flex; align-items: center; gap: .6rem; color: #fff; font: 700 1.25rem/1 var(--font-d); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
 .brand:hover { color: #fff; }
 .brand svg { width: 30px; height: 30px; }
@@ -140,7 +140,7 @@ code { font-size: .9em; background: var(--card-2); padding: .1em .35em; border-r
 
 /* dolny pasek na telefonie */
 .tabbar { display: none; }
-@media (max-width: 1100px) {
+@media (max-width: 1150px) {
   .nav { display: none; }
   .top__inner { height: 54px; }
   .brand small { display: none; }
@@ -448,7 +448,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .toast { background: #101b2c; color: #fff; padding: .7rem 1rem; border-radius: 12px; box-shadow: var(--shadow-lg); font-weight: 600; font-size: .9rem; animation: pop .15s; display: flex; gap: .55rem; align-items: center; }
 .toast.err { background: var(--bad); }
 .toast.ok { background: #0f7a48; }
-@media (max-width: 1100px) { .toasts { bottom: 84px; } }
+@media (max-width: 1150px) { .toasts { bottom: 84px; } }
 
 .foot { max-width: 1160px; margin: 0 auto; padding: 0 16px 2rem; color: var(--muted); font-size: .78rem; display: flex; gap: 1rem; flex-wrap: wrap; }
 .loading { min-height: 70vh; display: grid; place-items: center; color: var(--muted); }
@@ -490,7 +490,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .ptsgrid b { color: var(--muted); font-weight: 700; }
 
 /* ============================================================ czytelność */
-@media (max-width: 1240px) {
+@media (max-width: 1400px) {
   .nav a svg { display: none; }
   .nav a { padding: .45rem .55rem; }
   .brand small { display: none; }
@@ -541,7 +541,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .navbtn:hover:not(:disabled) { border-color: transparent; color: #fff; }
 .navbtn svg { width: 17px; height: 17px; }
 .menu.navmenu { right: auto; left: 0; top: calc(100% + 8px); }
-@media (max-width: 1240px) { .navbtn svg { display: none; } .navbtn { padding: .45rem .55rem; } }
+@media (max-width: 1400px) { .navbtn svg { display: none; } .navbtn { padding: .45rem .55rem; } }
 .race .when b { display: block; font-size: .95rem; color: var(--text); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .race .when b { display: inline; margin-left: .4rem; } }
 .tbd { font-size: .72rem; font-weight: 700; color: var(--warn); text-transform: uppercase; letter-spacing: .04em; }
