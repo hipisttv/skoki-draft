@@ -248,6 +248,7 @@ const NAV = [
   ['druzyny', 'Drużyny', 'team'],
   ['kalendarz', 'Kalendarz', 'calendar'],
   ['puchar', 'Puchar Świata', 'globe'],
+  ['analityka', 'Analityka', 'chart'],
   ['draft', 'Draft', 'draft'],
   ['zawodnicy', 'Zawodnicy', 'list'],
   ['zasady', 'Zasady', 'info'],
@@ -258,6 +259,7 @@ const NAV = [
 function render(scrollTop = false) {
   if (!state) return;
   calc = computeAll(state, weekends, results, byId);
+  addSeasonStats(calc);
   const kept = keepInputs();
   if (!leagueReady()) { root.innerHTML = screenCreate(); restoreInputs(kept); return; }
   if (!me() && !isAdmin()) {
@@ -266,7 +268,7 @@ function render(scrollTop = false) {
   }
 
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej };
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, analityka, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej };
   const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
   const active = view === 'race' ? 'kalendarz' : views[view] ? view : 'ranking';
   const y = window.scrollY;
@@ -313,7 +315,8 @@ function shell(active, content) {
   const ph = phase();
   const myTurn = ph === 'draft' && m && snakeOrder(state.draftOrder)[state.picks.length]?.pid === m.id;
   // w górnym pasku najważniejsze zakładki + Zasady; reszta pod „Więcej”
-  const MORE = ['zawodnicy', 'admin'];
+  // w sezonie Draft chowa się pod „Więcej”, przed sezonem – Analityka
+  const MORE = ['zawodnicy', 'admin', ph === 'season' ? 'draft' : 'analityka'];
   const nav = NAV.filter(([k]) => !MORE.includes(k));
   const more = NAV.filter(([k]) => MORE.includes(k) && (k !== 'admin' || isAdmin()));
   const moreActive = MORE.includes(active);
@@ -336,7 +339,7 @@ function shell(active, content) {
   ${store?.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
-  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
+  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'analityka', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
 }
 
 function userMenu() {
@@ -475,7 +478,7 @@ function ranking() {
   if (!played.length) {
     return html + `<div class="section"><div class="row"><h2>Gracze</h2></div><div class="podium">${ps.map((p) => `<div class="pcard">${avatar(p, 'lg')}
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
-      <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników</div></div>
+      <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników${(calc.teams[p.id] || []).length ? ` · śr. wiek ${fmt1(avgAge(calc.teams[p.id]))}` : ''}</div></div>
       <div class="bar" style="background:${p.color};width:100%"></div></div>`).join('')}</div></div>
       ${strengthCard()}
       <div class="section card empty">${icon('snow')}<b>Sezon jeszcze nie wystartował</b>
@@ -487,7 +490,8 @@ function ranking() {
       <div class="pos">${pos}</div>${avatar(p, 'lg')}
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
         <div class="pts">${calc.totals[p.id]}<small>pkt</small></div>
-        <div class="gap">${i === 0 ? (top ? 'lider' : '&nbsp;') : `−${top - calc.totals[p.id]} do lidera`}</div></div>
+        <div class="gap">${i === 0 ? (top ? 'lider' : '&nbsp;') : `−${top - calc.totals[p.id]} do lidera`}</div>
+        <div class="avgline">śr. <b>${fmt1(calc.playedW.all ? calc.totals[p.id] / calc.playedW.all : null)}</b> pkt/weekend · śr. wiek <b>${fmt1(avgAge(calc.teams[p.id] || []))}</b></div></div>
       <div class="bar" style="background:${p.color};width:${top ? (calc.totals[p.id] / top) * 100 : 0}%"></div>
     </div>`;
   }).join('')}</div></div>`;
@@ -546,6 +550,38 @@ function ranking() {
   return html;
 }
 
+// ---------------------------------------------------------------- średnie
+const fmt1 = (n) => (n == null || Number.isNaN(n) ? '–' : n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+// wiek w roku startu sezonu (rocznik z FIS)
+const ageOf = (id) => (byId[id]?.born ? calendar.season - 1 - byId[id].born : null);
+function avgAge(ids) {
+  const a = ids.map(ageOf).filter((x) => x != null);
+  return a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
+}
+// zeszły sezon: punkty PŚ zawodnika podzielone przez liczbę weekendów PŚ jego płci
+const prevWeekends = (g) => standings?.previous?.weekends?.[g] || null;
+const avgPrev = (id) => { const w = prevWeekends(byId[id]?.gender); return w ? (byId[id]?.wc || 0) / w : null; };
+// bieżący sezon: punkty ligi (bez kapitana) na rozegrany weekend jego płci
+const avgNow = (id) => { const w = calc.playedW[byId[id]?.gender]; return w ? (calc.raw[id] || 0) / w : null; };
+
+function addSeasonStats(c) {
+  const raw = {};
+  const played = { M: 0, W: 0, all: 0 };
+  for (const w of weekends) {
+    const had = { M: false, W: false };
+    for (const r of w.races) {
+      if (!results[r.id] || !countsForLeague(r, state.settings)) continue;
+      had[r.gender] = true;
+      for (const [id, pt] of racePoints(r, results[r.id], state.settings, recordIds(state, r.id, results[r.id]))) raw[id] = (raw[id] || 0) + pt.total;
+    }
+    if (had.M) played.M++;
+    if (had.W) played.W++;
+    if (had.M || had.W) played.all++;
+  }
+  c.raw = raw;
+  c.playedW = played;
+}
+
 // „Siła na papierze”: ile punktów PŚ 2025/26 zdobyli zawodnicy wybrani do każdej drużyny.
 function strengthCard() {
   if (!state.picks.length) return '';
@@ -556,23 +592,26 @@ function strengthCard() {
     const pts = (id) => byId[id]?.wc || 0;
     const starters = w ? lineupFor(state, weekends, w.id, p.id, ids, byId).starters : ids;
     const best = [...ids].sort((a, b) => pts(b) - pts(a))[0];
-    return { p, all: ids.reduce((t, id) => t + pts(id), 0), start: starters.reduce((t, id) => t + pts(id), 0), best, n: ids.length };
+    const perW = ids.reduce((t, id) => t + (avgPrev(id) || 0), 0);
+    return { p, all: ids.reduce((t, id) => t + pts(id), 0), start: starters.reduce((t, id) => t + pts(id), 0), best, n: ids.length, age: avgAge(ids), perW };
   }).sort((a, b) => b.all - a.all);
   const max = Math.max(1, ...rows.map((r) => r.all));
   return `<div class="section card pad0">
     <div class="card-head"><h3>Siła drużyn wg sezonu ${label}</h3><span class="spacer"></span>
-      <span class="muted xs">suma punktów PŚ ${label} wybranych zawodników — „na papierze”</span></div>
+      <span class="muted xs">punkty PŚ ${label} wybranych zawodników — „na papierze”${prevWeekends('M') ? ` · ${prevWeekends('M')} weekendów PŚ` : ''}</span></div>
     <div class="tablewrap"><table>
-      <thead><tr><th class="num">#</th><th>Drużyna</th><th class="strength-col">Cały skład</th><th class="num hide-sm">Podstawowa 7</th><th class="hide-sm">Najmocniejszy</th></tr></thead>
+      <thead><tr><th class="num">#</th><th>Drużyna</th><th class="strength-col">Cały skład</th><th class="num" title="Suma średnich zawodników: punkty PŚ ${label} na weekend PŚ">Śr. pkt/weekend</th><th class="num hide-sm">Podstawowa 7</th><th class="num hide-sm">Śr. wiek</th><th class="hide-sm">Najmocniejszy</th></tr></thead>
       <tbody>${rows.map((r, i) => {
         const open = ui.strengthOpen?.has(r.p.id);
         return `<tr class="srow ${r.p.id === me()?.id ? 'mine' : ''} ${open ? 'open' : ''}" data-action="toggleStrength" data-p="${r.p.id}" title="${open ? 'Zwiń skład' : 'Pokaż cały skład'}">
         <td class="rank">${i < 3 ? `<span class="medal m${i + 1}">${i + 1}</span>` : i + 1}</td>
         <td><div class="row nowrap" style="gap:.5rem"><span class="chev">${icon('chevron')}</span><div>${owner(r.p.id)}<div class="muted xs">${esc(r.p.name)}${r.n < TEAM_SIZE ? ` · ${r.n}/${TEAM_SIZE} zawodników` : ''}</div></div></div></td>
         <td class="strength-col"><div class="sbar"><i style="width:${(r.all / max) * 100}%;background:${r.p.color}"></i><b>${r.all}</b></div></td>
+        <td class="num"><b>${fmt1(prevWeekends('M') ? r.perW : null)}</b></td>
         <td class="num hide-sm">${r.start}</td>
+        <td class="num hide-sm">${fmt1(r.age)}</td>
         <td class="hide-sm">${r.best ? `<div class="bestath">${ath(r.best, { photo: true, gender: false })}<span class="ptspill">${byId[r.best]?.wc || 0} pkt</span></div>` : ''}</td>
-      </tr>${open ? `<tr class="sdetail"><td colspan="5">${squadList(r.p.id, w)}</td></tr>` : ''}`;
+      </tr>${open ? `<tr class="sdetail"><td colspan="7">${squadList(r.p.id, w)}</td></tr>` : ''}`;
       }).join('')}</tbody></table></div></div>`;
 }
 
@@ -587,7 +626,8 @@ function squadList(pid, w) {
     const starter = l.starters.includes(id);
     return `<div class="sq ${starter ? '' : 'res'}">${ath(id, { photo: true, gender: true })}
       <span class="sq-tags">${l.captain === id ? '<span class="cap" title="Kapitan">C</span>' : ''}${starter ? '' : '<span class="tag">rezerwa</span>'}</span>
-      <span class="ptspill">${a.wc || 0} pkt</span>${a.wcRank ? `<span class="muted xs sq-rank">${a.wcRank}. w PŚ ${label}</span>` : '<span class="muted xs sq-rank">bez pkt w PŚ</span>'}</div>`;
+      <span class="ptspill">${a.wc || 0} pkt</span>${a.wcRank ? `<span class="muted xs sq-rank">${a.wcRank}. w PŚ ${label}</span>` : '<span class="muted xs sq-rank">bez pkt w PŚ</span>'}
+      <span class="sq-avg">${ageOf(id) != null ? `${ageOf(id)} lat · ` : ''}śr. ${label}: <b>${fmt1(avgPrev(id))}</b>/weekend${calc.playedW[a.gender] ? ` · ${seasonLabel(calendar.season)}: <b>${fmt1(avgNow(id))}</b>/weekend` : ''}</span></div>`;
   }).join('') || '<div class="muted small">Brak zawodników</div>'}</div>`;
 }
 
@@ -819,7 +859,7 @@ function athleteTable(picking) {
 // Na telefonie kolumny z punktami się nie mieszczą – pokazujemy je pod nazwiskiem.
 function athSub(a) {
   const s = seasonLabel(athSeason - 1);
-  const wc = a.wc ? `PŚ ${s}: <b>${a.wc} pkt</b>${a.wcRank ? ` · ${a.wcRank}. ${a.gender === 'W' ? 'wśród kobiet' : 'wśród mężczyzn'}` : ''}`
+  const wc = a.wc ? `PŚ ${s}: <b>${a.wc} pkt</b>${a.wcRank ? ` · ${a.wcRank}. ${a.gender === 'W' ? 'wśród kobiet' : 'wśród mężczyzn'}` : ''}${prevWeekends(a.gender) ? ` · śr. ${fmt1(avgPrev(a.id))}/weekend` : ''}`
     : `bez punktów w PŚ ${s}`;
   const extra = [a.coc ? `PK ${a.coc}` : '', a.gp ? `LGP ${a.gp}` : '', a.born ? `ur. ${a.born}` : ''].filter(Boolean).join(' · ');
   return `<div class="athsub show-sm">${wc}${extra ? `<br><span>${extra}</span>` : ''}</div>`;
@@ -879,6 +919,7 @@ function teamCard(p, w, drafting) {
     }
     const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
     return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false, photo: true })}
+      ${drafting || !calc.playedW[a?.gender] ? '' : `<span class="muted xs avgpp" title="Średnio punktów ligi na weekend w tym sezonie (bez kapitana)">śr. ${fmt1(avgNow(id))}</span>`}
       ${drafting ? '' : `<span class="pp ${v ? '' : 'z'}">${v}</span>`}${ctrl}</div>`;
   };
   const men = l.starters.filter((id) => byId[id]?.gender === 'M');
@@ -886,7 +927,7 @@ function teamCard(p, w, drafting) {
   const label = hasRes ? 'pkt w weekendzie' : 'pkt w sezonie';
   return `<div class="card team">
     <div class="team-head" style="--c:${p.color}">${avatar(p)}<div><div class="nm">${esc(tname(p))}</div>
-      <div class="muted xs">${esc(p.name)}${p.id === me()?.id ? ' · Twoja drużyna' : ''}</div></div><span class="spacer"></span>
+      <div class="muted xs">${esc(p.name)}${p.id === me()?.id ? ' · Twoja drużyna' : ''}${ids.length ? ` · śr. wiek ${fmt1(avgAge(ids))}` : ''}</div></div><span class="spacer"></span>
       ${drafting ? '' : `<div class="tot"><div class="v">${hasRes ? calc.byWeekend[w.id]?.[p.id] || 0 : calc.totals[p.id]}</div><div class="l">${hasRes ? 'weekend' : 'sezon'}</div></div>`}</div>
     <div class="team-body">
       ${drafting ? (ids.map((id) => line(id, true)).join('') || '<div class="muted small" style="padding:.6rem 0">Jeszcze nikogo nie wybrano</div>') : `
@@ -976,7 +1017,7 @@ function kalendarz() {
               const v = calc.byRace[r.id]?.[p.id]?.total || 0;
               return v ? `<span class="chip">${avatar(p, 'sm')}<b>+${v}</b></span>` : '';
             }).join('') : ''}</span>
-            ${res ? `<span class="go">Wyniki${icon('chevron')}</span>`
+            ${res ? `<span class="go">${(state.raceComments?.[r.id] || []).length ? `<span class="cmt-count">💬 ${state.raceComments[r.id].length}</span>` : ''}Wyniki${icon('chevron')}</span>`
               : `<span class="soon">${r.cancelled ? 'odwołany' : live ? 'dziś' : st === 'past' ? 'brak wyników' : 'wyniki po konkursie'}</span>`}
           </${tag}>`;
         }).join('')}</div>
@@ -1020,7 +1061,7 @@ function raceView(id) {
       const e = calc.byRace[id]?.[p.id] || { total: 0, athletes: [], penalty: 0 };
       return `<div class="card team"><div class="team-head" style="--c:${p.color}">${avatar(p)}<div class="nm">${esc(tname(p))}</div><span class="spacer"></span>
           <div class="tot"><div class="v">+${e.total}</div><div class="l">pkt</div></div></div>
-        <div class="team-body">${e.triple ? `<div class="triple on" style="margin:.6rem 0 .2rem">${icon('star')}<span>Mnożnik ×${TRIPLE} — wszystkie punkty potrojone</span></div>` : ''}
+        <div class="team-body">${e.triple ? `<div class="triple on" style="margin:.6rem 0 .2rem"><div class="th">${icon('star')}Mnożnik ×${TRIPLE} — wszystkie punkty potrojone</div></div>` : ''}
           ${e.athletes.sort((a, b) => b.pts - a.pts).map((a) => `<div class="player">${ath(a.id, { gender: false, photo: true })}
           ${a.captain ? '<span class="cap">C</span>' : ''}<span class="pp">${a.pts}</span></div>
           <div class="muted xs" style="margin:-.35rem 0 .3rem;text-align:right">${breakdown(a.base)}${a.captain ? ' · ×2 kapitan' : ''}</div>`).join('') || '<div class="muted small" style="padding:.6rem 0">Brak punktów w tym konkursie</div>'}
@@ -1046,7 +1087,39 @@ function raceView(id) {
           ${ui.editRecord ? `<td><input type="checkbox" data-action="record" data-race="${id}" data-id="${r.id}" ${records.includes(r.id) ? 'checked' : ''}></td>` : ''}
         </tr>`;
       }).join('')}</tbody></table></div></div>
-    <p class="muted xs" style="margin-top:.6rem">„Pkt ligi” — punkty zawodnika w tym konkursie, bez kapitana i mnożnika. ${m ? 'Podświetlone wiersze to Twoi zawodnicy. ' : ''}Zielona odległość = najdłuższy skok konkursu.</p></div>`;
+    <p class="muted xs" style="margin-top:.6rem">„Pkt ligi” — punkty zawodnika w tym konkursie, bez kapitana i mnożnika. ${m ? 'Podświetlone wiersze to Twoi zawodnicy. ' : ''}Zielona odległość = najdłuższy skok konkursu.</p></div>
+    ${raceTalk(id)}`;
+}
+
+// Reakcje i komentarze pod wynikami konkursu.
+function raceTalk(raceId) {
+  const m = me();
+  const rx = state.raceReactions?.[raceId] || {};
+  const comments = state.raceComments?.[raceId] || [];
+  const when = (iso) => new Date(iso).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return `<div class="section card talk">
+    <div class="row"><h2>Reakcje i komentarze</h2><span class="spacer"></span><span class="muted small">${comments.length} ${pl(comments.length, 'komentarz', 'komentarze', 'komentarzy')}</span></div>
+    <div class="reactions big">${EMOJIS.map((e) => {
+      const who = rx[e] || [];
+      const mine = m && who.includes(m.id);
+      const names = who.map((id) => P(id)?.name).filter(Boolean).join(', ');
+      return `<button class="rx ${who.length ? 'has' : ''} ${mine ? 'mine' : ''}" data-action="raceReact" data-race="${raceId}" data-e="${e}"
+        title="${names ? esc(names) : m ? 'Zareaguj' : 'Reagować mogą gracze'}" ${m ? '' : 'disabled'}>${e}${who.length ? `<b>${who.length}</b>` : ''}</button>`;
+    }).join('')}</div>
+    <div class="comments">${comments.map((c) => {
+      const author = P(c.pid);
+      const canDel = (m && m.id === c.pid) || isAdmin();
+      return `<div class="cmt">${avatar(author || { name: '?', color: '#64748b' }, 'sm')}
+        <div class="cmt-body"><div class="cmt-head"><b>${esc(author ? tname(author) : 'usunięty gracz')}</b><span class="muted xs">${esc(author?.name || '')} · ${when(c.at)}</span>
+          ${canDel ? `<button class="icon ghost sm cmt-del" data-action="delComment" data-race="${raceId}" data-c="${c.id}" title="Usuń komentarz">${icon('trash')}</button>` : ''}</div>
+        <div class="cmt-text">${esc(c.text)}</div></div></div>`;
+    }).join('') || '<div class="muted small" style="padding:.4rem 0">Jeszcze nikt nie skomentował. Bądź pierwszy!</div>'}</div>
+    ${m ? `<form data-form="comment" class="cmt-form" autocomplete="off">
+      <input type="hidden" name="race" value="${raceId}">
+      ${avatar(m, 'sm')}<textarea name="text" maxlength="500" rows="2" placeholder="Napisz komentarz… (np. co za skok Prevca!)" required></textarea>
+      <button class="primary" type="submit">Wyślij</button><div class="formerr"></div>
+    </form>` : '<p class="muted small">Komentować mogą gracze (zaloguj się na konto gracza).</p>'}
+  </div>`;
 }
 
 // Zdjęcie skoczni z podpisem autora (licencje Wikimedia Commons wymagają uznania autorstwa).
@@ -1112,11 +1185,7 @@ function puchar() {
 // ================================================================ zawodnicy
 
 function zawodnicy() {
-  const raw = {};
-  for (const w of weekends) for (const r of w.races) {
-    if (!results[r.id] || !countsForLeague(r, state.settings)) continue;
-    for (const [id, p] of racePoints(r, results[r.id], state.settings, recordIds(state, r.id, results[r.id]))) raw[id] = (raw[id] || 0) + p.total;
-  }
+  const raw = calc.raw;
   const q = ui.q.toLowerCase();
   const list = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)))
     .sort((a, b) => (raw[b.id] || 0) - (raw[a.id] || 0) || byId[a.id].idx - byId[b.id].idx);
@@ -1124,14 +1193,208 @@ function zawodnicy() {
     <div class="row" style="margin-bottom:.8rem">${genderSeg()}
       <label class="search">${icon('search')}<input id="q" placeholder="Szukaj zawodnika lub kraju" value="${esc(ui.q)}"></label></div>
     <div class="card pad0"><div class="tablewrap"><table>
-      <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
+      <thead><tr><th>Zawodnik</th><th class="num" title="Punkty ligi bez kapitana, niezależnie od składu">Pkt sezonu</th><th class="num" title="Punkty ligi na rozegrany weekend (bez kapitana)">Śr./weekend</th><th class="num hide-sm" title="Punkty zdobyte dla drużyny (tylko w składzie, z kapitanem)">Dla drużyny</th><th class="num hide-sm">PŚ ${seasonLabel(athSeason - 1)}</th><th class="num hide-sm" title="Punkty PŚ ${seasonLabel(athSeason - 1)} na weekend PŚ">Śr. ${seasonLabel(athSeason - 1)}</th><th>Drużyna</th></tr></thead>
       <tbody>${list.map((a) => `<tr><td>${ath(a.id, { photo: true })}${athSub(a)}</td><td class="pts">${raw[a.id] || 0}</td>
+        <td class="num">${calc.playedW[a.gender] ? fmt1(avgNow(a.id)) : '<span class="muted">–</span>'}</td>
         <td class="num hide-sm">${calc.athleteTotals[a.id] || '<span class="muted">–</span>'}</td>
-        <td class="num hide-sm muted">${a.wc || '–'}</td><td>${owner(ownerOf(a.id))}</td></tr>`).join('')}</tbody>
+        <td class="num hide-sm muted">${a.wc || '–'}</td><td class="num hide-sm muted">${a.wc ? fmt1(avgPrev(a.id)) : '–'}</td><td>${owner(ownerOf(a.id))}</td></tr>`).join('')}</tbody>
     </table></div></div>`;
 }
 
 // ================================================================ zasady
+
+// ================================================================ analityka
+
+function analityka() {
+  const head = `<div class="page-head"><div><h1>Analityka</h1><div class="sub">Wykresy, statystyki i ciekawostki ligi</div></div></div>`;
+  if (!state.picks.length) return head + `<div class="card empty">${icon('chart')}<b>Analityka ruszy po drafcie</b>Gdy drużyny będą wybrane, pojawią się tu statystyki.</div>`;
+  const ps = [...state.participants].sort((a, b) => calc.totals[b.id] - calc.totals[a.id]);
+  const played = weekends.filter((w) => w.races.some((r) => results[r.id] && countsForLeague(r, state.settings)));
+  const st = seasonAnalytics(ps, played);
+  const label = seasonLabel(athSeason - 1);
+  let html = head + kpis(st, played);
+  if (played.length) {
+    html += `<div class="section grid-2">
+      <div class="card"><h3>Punkty w każdym weekendzie</h3>${legend(ps)}${groupedBars(ps, played)}</div>
+      <div class="card"><h3>Pozycje w lidze po każdym weekendzie</h3>${legend(ps)}${bumpChart(ps, played)}</div>
+    </div>
+    <div class="section card"><h3>Skąd biorą się punkty</h3><p class="muted small" style="margin:.2rem 0 .8rem">Podział punktów każdej drużyny: miejsca, bonusy, dodatek za kapitana, mnożnik ×3 i kary.</p>${sourceBars(ps, st)}</div>
+    <div class="section grid-2">
+      <div class="card pad0"><div class="card-head"><h3>MVP sezonu</h3><span class="spacer"></span><span class="muted xs">punkty dla drużyny</span></div>${mvpTable()}</div>
+      <div class="card pad0"><div class="card-head"><h3>Kapitanowie</h3></div>${captainTable(ps, st)}</div>
+    </div>
+    <div class="section grid-2">
+      <div class="card"><h3>Punkty na ławce</h3><p class="muted small" style="margin:.2rem 0 .8rem">Ile punktów zdobyli rezerwowi, którzy nie byli w składzie — czyli ile przepadło.</p>${simpleBars(ps.map((p) => [p, st.bench[p.id]]), 'pkt')}</div>
+      <div class="card"><h3>Draft z perspektywy sezonu</h3>${draftValue()}</div>
+    </div>`;
+  } else {
+    html += `<div class="section card empty">${icon('snow')}<b>Wykresy punktów pojawią się po pierwszym konkursie</b>Na razie statystyki składów na podstawie sezonu ${label}.</div>`;
+  }
+  html += `<div class="section grid-2">
+      <div class="card"><h3>Średni wiek drużyn</h3>${simpleBars(ps.map((p) => [p, avgAge(calc.teams[p.id] || [])]), 'lat', true)}</div>
+      <div class="card"><h3>Siła wg sezonu ${label}</h3><p class="muted small" style="margin:.2rem 0 .8rem">Średnio punktów PŚ ${label} na weekend — suma zawodników drużyny.</p>
+        ${simpleBars(ps.map((p) => [p, (calc.teams[p.id] || []).reduce((t, id) => t + (avgPrev(id) || 0), 0)]), 'pkt/weekend', true)}</div>
+    </div>
+    <div class="section card"><h3>Kraje w składach</h3>${nationsTable(ps)}</div>`;
+  return html;
+}
+
+function seasonAnalytics(ps, played) {
+  const src = {};
+  const bench = {};
+  const capt = {};
+  for (const p of ps) {
+    src[p.id] = { place: 0, longest: 0, quali: 0, record: 0, captain: 0, triple: 0, penalty: 0 };
+    bench[p.id] = 0;
+    capt[p.id] = { pts: 0, races: 0, top10: 0, pens: 0 };
+  }
+  let bestWeekend = null;
+  let longest = null;
+  for (const w of played) {
+    for (const p of ps) {
+      const v = calc.byWeekend[w.id][p.id];
+      if (!bestWeekend || v > bestWeekend.v) bestWeekend = { v, p, w };
+    }
+    for (const r of w.races) {
+      const res = results[r.id];
+      if (!res || !countsForLeague(r, state.settings)) continue;
+      if (isMain(r)) {
+        for (const x of res.results) for (const j of x.jumps || []) if (!longest || j > longest.d) longest = { d: j, id: x.id, name: x.name, r };
+      }
+      const pts = racePoints(r, res, state.settings, recordIds(state, r.id, res));
+      const rank = Object.fromEntries(res.results.map((x) => [x.id, x.rank]));
+      for (const p of ps) {
+        const e = calc.byRace[r.id]?.[p.id];
+        if (!e) continue;
+        const mult = e.triple ? TRIPLE : 1;
+        for (const a of e.athletes) {
+          const b = a.base;
+          const s = src[p.id];
+          s.place += b.place; s.longest += b.longest; s.quali += b.quali; s.record += b.record;
+          if (a.captain) s.captain += b.total;
+          s.triple += b.total * (a.captain ? 2 : 1) * (mult - 1);
+        }
+        src[p.id].penalty += e.penalty;
+        const l = lineupFor(state, weekends, w.id, p.id, calc.teams[p.id] || [], byId);
+        for (const id of calc.teams[p.id] || []) if (!l.starters.includes(id)) bench[p.id] += pts.get(id)?.total || 0;
+        if (l.captain && isMain(r) && byId[l.captain]?.gender === r.gender) {
+          const c = capt[p.id];
+          c.races++;
+          if (rank[l.captain] && rank[l.captain] <= 10) c.top10++;
+          if (e.penalty) c.pens++;
+          c.pts += (pts.get(l.captain)?.total || 0) * mult;
+        }
+      }
+    }
+  }
+  return { src, bench, capt, bestWeekend, longest };
+}
+
+function kpis(st, played) {
+  const races = played.reduce((t, w) => t + w.races.filter((r) => results[r.id] && isMain(r)).length, 0);
+  const tile = (v, l, sub = '') => `<div class="card stat kpi"><div class="v">${v}</div><div class="l">${l}</div>${sub ? `<div class="muted xs">${sub}</div>` : ''}</div>`;
+  const bw = st.bestWeekend;
+  const lj = st.longest;
+  return `<div class="grid kpis">
+    ${tile(`${played.length}<small>/${weekends.length}</small>`, 'rozegrane weekendy')}
+    ${tile(races, 'konkursów z wynikami')}
+    ${tile(bw && bw.v > 0 ? bw.v : '–', 'rekord weekendu', bw && bw.v > 0 ? `${esc(tname(bw.p))} · ${esc(bw.w.name)}` : 'jeszcze brak')}
+    ${tile(lj ? `${lj.d}<small> m</small>` : '–', 'najdłuższy skok sezonu', lj ? `${esc(prettyName(athInfo(lj.id, { name: lj.name }).name).last)} · ${esc(lj.r.place)}` : 'jeszcze brak')}
+  </div>`;
+}
+
+const legend = (ps) => `<div class="legend" style="margin:.4rem 0 .6rem">${ps.map((p) => `<span><i style="background:${p.color}"></i>${esc(tname(p))}</span>`).join('')}</div>`;
+
+function groupedBars(ps, played) {
+  const W = 460; const H = 230; const L = 36; const B = 24; const T = 8;
+  const max = Math.max(10, ...played.flatMap((w) => ps.map((p) => calc.byWeekend[w.id][p.id])));
+  const gw = (W - L) / played.length;
+  const bw = Math.max(2, Math.min(18, (gw - 6) / ps.length));
+  const y = (v) => T + (1 - Math.max(0, v) / max) * (H - T - B);
+  const ticks = [0, Math.round(max / 2), max];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <g class="grid">${ticks.map((v) => `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join('')}</g>
+    ${played.map((w, i) => {
+      const x0 = L + i * gw + (gw - bw * ps.length) / 2;
+      return ps.map((p, k) => { const v = calc.byWeekend[w.id][p.id]; return `<rect x="${x0 + k * bw}" y="${y(v)}" width="${bw - 1}" height="${Math.max(0, H - B - y(v))}" rx="2" fill="${p.color}"><title>${esc(tname(p))} · ${esc(w.name)}: ${v} pkt</title></rect>`; }).join('')
+        + `<text x="${L + i * gw + gw / 2}" y="${H - 8}" text-anchor="middle"><title>${esc(w.name)}</title>${w.no}</text>`;
+    }).join('')}
+  </svg>`;
+}
+
+function bumpChart(ps, played) {
+  const W = 460; const H = 230; const L = 30; const R = 14; const T = 14; const B = 24;
+  const n = ps.length;
+  const cum = Object.fromEntries(ps.map((p) => [p.id, 0]));
+  const ranks = played.map((w) => {
+    for (const p of ps) cum[p.id] += calc.byWeekend[w.id][p.id];
+    const order = [...ps].sort((a, b) => cum[b.id] - cum[a.id]);
+    return Object.fromEntries(order.map((p, i) => [p.id, i + 1]));
+  });
+  const x = (i) => L + (played.length > 1 ? (i / (played.length - 1)) * (W - L - R) : (W - L - R) / 2);
+  const y = (rk) => T + ((rk - 1) / Math.max(1, n - 1)) * (H - T - B);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <g class="grid">${ps.map((_, i) => `<line x1="${L}" x2="${W - R}" y1="${y(i + 1)}" y2="${y(i + 1)}"/><text x="${L - 8}" y="${y(i + 1) + 4}" text-anchor="end">${i + 1}.</text>`).join('')}</g>
+    ${played.map((w, i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle"><title>${esc(w.name)}</title>${w.no}</text>`).join('')}
+    ${ps.map((p) => `<polyline fill="none" stroke="${p.color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="${ranks.map((rk, i) => `${x(i)},${y(rk[p.id])}`).join(' ')}"/>
+      ${ranks.map((rk, i) => `<circle cx="${x(i)}" cy="${y(rk[p.id])}" r="4" fill="${p.color}"><title>${esc(tname(p))} · po weekendzie ${played[i].no}: ${rk[p.id]}. miejsce</title></circle>`).join('')}`).join('')}
+  </svg>`;
+}
+
+function sourceBars(ps, st) {
+  const parts = [['place', 'miejsca', '#1f6feb'], ['longest', 'najdłuższy skok', '#12a594'], ['quali', 'wygrane kwal.', '#8e4ec6'],
+    ['record', 'rekord skoczni', '#c38b00'], ['captain', 'kapitan', '#f59e0b'], ['triple', '×3', '#e54d9e']];
+  const max = Math.max(1, ...ps.map((p) => parts.reduce((t, [k]) => t + st.src[p.id][k], 0)));
+  return `<div class="legend" style="margin-bottom:.8rem">${parts.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}<span><i style="background:var(--bad)"></i>kary</span></div>
+    <div class="srcbars">${ps.map((p) => {
+      const s = st.src[p.id];
+      const tot = parts.reduce((t, [k]) => t + s[k], 0);
+      return `<div class="srcrow"><div class="srcname">${owner(p.id)}</div>
+        <div class="srcbar">${parts.map(([k, l, c]) => (s[k] ? `<i style="width:${(s[k] / max) * 100}%;background:${c}" title="${l}: ${s[k]} pkt"></i>` : '')).join('')}</div>
+        <div class="srcnum"><b>${tot}</b>${s.penalty ? ` <span style="color:var(--bad)">${s.penalty}</span>` : ''}</div></div>`;
+    }).join('')}</div>`;
+}
+
+function simpleBars(rows, unit, decimals = false) {
+  const max = Math.max(1, ...rows.map(([, v]) => v || 0));
+  return `<div class="srcbars">${rows.map(([p, v]) => `<div class="srcrow"><div class="srcname">${owner(p.id)}</div>
+    <div class="srcbar"><i style="width:${((v || 0) / max) * 100}%;background:${p.color}"></i></div>
+    <div class="srcnum"><b>${v == null ? '–' : decimals ? fmt1(v) : v}</b> <span class="muted xs">${unit}</span></div></div>`).join('')}</div>`;
+}
+
+function mvpTable() {
+  const top = Object.entries(calc.athleteTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  return `<div class="tablewrap"><table><tbody>${top.map(([id, v], i) => `<tr><td class="rank">${i < 3 ? `<span class="medal m${i + 1}">${i + 1}</span>` : i + 1}</td>
+    <td>${ath(id, { photo: true, gender: false })}<div class="under">${owner(ownerOf(id))}</div></td><td class="pts">${v}</td></tr>`).join('') || '<tr><td class="muted">—</td></tr>'}</tbody></table></div>`;
+}
+
+function captainTable(ps, st) {
+  return `<div class="tablewrap"><table>
+    <thead><tr><th>Drużyna</th><th class="num" title="Punkty zdobyte przez kapitanów (z mnożnikiem kapitana)">Pkt kapitanów</th><th class="num" title="W ilu konkursach kapitan był w top 10">Top 10</th><th class="num" title="Kary za kapitana poza top 30">Kary</th></tr></thead>
+    <tbody>${ps.map((p) => { const c = st.capt[p.id]; return `<tr><td>${owner(p.id)}</td><td class="pts">${c.pts * 2}</td>
+      <td class="num">${c.races ? `${c.top10}/${c.races} <span class="muted xs">(${Math.round((c.top10 / c.races) * 100)}%)</span>` : '–'}</td>
+      <td class="num" style="color:${c.pens ? 'var(--bad)' : 'inherit'}">${c.pens}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+
+function draftValue() {
+  const seq = snakeOrder(state.draftOrder);
+  const picks = state.picks.map((id, i) => ({ id, no: i + 1, round: seq[i]?.round, pid: seq[i]?.pid, pts: calc.raw[id] || 0 }));
+  const steals = picks.filter((x) => x.round >= 5).sort((a, b) => b.pts - a.pts).slice(0, 5);
+  const busts = picks.filter((x) => x.round <= 2).sort((a, b) => a.pts - b.pts).slice(0, 5);
+  const row = (x) => `<div class="player"><div class="grow">${ath(x.id, { photo: true, gender: false })}<div class="under muted xs">wybór ${x.no} · ${esc(pname(x.pid))}</div></div><span class="ptspill">${x.pts} pkt</span></div>`;
+  return `<div class="sect">Najlepsze wybory z dalszych rund (5+)</div>${steals.map(row).join('') || '<div class="muted small">—</div>'}
+    <div class="sect">Rozczarowania z pierwszych rund (1–2)</div>${busts.map(row).join('') || '<div class="muted small">—</div>'}
+    <p class="muted xs" style="margin-top:.6rem">Punkty ligi zawodnika w sezonie (bez kapitana), niezależnie od składu.</p>`;
+}
+
+function nationsTable(ps) {
+  return `<div class="nations">${ps.map((p) => {
+    const cnt = {};
+    for (const id of calc.teams[p.id] || []) { const n = byId[id]?.nation || '?'; cnt[n] = (cnt[n] || 0) + 1; }
+    const list = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+    return `<div class="nrow">${owner(p.id)}<div class="nchips">${list.map(([n, c]) => `<span class="chip">${flag(n)}${esc(n)} <b>${c}</b></span>`).join('')}</div></div>`;
+  }).join('')}</div>`;
+}
 
 // ================================================================ nagrody
 
@@ -1219,7 +1482,7 @@ function zasady() {
 // ================================================================ więcej (telefon)
 
 function wiecej() {
-  const items = [['zasady', 'Zasady', 'info'], ['nagrody', 'Nagrody', 'trophy'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
+  const items = [['analityka', 'Analityka', 'chart'], ['zasady', 'Zasady', 'info'], ['nagrody', 'Nagrody', 'trophy'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
   if (isAdmin()) items.push(['admin', 'Panel admina', 'settings']);
   return `<div class="page-head"><h1>Więcej</h1></div>
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">
@@ -1337,7 +1600,7 @@ const forms = {
       if (s.setup?.adminUser) fail('Liga została już założona');
       const maxPlayers = Math.min(12, Math.max(2, Math.round(+f.players) || 3));
       return { ...s, setup: { leagueName: f.league.trim(), salt, adminUser, adminHash, invite: f.invite.trim(), maxPlayers, created: new Date().toISOString() },
-        draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {} };
+        draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {}, raceReactions: {}, raceComments: {} };
     });
     if (ok) {
       setSession({ role: 'admin', h: adminHash });
@@ -1363,6 +1626,19 @@ const forms = {
     ui.authMode = null;
     render();
     toast(`Witaj w lidze, ${created.team}!`, 'ok');
+  },
+  async comment(f, err) {
+    const m = me();
+    const text = String(f.text || '').trim().slice(0, 500);
+    if (!m) return err('Komentować mogą gracze');
+    if (!text) return err('Napisz coś');
+    const ok = await save((s) => {
+      s.raceComments = s.raceComments || {};
+      const list = (s.raceComments[f.race] = s.raceComments[f.race] || []);
+      list.push({ id: randomId(8), pid: m.id, text, at: new Date().toISOString() });
+      return s;
+    });
+    if (ok) { const t = document.querySelector('.cmt-form textarea'); if (t) t.value = ''; }
   },
   async login(f, err) {
     const user = f.user.trim().toLowerCase();
@@ -1424,6 +1700,31 @@ const actions = {
     const id = el.dataset.p;
     ui.strengthOpen.has(id) ? ui.strengthOpen.delete(id) : ui.strengthOpen.add(id);
     render();
+  },
+  raceReact: (el) => {
+    const m = me();
+    if (!m) return;
+    const { race, e } = el.dataset;
+    save((s) => {
+      s.raceReactions = s.raceReactions || {};
+      const r = (s.raceReactions[race] = s.raceReactions[race] || {});
+      const who = new Set(r[e] || []);
+      who.has(m.id) ? who.delete(m.id) : who.add(m.id);
+      if (who.size) r[e] = [...who]; else delete r[e];
+      return s;
+    });
+  },
+  delComment: async (el) => {
+    const { race, c } = el.dataset;
+    if (!await confirmModal('Usunąć komentarz?', 'Tego nie da się cofnąć.', 'Usuń', true)) return;
+    save((s) => {
+      const list = s.raceComments?.[race] || [];
+      const cm = list.find((x) => x.id === c);
+      if (!cm) return s;
+      if (!isAdmin() && cm.pid !== session.id) fail('Możesz usuwać tylko swoje komentarze');
+      s.raceComments[race] = list.filter((x) => x.id !== c);
+      return s;
+    });
   },
   react: (el) => {
     const m = me();
@@ -1611,7 +1912,7 @@ const actions = {
   },
   deleteLeague: async () => {
     if (!await confirmModal('Usunąć całą ligę?', 'Znikną konta graczy, draft, składy i konto admina. Najpierw pobierz kopię zapasową. Tego nie da się cofnąć.', 'Usuń ligę', true)) return;
-    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {}, settings: {} }))) {
+    if (await save((s) => ({ ...s, setup: null, draftStarted: false, participants: [], draftOrder: [], draws: [], picks: [], lineups: {}, triples: {}, hillRecords: {}, reactions: {}, raceReactions: {}, raceComments: {}, settings: {} }))) {
       setSession({}); location.hash = ''; render();
     }
   },

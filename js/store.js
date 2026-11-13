@@ -14,6 +14,8 @@ export const EMPTY_STATE = {
   draws: [],            // [{ at, order }] – historia losowań kolejności draftu (jawna dla wszystkich)
   hillRecords: {},
   reactions: {},        // { weekendId: { pid: { emoji: [pid, …] } } } – reakcje pod składami
+  raceReactions: {},    // { raceId: { emoji: [pid, …] } } – reakcje pod wynikami konkursu
+  raceComments: {},     // { raceId: [{ id, pid, text, at }] } – komentarze pod wynikami
   settings: {},
 };
 

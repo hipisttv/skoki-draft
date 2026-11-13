@@ -436,6 +436,28 @@ def build_calendar(season):
     return out
 
 
+def weekend_counts(season):
+    """Ile weekendów PŚ (z rozegranym konkursem indywidualnym) miał dany sezon – osobno mężczyźni i kobiety.
+
+    Weekend = zawody, których terminy na siebie zachodzą (tak samo grupuje aplikacja).
+    """
+    events = [e for e in build_calendar(season) if not e.get("championship")]
+    events.sort(key=lambda e: e["start"])
+    groups = []
+    for ev in events:
+        if groups and ev["start"] <= groups[-1]["end"]:
+            groups[-1]["end"] = max(groups[-1]["end"], ev["end"])
+            groups[-1]["races"] += ev["races"]
+        else:
+            groups.append({"end": ev["end"], "races": list(ev["races"])})
+    count = {"M": 0, "W": 0}
+    for g in groups:
+        for gender in count:
+            if any(r["category"] == "WC" and r["gender"] == gender and not r["cancelled"] for r in g["races"]):
+                count[gender] += 1
+    return count
+
+
 # ---------------------------------------------------------------- wyniki
 
 def parse_results(h):
@@ -643,7 +665,22 @@ def main():
                 rows = []
             stand[key][gender] = rows
             print(f"  {season} {gender}: {len(rows)}")
-    save(stand, os.path.join(out, "standings.json"))
+    # liczba weekendów PŚ zeszłego sezonu (osobno M/K) – do średnich „na weekend”; liczona raz i zapamiętana
+    path = os.path.join(out, "standings.json")
+    old = {}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            old = json.load(f)
+    prev_w = old.get("previous", {}).get("weekends") if old.get("season") == args.season else None
+    if not prev_w:
+        try:
+            prev_w = weekend_counts(args.season - 1)
+        except Exception as e:  # noqa: BLE001
+            print(f"  nie udało się policzyć weekendów: {e}", file=sys.stderr)
+    if prev_w:
+        stand["previous"]["weekends"] = prev_w
+        print(f"  weekendy PŚ {args.season - 1}: {prev_w}")
+    save(stand, path)
     print("Gotowe.")
 
 

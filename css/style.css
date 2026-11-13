@@ -703,3 +703,48 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .sq .ptspill { grid-area: p; justify-self: end; }
 .sq .sq-rank { grid-area: r; justify-self: end; font-size: .68rem; }
 .sq.res { opacity: .75; }
+
+/* średnie */
+.avgline { font-size: .72rem; color: var(--muted); margin-top: .15rem; }
+.avgline b { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.sq { grid-template-areas: "a t p" "a t r" "s s s"; }
+.sq .sq-avg { grid-area: s; font-size: .72rem; color: var(--muted); margin-top: .15rem; }
+.sq .sq-avg b { color: var(--text-2); }
+.avgpp { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ============================================================ komentarze pod wynikami */
+.talk .reactions.big { border-top: 0; padding-top: 0; margin: .6rem 0 1rem; }
+.talk .reactions.big .rx { font-size: 1.25rem; padding: .3rem .6rem; }
+.comments { display: grid; gap: .2rem; }
+.cmt { display: flex; gap: .7rem; padding: .7rem 0; border-top: 1px solid var(--line-2); }
+.cmt-body { flex: 1; min-width: 0; }
+.cmt-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.cmt-del { margin-left: auto; width: 26px; height: 26px; padding: 0; }
+.cmt-text { margin-top: .2rem; white-space: pre-wrap; word-wrap: break-word; color: var(--text-2); }
+.cmt-form { display: grid; grid-template-columns: auto 1fr auto; gap: .6rem; align-items: start; margin-top: 1rem; }
+.cmt-form .formerr { grid-column: 2 / -1; margin: 0; }
+.cmt-form textarea { min-height: 2.6rem; }
+.cmt-count { margin-right: .35rem; font-weight: 700; }
+@media (max-width: 640px) { .cmt-form { grid-template-columns: 1fr auto; } .cmt-form > .av { display: none; } }
+
+/* ============================================================ analityka */
+.kpis { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.kpi { padding: 1rem 1.1rem; }
+.kpi .v small { font-size: .55em; color: var(--muted); margin-left: .15rem; }
+.srcbars { display: grid; gap: .55rem; }
+.srcrow { display: grid; grid-template-columns: minmax(120px, 180px) 1fr auto; gap: .8rem; align-items: center; }
+.srcname { min-width: 0; overflow: hidden; }
+.srcbar { display: flex; height: 18px; background: var(--card-2); border-radius: 6px; overflow: hidden; }
+.srcbar i { display: block; height: 100%; }
+.srcnum { min-width: 3.5rem; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nations { display: grid; gap: .6rem; }
+.nrow { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: .8rem; align-items: center; }
+.nchips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.nchips .chip { padding: .15rem .55rem; gap: .35rem; }
+@media (max-width: 640px) {
+  .srcrow { grid-template-columns: 1fr auto; }
+  .srcrow .srcbar { grid-column: 1 / -1; grid-row: 2; }
+  .nrow { grid-template-columns: 1fr; }
+}
+.under { margin: .15rem 0 0 2.4rem; }
+.grow { flex: 1; min-width: 0; }
