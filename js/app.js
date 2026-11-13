@@ -28,7 +28,7 @@ let results = {};        // raceId -> wyniki
 let calc = null;
 let lastPicks = null;
 let presence = {};       // { pid: { t, view } } – kto ma otwartą aplikację i na której zakładce
-const ONLINE_MS = 60 * 1000;
+const ONLINE_MS = 45 * 1000;   // bez sygnału dłużej niż 45 s = gracz nieobecny
 let localPick = null;   // wybór zrobiony na tym urządzeniu – bez podwójnego powiadomienia
 
 const ui = {
@@ -186,7 +186,9 @@ async function init() {
       if (pid !== session.id && s.picks[i] !== localPick) toast(`${p ? `${tname(p)} (${p.name})` : '?'} wybiera: ${n.first} ${n.last}`);
     }
     lastPicks = s.picks.length;
+    const first = !state;
     state = s;
+    if (first) beat(); // pierwszy sygnał obecności od razu po wczytaniu danych
     render();
   }
   window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; beat(); render(true); });
@@ -197,16 +199,35 @@ async function init() {
     if (lobbyKey() !== before && ['draft', 'admin', 'ranking', ''].includes(currentView())) render();
   });
   beat();
-  setInterval(beat, 15000);
-  setInterval(() => { if (phase() !== 'season' && ['draft', 'admin'].includes(currentView())) render(); }, 20000);
+  setInterval(beat, 10000);
+  // zamknięcie karty / wyjście z aplikacji – od razu sygnał „wyszedł”, żeby draft nie czekał 45 s
+  window.addEventListener('pagehide', () => { const m = state && me(); if (m && phase() !== 'season') store.heartbeat(m.id, 'left', 0); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+  // w trakcie zapisów i draftu co 5 s sprawdzamy, czy ktoś nie zniknął (pauza / wznowienie)
+  setInterval(() => {
+    if (!state || phase() === 'season') return;
+    const before = ui.pauseKey;
+    ui.pauseKey = lobbyKey();
+    if (before !== ui.pauseKey || ['draft', 'admin'].includes(currentView())) render();
+  }, 5000);
 }
 
 const currentView = () => (location.hash.slice(1) || 'ranking').split('/')[0];
+// Sygnał obecności tylko w czasie zapisów i draftu – w sezonie nie jest potrzebny (oszczędza limit Firebase).
 function beat() {
   const m = state && me();
-  if (m) store.heartbeat(m.id, currentView());
+  if (m && phase() !== 'season') store.heartbeat(m.id, currentView());
 }
-const online = (pid) => !!presence[pid] && Date.now() - presence[pid].t < ONLINE_MS;
+const online = (pid) => !!presence[pid] && presence[pid].view !== 'left' && Date.now() - presence[pid].t < ONLINE_MS;
+// W trakcie draftu: gracze bez połączenia – draft czeka na ich powrót
+const absentPlayers = () => (phase() === 'draft' ? state.participants.filter((p) => !online(p.id)) : []);
+const draftPaused = () => absentPlayers().length > 0;
+const awayFor = (pid) => {
+  const t = presence[pid]?.t;
+  if (!t) return '';
+  const sec = Math.max(0, Math.round((Date.now() - t) / 1000));
+  return sec < 60 ? `${sec} s` : `${Math.floor(sec / 60)} min ${sec % 60} s`;
+};
 const inLobby = (pid) => online(pid) && presence[pid].view === 'draft';
 const lobbyKey = () => (state ? state.participants.map((p) => `${p.id}:${inLobby(p.id) ? 1 : online(p.id) ? 2 : 0}`).join(',') : '');
 const maxPlayers = () => state.setup?.maxPlayers || state.participants.length;
@@ -552,6 +573,11 @@ function chart(ps, played) {
 function draft() {
   const ph = phase();
   const m = me();
+  const paused = draftPaused();
+  if (ph === 'draft' && ui.wasPaused !== undefined && ui.wasPaused !== paused) {
+    toast(paused ? `Draft wstrzymany — czekamy na: ${absentPlayers().map((x) => tname(x)).join(', ')}` : 'Wszyscy wrócili — draft wznowiony', paused ? 'warn' : 'ok');
+  }
+  ui.wasPaused = paused;
   if (ph === 'signup') {
     return `<div class="page-head"><div><h1>Poczekalnia draftu</h1><div class="sub">Snake draft · ${TEAM_SIZE} zawodników na gracza (${TEAM.men} M + ${TEAM.women} K + ${TEAM.reserves} rezerwowych)</div></div></div>
       ${lobbyCard(isAdmin())}
@@ -590,14 +616,14 @@ function draft() {
         : '';
     hero = `<div class="hero"><div class="clock">${avatar(p, 'xl')}
       <div class="who"><div class="eyebrow">Wybór ${n + 1} z ${seq.length} · runda ${cur.round}</div>
-        <div class="big">${mine ? 'Twoja kolej!' : `Wybiera ${esc(tname(p))}`}</div>
-        <div class="picker">${mine ? `${esc(tname(p))} · ` : ''}gracz: <b>${esc(p.name)}</b>${online(p.id) ? ' <span class="st on">online</span>' : ' <span class="st off">offline</span>'}</div>
+        <div class="big">${paused ? 'Draft wstrzymany' : mine ? 'Twoja kolej!' : `Wybiera ${esc(tname(p))}`}</div>
+        <div class="picker">${paused ? `Teraz kolej: <b>${mine ? 'Twoja' : esc(tname(p))}</b> · ` : mine ? `${esc(tname(p))} · ` : ''}gracz: <b>${esc(p.name)}</b>${online(p.id) ? ' <span class="st on">online</span>' : ' <span class="st off">offline</span>'}</div>
         ${!mine && m ? nextPickInfo(seq, n, m.id) : ''}
         <div class="needs"><span class="need ${men >= TEAM.men ? 'done' : ''}">Mężczyźni ${Math.min(men, TEAM.men)}/${TEAM.men}</span>
           <span class="need ${wom >= TEAM.women ? 'done' : ''}">Kobieta ${Math.min(wom, TEAM.women)}/${TEAM.women}</span>
           <span class="need">Rezerwa ${Math.max(0, t.length - Math.min(men, TEAM.men) - Math.min(wom, TEAM.women))}/${TEAM.reserves}</span></div></div>
       ${n > 0 && (isAdmin() || seq[n - 1].pid === m?.id) ? `<button class="btn sm" data-action="undo" style="position:relative;z-index:1">${icon('undo')}Cofnij ostatni</button>` : ''}
-    </div>${alert}</div>`;
+    </div>${paused ? pauseBox() : alert}</div>`;
   }
 
   const cells = [];
@@ -653,6 +679,16 @@ function recentPicks(seq, n) {
     ${last.map(({ aid, i }) => `<span class="rp ${i === n - 1 ? 'new' : ''}">${avatar(P(seq[i].pid), 'sm')}${shortAth(aid)}<small>#${i + 1}</small></span>`).join('')}</div>`;
 }
 
+// Pauza draftu – kogo brakuje i od kiedy. Wznawia się sama, gdy wszyscy wrócą.
+function pauseBox() {
+  const away = absentPlayers();
+  return `<div class="pausebox">
+    <div class="row nowrap">${icon('clock')}<b>Draft wstrzymany — czekamy na powrót ${away.length > 1 ? 'graczy' : 'gracza'}</b></div>
+    <div class="pause-list">${away.map((x) => `<span class="pp-away">${avatar(x, 'sm')}<span><b>${esc(tname(x))}</b> (${esc(x.name)})${presence[x.id]?.t ? ` · offline od ${awayFor(x.id)}` : ' · jeszcze nie był w aplikacji'}</span></span>`).join('')}</div>
+    <div class="xs" style="opacity:.85">Wybory są zablokowane. Draft ruszy sam, gdy ${away.length > 1 ? 'wszyscy wrócą' : 'ten gracz wróci'} — wystarczy, że otworzy stronę.${isAdmin() ? ' Admin może w razie potrzeby wybrać za nieobecnego.' : ''}</div>
+  </div>`;
+}
+
 // Poczekalnia: kto ma konto, kto ma otwartą zakładkę Draft. Start dopiero, gdy są wszyscy.
 function lobbyCard(withStart) {
   const ps = state.participants;
@@ -696,14 +732,16 @@ function athleteTable(picking) {
   const seq = snakeOrder(state.draftOrder);
   const cur = seq[state.picks.length];
   const taken = new Map(state.picks.map((aid, i) => [aid, seq[i]?.pid]));
-  const myTurn = picking && cur && (cur.pid === me()?.id || isAdmin());
+  const paused = picking && draftPaused();
+  const myTurn = picking && cur && ((cur.pid === me()?.id && !paused) || isAdmin());
   const team = cur ? calc.teams[cur.pid] || [] : [];
   const q = ui.q.toLowerCase();
   const all = athletes.filter((a) => (ui.gender === 'ALL' || a.gender === ui.gender) &&
     (!ui.hideTaken || !taken.has(a.id)) && (!q || `${a.name} ${a.nation}`.toLowerCase().includes(q)));
   const list = all.slice(0, ui.limit);
   return `<div class="section"><div class="row"><h2>Zawodnicy</h2><span class="muted small">${all.length} ${pl(all.length, 'aktywny', 'aktywnych', 'aktywnych')} w FIS</span><span class="spacer"></span>
-      ${picking && cur && !myTurn ? `<span class="tag">przeglądasz — „Wybierz” pojawi się, gdy przyjdzie Twoja kolej</span>` : ''}
+      ${paused ? `<span class="tag warn">${icon('clock')}draft wstrzymany — czekamy na ${absentPlayers().map((x) => esc(tname(x))).join(', ')}</span>` : ''}
+      ${picking && cur && !myTurn && !paused ? `<span class="tag">przeglądasz — „Wybierz” pojawi się, gdy przyjdzie Twoja kolej</span>` : ''}
       ${picking && myTurn && cur.pid === me()?.id ? '<span class="tag good">Twoja kolej — wybierz zawodnika</span>' : ''}
       ${picking && myTurn && cur.pid !== me()?.id ? `<span class="tag warn">admin: wybierasz za ${esc(pname(cur.pid))} (${esc(P(cur.pid)?.name || '')})</span>` : ''}</div>
     <div class="row" style="margin-bottom:.8rem">
@@ -1035,6 +1073,7 @@ function zasady() {
       ${sec('Drużyna i draft', 'team', li([
         `Każdy gracz ma <b>${TEAM_SIZE} zawodników</b>: ${TEAM.men} mężczyzn i ${TEAM.women} kobietę w składzie + ${TEAM.reserves} rezerwowych (dowolnej płci).`,
         'Draft metodą <b>snake</b>: kolejność 1–2–3, potem 3–2–1 i tak na zmianę.',
+        'Jeśli w trakcie draftu ktoś wyjdzie albo straci internet, <b>draft się wstrzymuje</b> i czeka, aż wróci — potem rusza sam.',
         'Draft rusza dopiero, gdy liga jest pełna i <b>wszyscy gracze są w poczekalni</b> (mają otwartą zakładkę Draft) — każdy wybiera na żywo.',
         '<b>Kolejność losuje aplikacja</b> w chwili startu draftu. Wynik z godziną losowania widzą wszyscy, a każde ponowne losowanie (po resecie draftu) zostaje w historii.',
         'Każdy zawodnik może trafić tylko do jednej drużyny. Do wyboru są wszyscy aktywni skoczkowie z bazy FIS.',
@@ -1316,6 +1355,8 @@ const actions = {
     const aid = el.dataset.id;
     const cur = snakeOrder(state.draftOrder)[state.picks.length];
     if (!cur) return;
+    if (draftPaused() && !isAdmin()) return toast('Draft jest wstrzymany — czekamy na powrót gracza', 'warn');
+    if (draftPaused() && isAdmin() && !await confirmModal('Draft jest wstrzymany', `Nieobecni: <b>${absentPlayers().map((x) => esc(tname(x))).join(', ')}</b>. Wybrać mimo to (awaryjnie)?`, 'Tak, wybieram')) return;
     const a = athInfo(aid);
     const n = prettyName(a.name);
     const forWho = cur.pid !== me()?.id ? ` dla drużyny <b>${esc(pname(cur.pid))}</b> (gracz ${esc(P(cur.pid)?.name || '')})` : '';

@@ -49,8 +49,8 @@ async function firestoreStore(onChange) {
         tx.set(ref, { state: JSON.stringify(next), updated: Date.now() });
       });
     },
-    heartbeat(pid, view) {
-      return fs.setDoc(presenceRef, { [pid]: { t: Date.now(), view } }, { merge: true }).catch(() => {});
+    heartbeat(pid, view, t = Date.now()) {
+      return fs.setDoc(presenceRef, { [pid]: { t: t || Date.now(), view } }, { merge: true }).catch(() => {});
     },
     onPresence(cb) {
       fs.onSnapshot(presenceRef, (snap) => cb(snap.data() || {}));
@@ -80,9 +80,9 @@ function localStore(onChange) {
       try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* brak miejsca / tryb prywatny */ }
       onChange(normalize(next));
     },
-    heartbeat(pid, view) {
+    heartbeat(pid, view, t = Date.now()) {
       const p = readP();
-      p[pid] = { t: Date.now(), view };
+      p[pid] = { t: t || Date.now(), view };
       try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch { /* ignoruj */ }
       if (presenceCb) presenceCb(p);
     },

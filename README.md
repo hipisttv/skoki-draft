@@ -52,6 +52,7 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 5. Admin klika **Losuj kolejność i zacznij draft** – **aplikacja sama losuje kolejność**, a wynik z godziną
    losowania widzą wszyscy (zakładka Draft). Zapisy się zamykają. Każde ponowne losowanie po resecie draftu zostaje w historii.
 6. Draft odbywa się na żywo, każdy na swoim urządzeniu. Kto akurat wybiera, widzi „Twoja kolej!”.
+   Jeśli ktoś wyjdzie albo straci internet, **draft się wstrzymuje** i rusza sam, gdy ta osoba wróci.
 7. Przed każdym weekendem każdy w zakładce **Drużyny** wybiera kapitana (przycisk **C**) i ewentualnie wstawia rezerwowego.
 
 Każdy gracz ma **login** (do logowania) i osobną **nazwę drużyny** (widoczną w rankingu, drafcie i tabelach). Nazwę drużyny
