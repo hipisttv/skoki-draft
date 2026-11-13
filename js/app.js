@@ -169,7 +169,15 @@ async function init() {
     root.innerHTML = `<div class="wrap"><div class="card empty">${icon('info')}<b>Nie udało się wczytać danych FIS</b>${esc(e.message)}</div></div>`;
     return;
   }
-  store = await createStore((s) => {
+  try {
+    store = await createStore(onState);
+  } catch (e) {
+    root.innerHTML = `<div class="wrap"><div class="card empty">${icon('info')}<b>Nie udało się połączyć z bazą ligi</b>
+      Sprawdź połączenie z internetem i odśwież stronę. (${esc(e.message)})
+      <div style="margin-top:1rem"><button class="primary" onclick="location.reload()">Odśwież</button></div></div></div>`;
+    return;
+  }
+  function onState(s) {
     if (lastPicks !== null && s.picks.length > lastPicks && s.picks.length) {
       const i = s.picks.length - 1;
       const pid = snakeOrder(s.draftOrder)[i]?.pid;
@@ -180,7 +188,7 @@ async function init() {
     lastPicks = s.picks.length;
     state = s;
     render();
-  });
+  }
   window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; beat(); render(true); });
   // sygnał obecności co 15 s; poczekalnię i draft odświeżamy, gdy ktoś wejdzie lub wyjdzie
   store.onPresence((p) => {
@@ -303,7 +311,7 @@ function shell(active, content) {
   </div>
   ${ui.menu ? userMenu() : ''}
   </header>
-  ${store.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
+  ${store?.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
   <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
