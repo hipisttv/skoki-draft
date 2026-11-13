@@ -123,7 +123,8 @@ export function raceStart(r) {
   const [y, m, d] = r.date.split('-').map(Number);
   const [hh, mm] = r.time.split(':').map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d, hh, mm));
-  const tz = TZ[r.nation] || 'Europe/Warsaw';
+  // Berkutschi podaje czas polski (tz), FIS – lokalny czas skoczni
+  const tz = r.tz || TZ[r.nation] || 'Europe/Warsaw';
   const offset = new Date(utc.toLocaleString('en-US', { timeZone: tz })) - new Date(utc.toLocaleString('en-US', { timeZone: 'UTC' }));
   return new Date(utc - offset);
 }

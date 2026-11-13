@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-13T03:08:00+00:00",
+ "updated": "2026-11-13T03:20:45+00:00",
  "events": [
   {
    "id": "63024",
@@ -19,7 +19,9 @@
      "category": "QUA",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "7796",
@@ -30,7 +32,9 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "7799",
@@ -41,7 +45,9 @@
      "category": "WC",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "7795",
@@ -52,7 +58,9 @@
      "category": "WC",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "8011",
@@ -63,7 +71,9 @@
      "category": "QUA",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "7800",
@@ -74,7 +84,9 @@
      "category": "WC",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "8010",
@@ -85,7 +97,9 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     },
     {
      "id": "7797",
@@ -96,7 +110,9 @@
      "category": "WC",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "tz": "Europe/Warsaw",
+     "timeSource": "berkutschi"
     }
    ]
   },

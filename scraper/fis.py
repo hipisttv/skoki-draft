@@ -275,6 +275,62 @@ def parse_event(h, season):
     return races
 
 
+# ---------------------------------------------------------------- Berkutschi (godziny startu)
+
+BERK = "https://berkutschi.com/pl/front"
+
+
+def berkutschi_programs():
+    """Programy zawodów z Berkutschi: [(data, płeć, etykieta, godzina CET)].
+
+    Berkutschi publikuje program z wyprzedzeniem (zwykle od najbliższych zawodów),
+    linki do niego są w kalendarzu PŚ mężczyzn i kobiet.
+    """
+    ids = set()
+    for sort in ("worldcup_men_full", "worldcup_ladies_full"):
+        try:
+            ids |= set(re.findall(r"/front/events/(\d+)/preview", fetch(f"{BERK}/calendars?sort={sort}")))
+        except Exception as e:  # noqa: BLE001
+            print(f"  Berkutschi niedostępne ({sort}): {e}", file=sys.stderr)
+    out = []
+    for eid in sorted(ids):
+        try:
+            t = text(fetch(f"{BERK}/events/{eid}/program"))
+        except Exception as e:  # noqa: BLE001
+            print(f"  brak programu Berkutschi {eid}: {e}", file=sys.stderr)
+            continue
+        # "20.11.2026 Piątek (Panowie) 12:00 Trening 14:00 Kwalifikacje 16:00 Seria 1 21.11.2026 ..."
+        for day in re.finditer(r"(\d{2})\.(\d{2})\.(\d{4}) \w+ \((Panowie|Panie)\)(.*?)(?=\d{2}\.\d{2}\.\d{4} \w+ \(|Wszystkie czasy|$)", t, re.S):
+            d, m, y, g, body = day.groups()
+            date = f"{y}-{m}-{d}"
+            for hhmm, label in re.findall(r"(\d{1,2}:\d{2})\s+(.+?)(?=\s+\d{1,2}:\d{2}\b|$)", body.strip()):
+                out.append((date, "M" if g == "Panowie" else "W", label.strip(), hhmm.zfill(5)))
+    print(f"  Berkutschi: {len(ids)} programów, {len(out)} wpisów")
+    return out
+
+
+def apply_berkutschi(events, programs):
+    """Nadpisuje godziny (i daty kwalifikacji) danymi z Berkutschi – czas CET/CEST."""
+    by_key = {}
+    for date, g, label, hhmm in programs:
+        kind = "QUA" if label.startswith("Kwalifik") else "RUN1" if re.match(r"Seria 1\b", label) else None
+        if kind:
+            by_key.setdefault((date, g, kind), []).append(hhmm)
+    changed = 0
+    for ev in events:
+        for r in ev["races"]:
+            kind = "QUA" if r["category"] == "QUA" else "RUN1"
+            times = sorted(by_key.get((r["date"], r["gender"], kind), []))
+            if not times:
+                continue
+            # przy kilku „Seria 1” jednego dnia (np. konkurs + mikst wieczorem) indywidualny jest pierwszy
+            new = times[0]
+            if r.get("time") != new or r.get("tz") != "Europe/Warsaw":
+                changed += 1
+            r["time"], r["tz"], r["timeSource"] = new, "Europe/Warsaw", "berkutschi"
+    print(f"  Berkutschi: zaktualizowano godziny {changed} startów")
+
+
 def calendar_url(season, category):
     return (f"{BASE}/ski-jumping/calendar-results.html?eventselection=&place=&sectorcode=JP"
             f"&seasoncode={season}&categorycode={category}&disciplinecode=&gendercode=&racedate=&racecodex="
@@ -537,6 +593,8 @@ def main():
 
     print("Kalendarz...")
     events = build_calendar(args.season)
+    # godziny z Berkutschi mają pierwszeństwo przed programami FIS
+    apply_berkutschi(events, berkutschi_programs())
 
     print("Wyniki...")
     for ev in events:

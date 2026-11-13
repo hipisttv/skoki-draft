@@ -942,6 +942,7 @@ function zasady() {
       ]))}
       ${sec('Skąd są wyniki', 'globe', li([
         'Wyniki i odległości pobierane są automatycznie z oficjalnych danych FIS (co 2 h, w weekendy co 30 min).',
+        'Godziny startu: z Berkutschi (gdy opublikuje program zawodów), a wcześniej z programów zawodów FIS. W aplikacji zawsze w czasie polskim.',
         'Rekord skoczni odczytywany jest z oficjalnego protokołu FIS; admin może go poprawić, jeśli skok nie został uznany.',
         'Liczą się tylko konkursy indywidualne — bez drużynówek, duetów i mikstów.',
       ]))}
