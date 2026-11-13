@@ -772,7 +772,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .skc i { font-style: normal; font-weight: 900; }
 .skc.ok { background: #1f9d55; color: #fff; }
 .skc.close { background: #e3b008; color: #2b1d00; }
-.skc.bad { background: var(--card-2); color: var(--text-2); border: 1px solid var(--line); }
+.skc.bad { background: #c53030; color: #fff; }
 .sk-form { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .4rem 0 .9rem; }
 .sk-form input { flex: 1; min-width: 200px; }
 .sk-form .formerr { width: 100%; margin: 0; }
@@ -875,6 +875,7 @@ body.sk-lock { overflow: hidden; }
   .skwin .sk-table td { padding: .4em .15em; }
   .skwin .skc { font-size: .72em; padding: .3em .35em; gap: .15em; }
   .skwin .sk-table .ath { font-size: .8em; }
-  .skwin .sk-table .ath .ph, .skwin .sk-table .ath .flag { display: none; }
+  .skwin .sk-table .ath .ph, .skwin .sk-table .ath .flag, .skwin .sk-table .skc .flag { display: none; }
+  .skwin .sk-table .ath .nm { font-size: .92em; word-break: break-word; }
   .skwin .sk-table .ath .nm { white-space: normal; line-height: 1.15; }
 }

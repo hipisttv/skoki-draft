@@ -165,6 +165,11 @@ def build_athletes(season):
                     a["wcRank"] = r["rank"]
     if skipped:
         print(f"  pominięci nieaktywni z punktami: {', '.join(sorted(skipped))}")
+    # rocznik z listy FIS bywa pusty – dla punktujących dociągamy go z biogramu
+    for a in athletes.values():
+        if not a.get("born") and (a["wc"] or a["coc"] or a["gp"]):
+            a["born"] = bio_birth_year(a["id"])
+            print(f"  rocznik z biogramu: {a['name']} → {a['born']}")
     return sorted(athletes.values(), key=lambda a: (-a["wc"], -a["coc"], -a["gp"], a["name"]))
 
 
@@ -458,6 +463,18 @@ def weekend_counts(season):
     return count
 
 
+def bio_birth_year(cid):
+    """Rok urodzenia z biogramu zawodnika w FIS (None, gdy FIS go nie podaje)."""
+    try:
+        h = fetch(f"{BASE}/general/athlete-biography.html?sectorcode=JP&competitorid={cid}")
+        i = h.find("Birthdate")
+        m = re.search(r"Birthdate.*?(\d{4})", text(h[i:i + 400])) if i >= 0 else None
+        return int(m.group(1)) if m else None
+    except Exception as e:  # noqa: BLE001
+        print(f"  biogram {cid}: {e}", file=sys.stderr)
+        return None
+
+
 def retired_scorers(prev, athletes_path, out, cache):
     """Zawodnicy z punktami PŚ zeszłego sezonu, których nie ma już wśród aktywnych w FIS."""
     with open(athletes_path, encoding="utf-8") as f:
@@ -467,7 +484,7 @@ def retired_scorers(prev, athletes_path, out, cache):
         for r in prev.get(gender, []):
             if r["id"] in active:
                 continue
-            if r["id"] in cache:
+            if r["id"] in cache and cache[r["id"]].get("born"):
                 res.append(cache[r["id"]])
                 continue
             born, photo = None, None
