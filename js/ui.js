@@ -84,6 +84,8 @@ export function toast(msg, kind = '') {
   el.innerHTML = (kind === 'err' ? icon('info') : kind === 'ok' ? icon('check') : '') + `<span>${esc(msg)}</span>`;
   el.querySelector('svg')?.setAttribute('width', '18');
   box.appendChild(el);
+  // najwyżej 3 naraz – przy szybkim drafcie starsze znikają
+  while (box.children.length > 3) box.firstElementChild.remove();
   setTimeout(() => el.remove(), kind === 'err' ? 5000 : 3000);
 }
 

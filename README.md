@@ -76,11 +76,13 @@ Zapomniany PIN admin ustawia na nowo w Panelu admina (ikona klucza przy graczu).
 - **Kapitan** ×2 za wszystko w danym weekendzie. Wybierany przed weekendem, nie można go zmienić w trakcie.
 - **Kara −20 pkt**, gdy kapitan skończy konkurs (swojej płci) poza czołową 30 – także gdy odpadnie w kwalifikacjach lub nie wystartuje.
 - **Mnożnik ×3 raz w sezonie:** każdy wybiera jeden konkurs (nie kwalifikacje) i wszystkie punkty jego drużyny w tym
-  konkursie – razem z kapitanem i karą – są mnożone przez 3. Ustawia się go w zakładce Drużyny przed weekendem.
+  konkursie – razem z kapitanem i karą – są mnożone przez 3. Ustawia się go w zakładce Drużyny i można zmieniać
+  aż do startu wybranego konkursu (godzina z FIS w czasie lokalnym skoczni; dopóki FIS jej nie poda – do północy w dniu konkursu).
 - **Rekord skoczni** wykrywany jest automatycznie z oficjalnego protokołu FIS (PDF z wynikami): skok dłuższy od rekordu
   albo rekord z datą tego konkursu. Wyrównanie rekordu nie jest nowym rekordem. Admin może to poprawić w widoku konkursu
   (np. gdy skok z upadkiem nie został uznany).
-- Skład, kapitana i mnożnik można zmieniać do północy przed pierwszym dniem weekendu, potem są zablokowane.
+- Skład i kapitana można zmieniać do północy przed pierwszym dniem weekendu, potem są zablokowane.
+- Pełne zasady są w aplikacji w zakładce **Zasady** (dostępnej też przed zalogowaniem).
 - Liczone są tylko konkursy indywidualne – bez drużynówek, duetów i mikstów.
 - Wszystkie wartości punktowe admin może zmienić w Panelu admina → Punktacja (również wyłączyć liczenie MŚ).
 
