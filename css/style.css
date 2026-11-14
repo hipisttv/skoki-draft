@@ -879,3 +879,8 @@ body.sk-lock { overflow: hidden; }
   .skwin .sk-table .ath .nm { font-size: .92em; word-break: break-word; }
   .skwin .sk-table .ath .nm { white-space: normal; line-height: 1.15; }
 }
+
+/* skokdle – podgląd obrazka z wynikiem */
+.sk-share-bg { z-index: 120; }
+.sk-share { max-width: 520px; }
+.sk-share img { display: block; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; border: 1px solid var(--line); background: #0a1220; }

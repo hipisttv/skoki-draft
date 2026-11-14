@@ -1280,20 +1280,21 @@ function hillInfo(place) {
 }
 
 // porównanie cechy: ok / blisko / pudło + strzałka (↑ = szukany ma więcej)
-// rank = true: przy miejscu ↑ znaczy „szukany jest wyżej w klasyfikacji” (mniejszy numer)
-function skCmp(g, t, close, rank = false) {
+function skCmp(g, t, close) {
   if (g == null || t == null) return { c: 'bad', arrow: '' };
   if (g === t) return { c: 'ok', arrow: '' };
-  return { c: close(g, t) ? 'close' : 'bad', arrow: (rank ? t < g : t > g) ? '↑' : '↓' };
+  return { c: close(g, t) ? 'close' : 'bad', arrow: t > g ? '↑' : '↓' };
 }
+// wiek z rocznika (w roku dzisiejszej zagadki)
+const skAge = (a) => (a?.born ? Number(skDay().slice(0, 4)) - a.born : null);
 function skRow(g, t) {
   return [
     { c: g.gender === t.gender ? 'ok' : 'bad', v: g.gender === 'W' ? 'K' : 'M' },
     { c: !!g.retired === !!t.retired ? 'ok' : 'bad', v: g.retired ? 'emeryt' : 'aktywny' },
     { c: g.nation === t.nation ? 'ok' : 'bad', v: `${flag(g.nation)}${esc(g.nation)}` },
-    { ...skCmp(g.born, t.born, (a, b) => Math.abs(a - b) <= 2), v: g.born || '–' },
+    { ...skCmp(skAge(g), skAge(t), (a, b) => Math.abs(a - b) <= 2), v: skAge(g) ?? '–' },
     { ...skCmp(g.wc, t.wc, (a, b) => Math.abs(a - b) <= Math.max(60, b * 0.15)), v: g.wc },
-    { ...skCmp(g.wcRank, t.wcRank, (a, b) => Math.abs(a - b) <= 5, true), v: g.wcRank ? `${g.wcRank}.` : '–' },
+    { ...skCmp(g.wcRank, t.wcRank, (a, b) => Math.abs(a - b) <= 5), arrow: '', v: g.wcRank ? `${g.wcRank}.` : '–' },
   ];
 }
 
@@ -1374,12 +1375,12 @@ function skAthlete(prog, t, done) {
   if (!t) return '';
   const guesses = prog.a.map((id) => byId[id]).filter(Boolean);
   const won = prog.a.includes(t.id);
-  const head = ['Zawodnik', 'Płeć', 'Status', 'Kraj', 'Rocznik', `Pkt PŚ ${seasonLabel(athSeason - 1)}`, 'Miejsce PŚ'];
+  const head = ['Zawodnik', 'Płeć', 'Status', 'Kraj', 'Wiek', `Pkt PŚ ${seasonLabel(athSeason - 1)}`, 'Miejsce PŚ'];
   return `<p class="muted small" style="margin:.6rem 0">Zgadnij zawodnika lub zawodniczkę z punktami w PŚ ${seasonLabel(athSeason - 1)} (także tych, którzy już zakończyli karierę). Po każdej próbie widzisz, co się zgadza:
-      <span class="skc ok">trafione</span> <span class="skc close">blisko</span> <span class="skc bad">pudło</span>, ↑ szukany ma więcej, ↓ mniej; przy miejscu ↑ = szukany jest wyżej w klasyfikacji, ↓ = niżej.</p>
+      <span class="skc ok">trafione</span> <span class="skc close">blisko</span> <span class="skc bad">pudło</span>, ↑ szukany ma więcej (jest starszy / ma więcej punktów), ↓ mniej. Przy miejscu w PŚ: żółte = do 5 miejsc różnicy.</p>
     ${done ? `<div class="sk-done ${won ? 'win' : 'lose'}">${portrait(t, 'lg')}<div><div class="eyebrow">${won ? `Brawo! Zgadnięte w ${prog.a.length}/${SK_A_MAX}` : 'Tym razem się nie udało'}</div>
         <div class="sk-name">${esc(prettyName(t.name).first)} <b>${esc(prettyName(t.name).last)}</b></div>
-        <div class="muted small">${flag(t.nation)} ${esc(t.nation)} · ur. ${t.born || '?'} · ${t.wc} pkt w PŚ ${seasonLabel(athSeason - 1)}${t.wcRank ? ` (${t.wcRank}.)` : ''}${t.retired ? ' · zakończył(a) karierę' : ''}</div></div>
+        <div class="muted small">${flag(t.nation)} ${esc(t.nation)} · ${skAge(t) != null ? `${skAge(t)} ${pl(skAge(t), 'rok', 'lata', 'lat')}` : 'wiek ?'} · ${t.wc} pkt w PŚ ${seasonLabel(athSeason - 1)}${t.wcRank ? ` (${t.wcRank}.)` : ''}${t.retired ? ' · zakończył(a) karierę' : ''}</div></div>
         <button class="sm" data-action="skShare" data-v="a">${icon('upload')}Udostępnij wynik</button></div>`
       : `<form data-form="skokA" class="sk-form" autocomplete="off">
         <input id="sk-ga" name="g" list="sk-athletes" placeholder="Wpisz nazwisko skoczka/skoczkini…" required>
@@ -1486,6 +1487,93 @@ function skShareText(kind) {
   const t = skTargetH();
   const won = prog.h.includes(t);
   return `🎯 Skokdle ${d} · skocznia ${won ? prog.h.length : 'X'}/${SK_H_MAX}\n${prog.h.map((x) => (x === t ? '🟩' : '⬛')).join('')}\n${location.origin}${location.pathname}`;
+}
+
+// Obrazek z wynikiem (bez nazwisk – nie zdradza rozwiązania), rysowany na canvasie.
+const SK_COL = { ok: '#1f9d55', close: '#e3b008', bad: '#c53030', empty: '#1c2a40' };
+async function skShareImage(kind) {
+  const prog = skLoad();
+  const isA = kind === 'a';
+  const t = isA ? skTargetA() : skTargetH();
+  const tries = isA ? prog.a : prog.h;
+  const max = isA ? SK_A_MAX : SK_H_MAX;
+  const won = isA ? tries.includes(t.id) : tries.includes(t);
+  const head = isA ? ['Płeć', 'Status', 'Kraj', 'Wiek', 'Punkty', 'Miejsce'] : [];
+  const rows = isA ? tries.map((id) => skRow(byId[id], t)) : tries.map((x) => [{ c: x === t ? 'ok' : 'bad' }]);
+  const W = 1080; const pad = 70;
+  const cols = isA ? head.length : 1;
+  const gap = 14;
+  const cell = isA ? Math.floor((W - pad * 2 - gap * (cols - 1)) / cols) : 120;
+  const ch = isA ? 92 : 120;
+  const gridTop = 330;
+  const H = gridTop + (isA ? 46 : 0) + rows.length * (ch + gap) + 170;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  await document.fonts?.ready;
+  const FD = '"Barlow Condensed", "Inter", system-ui, sans-serif';
+  const FB = '"Inter", system-ui, sans-serif';
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0f2347'); bg.addColorStop(1, '#0a1220');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); };
+  const logo = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'img/logo.png'; });
+  if (logo) g.drawImage(logo, pad, 62, 96, 96 * (logo.height / logo.width));
+  g.fillStyle = '#fff'; g.font = `800 92px ${FD}`; g.textBaseline = 'alphabetic';
+  g.fillText('SKOKDLE', pad + (logo ? 120 : 0), 140);
+  g.fillStyle = '#9fb3d1'; g.font = `500 34px ${FB}`;
+  g.fillText(`${isA ? 'Skoczek dnia' : 'Skocznia dnia'} · ${fmtLong(skDay())}`, pad, 215);
+  g.font = `800 62px ${FD}`;
+  g.fillStyle = won ? '#3ddc84' : '#ff6b6b';
+  g.fillText(won ? `Zgadnięte w ${tries.length}/${max}` : `Nie tym razem · X/${max}`, pad, 290);
+  let y = gridTop;
+  if (isA) {
+    g.fillStyle = '#7f93b2'; g.font = `700 24px ${FB}`; g.textAlign = 'center';
+    head.forEach((h, i) => g.fillText(h.toUpperCase(), pad + i * (cell + gap) + cell / 2, y + 26));
+    y += 46;
+  }
+  g.textAlign = 'center';
+  for (const r of rows) {
+    r.forEach((c, i) => {
+      const x = pad + i * (cell + gap);
+      g.fillStyle = SK_COL[c.c] || SK_COL.empty;
+      rr(isA ? x : pad, y, isA ? cell : W - pad * 2, ch, 18);
+      if (c.arrow) { g.fillStyle = c.c === 'close' ? '#2b1d00' : '#fff'; g.font = `800 52px ${FB}`; g.fillText(c.arrow, x + cell / 2, y + ch / 2 + 19); }
+    });
+    if (!isA) { g.fillStyle = '#fff'; g.font = `700 40px ${FB}`; g.fillText(r[0].c === 'ok' ? 'Trafiona!' : 'Pudło', W / 2, y + ch / 2 + 14); }
+    y += ch + gap;
+  }
+  g.textAlign = 'left'; g.fillStyle = '#7f93b2'; g.font = `600 28px ${FB}`;
+  const who = me();
+  g.fillText(`${who ? tname(who) + ' · ' : ''}${state.setup?.leagueName || 'Draft Skoków'}`, pad, H - 90);
+  g.fillStyle = '#5b6f8e'; g.font = `500 24px ${FB}`;
+  g.fillText(`${location.host}${location.pathname}`.replace(/\/$/, ''), pad, H - 52);
+  return new Promise((res) => cv.toBlob((b) => res(b), 'image/png'));
+}
+
+// Podgląd obrazka: Zapisz (pobranie PNG) albo Udostępnij (menu udostępniania telefonu).
+async function skShareDialog(kind) {
+  const blob = await skShareImage(kind);
+  const text = skShareText(kind);
+  const name = `skokdle-${skDay()}-${kind === 'a' ? 'skoczek' : 'skocznia'}.png`;
+  const file = new File([blob], name, { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg sk-share-bg';
+  bg.innerHTML = `<div class="modal sk-share"><h3>Twój wynik</h3><img src="${url}" alt="Wynik Skokdle">
+    <div class="row" style="gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="primary" data-dl>${icon('download')}Zapisz obraz</button>
+      ${canShare ? `<button class="primary ghost" data-sh>${icon('upload')}Udostępnij</button>` : ''}
+      <button data-cp>Kopiuj tekst</button><span class="spacer"></span><button class="ghost" data-x>Zamknij</button></div></div>`;
+  const close = () => { bg.remove(); URL.revokeObjectURL(url); };
+  bg.addEventListener('click', async (e) => {
+    if (e.target === bg || e.target.closest('[data-x]')) close();
+    else if (e.target.closest('[data-dl]')) { const l = document.createElement('a'); l.href = url; l.download = name; document.body.appendChild(l); l.click(); l.remove(); toast('Zapisano obraz', 'ok'); }
+    else if (e.target.closest('[data-sh]')) { try { await navigator.share({ files: [file], text }); } catch { /* anulowane */ } }
+    else if (e.target.closest('[data-cp]')) { try { await navigator.clipboard.writeText(text); toast('Skopiowano tekst', 'ok'); } catch { toast('Nie udało się skopiować', 'warn'); } }
+  });
+  document.body.appendChild(bg);
 }
 
 // ================================================================ analityka
@@ -1984,11 +2072,7 @@ const actions = {
   more: () => { ui.limit += 150; render(); },
   skToggle: () => { ui.skOpen = !ui.skOpen; render(); },
   skTab: (el) => { ui.skTab = el.dataset.v; render(); },
-  skShare: async (el) => {
-    const text = skShareText(el.dataset.v);
-    try { await navigator.clipboard.writeText(text); toast('Skopiowano — wklej na grupę!', 'ok'); }
-    catch { await modal({ title: 'Twój wynik', text: `<pre class="sk-pre">${esc(text)}</pre>Skopiuj i wklej na grupę.`, ok: 'OK', cancel: '' }); }
-  },
+  skShare: (el) => skShareDialog(el.dataset.v),
   toggleRankSquad: (el) => { ui.rankOpen = ui.rankOpen === el.dataset.p ? null : el.dataset.p; render(); },
   toggleStrength: (el) => {
     ui.strengthOpen = ui.strengthOpen || new Set();
