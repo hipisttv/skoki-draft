@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-13T23:46:45+00:00",
+ "updated": "2026-11-14T07:43:10+00:00",
  "events": [
   {
    "id": "63024",
@@ -131,6 +131,18 @@
      "cancelled": false
     },
     {
+     "id": "p63025-2026-11-29-M",
+     "date": "2026-11-29",
+     "time": "13:45",
+     "codex": "",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
+    },
+    {
      "id": "7803",
      "date": "2026-11-29",
      "time": "15:20",
@@ -172,6 +184,18 @@
      "gender": "W",
      "team": false,
      "cancelled": false
+    },
+    {
+     "id": "p63029-2026-11-29-W",
+     "date": "2026-11-29",
+     "time": "08:45",
+     "codex": "",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
     },
     {
      "id": "7820",
@@ -411,6 +435,18 @@
      "gender": "M",
      "team": false,
      "cancelled": false
+    },
+    {
+     "id": "p63028-2026-12-20-W",
+     "date": "2026-12-20",
+     "time": "12:00",
+     "codex": "",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
     },
     {
      "id": "7817",
@@ -823,6 +859,18 @@
      "cancelled": false
     },
     {
+     "id": "p63036-2027-01-20-W",
+     "date": "2027-01-20",
+     "time": "14:45",
+     "codex": "",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
+    },
+    {
      "id": "7854",
      "date": "2027-01-20",
      "time": "16:15",
@@ -1115,6 +1163,18 @@
    "cancelled": false,
    "races": [
     {
+     "id": "p63043-2027-02-18-W",
+     "date": "2027-02-18",
+     "time": "14:15",
+     "codex": "",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "W",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
+    },
+    {
      "id": "7886",
      "date": "2027-02-18",
      "time": "15:30",
@@ -1146,6 +1206,18 @@
      "gender": "M",
      "team": false,
      "cancelled": false
+    },
+    {
+     "id": "p63043-2027-02-21-M",
+     "date": "2027-02-21",
+     "time": "14:50",
+     "codex": "",
+     "discipline": "Individual Flying Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false,
+     "fromProgram": true
     },
     {
      "id": "7889",

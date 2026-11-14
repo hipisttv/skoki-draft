@@ -406,6 +406,26 @@ def apply_program(races, tagged, untagged):
                     break
 
 
+def program_only_qualis(ev_id, races, tagged, untagged):
+    """Kwalifikacje, które są w programie zawodów, ale FIS nie wpisał ich jeszcze do bazy
+    (zwykle drugie kwalifikacje weekendu). Gdy FIS je doda, wpis z bazy zajmie miejsce tego."""
+    left = [(day, g, hhmm) for day, cat, g, hhmm in untagged if cat == "QUA"]
+    left += [(day, g, hhmm) for (_, cat, g), lst in tagged.items() if cat == "QUA" for day, hhmm in lst]
+    out = []
+    for day, g, hhmm in sorted(left):
+        # tylko gdy tego dnia albo dzień później jest konkurs tej płci, a jego kwalifikacji jeszcze nie ma
+        main = next((r for r in races if r["gender"] == g and r["category"] != "QUA"
+                     and 0 <= (dt.date.fromisoformat(r["date"]) - dt.date.fromisoformat(day)).days <= 1
+                     and not any(q["gender"] == g and q["category"] == "QUA" and q["date"] == day for q in races + out)), None)
+        if not main:
+            continue
+        out.append({"id": f"p{ev_id}-{day}-{g}", "date": day, "time": hhmm, "codex": "",
+                    "discipline": main["discipline"] + " Qualification", "category": "QUA", "gender": g,
+                    "team": False, "cancelled": False, "fromProgram": True})
+        print(f"  {day} kwalifikacje {g} z programu (brak w bazie FIS)")
+    return out
+
+
 def build_calendar(season):
     # cykle (Turniej Czterech Skoczni, Two Nights Tour…) mają kraj "FIS" i zawierają tylko
     # klasyfikacje łączne, które nie są osobnymi konkursami
@@ -428,7 +448,9 @@ def build_calendar(season):
         # FIS nie wpisuje godzin do bazy przed zawodami, a kwalifikacje ma pod datą konkursu –
         # prawdziwy dzień i godzinę bierzemy z programu zawodów
         if any(not r["time"] for r in races):
-            apply_program(races, *program_times(eh, ev["id"]))
+            tagged, untagged = program_times(eh, ev["id"])
+            apply_program(races, tagged, untagged)
+            races += program_only_qualis(ev["id"], races, tagged, untagged)
         races.sort(key=lambda x: (x["date"], x["time"] or "99:99", x["codex"]))
         ev["start"] = min([ev["start"]] + [r["date"] for r in races])
         ev["end"] = max([ev["end"]] + [r["date"] for r in races])
@@ -658,7 +680,7 @@ def main():
     print("Wyniki...")
     for ev in events:
         for race in ev["races"]:
-            if race["cancelled"] or race["date"] > today:
+            if race["cancelled"] or race["date"] > today or race.get("fromProgram"):
                 continue
             res = build_results(race, out)
             race["hasResults"] = bool(res)
