@@ -1439,6 +1439,7 @@ const TOUR_NAME = {
   'Nordic Tournament': 'Turniej Nordycki', 'Planica7': 'Planica 7', 'Willingen Six': 'Willingen Six', 'Two Nights Tour': 'Two Nights Tour',
 };
 const MEDAL = ['', '🥇', '🥈', '🥉'];
+const TOUR_SHORT = { 'Four Hills': 'TCS', 'Ski Flying Standing': 'Loty', 'RAW AIR Tournament': 'Raw Air', 'Nordic Tournament': 'T. Nordycki' };
 const hillPl = (h) => `${/Team/.test(h) ? 'drużynowo, ' : ''}skocznia ${/Flying/.test(h) ? 'mamucia' : /Normal/.test(h) ? 'normalna' : 'duża'}`;
 const ageIn = (a, season) => (a?.born ? season - 1 - a.born : null);
 
@@ -1565,7 +1566,7 @@ function seasonsBlock(pr, a) {
       <tbody>${rows.map((x) => `<tr><td><b>${seasonLabel(x.season)}</b></td><td class="num muted">${ageIn(a, x.season) ?? '–'}</td>
         <td class="num">${x.rank ? (x.rank <= 3 ? `<span class="medal m${x.rank}">${x.rank}</span>` : `${x.rank}.`) : '–'}</td><td class="pts">${x.points || '–'}</td>
         <td class="num">${x.podiums?.[0] || ''}</td><td class="num">${x.podiums ? x.podiums[0] + x.podiums[1] + x.podiums[2] || '' : ''}</td>
-        <td class="hide-sm muted xs">${Object.entries(x.tours || {}).filter(([, v]) => v[0]).map(([k, v]) => `${esc(TOUR_NAME[k] || k)}: <b>${v[0]}.</b>`).join(' · ')}</td></tr>`).join('')}</tbody>
+        <td class="hide-sm">${Object.entries(x.tours || {}).filter(([, v]) => v[0]).map(([k, v]) => `<span class="tourchip ${v[0] === 1 ? 'tc-gold' : v[0] <= 3 ? 'tc-pod' : v[0] <= 10 ? 'tc-top' : ''}" title="${esc(TOUR_NAME[k] || k)}">${esc(TOUR_SHORT[k] || TOUR_NAME[k] || k)} <b>${v[0]}.</b></span>`).join('')}</td></tr>`).join('')}</tbody>
     </table></div></div>`;
 }
 

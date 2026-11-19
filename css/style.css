@@ -1027,3 +1027,35 @@ a.race:not(.has-res):not(.has-sl):hover { border-color: var(--line); text-decora
   .prof-sub { justify-content: center; }
   .cmp-form input[name=q] { min-width: 0; flex: 1; }
 }
+
+/* ============================================================ tabele – czytelniej, z kolorami (cała aplikacja) */
+.tablewrap { border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.card.pad0 > .tablewrap, .card.pad0 .tablewrap:only-child { border: 0; border-radius: 0; }
+:where(table:not(.hilltab)) th {
+  background: color-mix(in srgb, var(--accent) 13%, var(--card-2));
+  color: color-mix(in srgb, var(--accent) 65%, var(--text));
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  padding-top: .65rem; padding-bottom: .65rem;
+}
+:where(table:not(.hilltab)) td { border-bottom: 1px solid var(--line); }
+:where(table:not(.hilltab)) th + th, :where(table:not(.hilltab)) td + td { border-left: 1px solid var(--line-2); }
+:where(table:not(.hilltab):not(.cmp-tab)) tbody tr:nth-child(even) > td { background: color-mix(in srgb, var(--accent) 8%, var(--card-2)); }
+:where(table:not(.hilltab)) tbody tr:hover > td { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+:where(table:not(.hilltab)) tr.mine > td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+:where(table:not(.hilltab)) tr.mine > td { font-weight: 600; }
+:where(table:not(.hilltab)) td.pts { color: var(--accent); font-size: .98rem; font-weight: 800; }
+:where(table:not(.hilltab)) td.rank { color: var(--text-2); }
+:where(table:not(.hilltab)) td.num.muted, :where(table:not(.hilltab)) td.muted { color: var(--text-2); }
+:where(table:not(.hilltab)) td.best { color: var(--good); font-weight: 800; background: var(--good-soft) !important; }
+/* szczegóły rozwinięte w tabelach (siła drużyn) bez pasków */
+:where(table) tr.sdetail > td { background: var(--card-2) !important; border-left: 0; }
+/* porównanie zawodników – kolumna z etykietą wyraźnie oddzielona */
+.cmp-tab th { background: var(--card-2); color: var(--text-2); border-bottom: 1px solid var(--line); }
+.cmp-tab td { border-bottom: 1px solid var(--line); }
+.tourchip { display: inline-flex; gap: .25rem; align-items: center; font-size: .72rem; font-weight: 600; padding: .15rem .5rem; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); color: var(--text-2); margin: .1rem .25rem .1rem 0; }
+.tourchip b { color: var(--text); }
+.tourchip.tc-gold { background: var(--gold-soft); border-color: transparent; color: var(--gold); }
+.tourchip.tc-gold b { color: var(--gold); }
+.tourchip.tc-pod { background: color-mix(in srgb, var(--silver) 22%, transparent); border-color: transparent; }
+.tourchip.tc-top { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.tourchip.tc-top b { color: var(--accent); }
