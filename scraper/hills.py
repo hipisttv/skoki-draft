@@ -13,7 +13,7 @@ import time
 import urllib.parse
 import urllib.request
 
-UA = "skoki-draft/1.0 (prywatna liga znajomych; zdjecia skoczni z Wikimedia Commons)"
+UA = "skoki-draft/1.0 (https://github.com/hipisttv/skoki-draft; prywatna liga znajomych) python-urllib"
 
 # Miejsce z kalendarza FIS -> kandydaci na artykuł w Wikipedii (język, tytuł)
 HILLS = {
@@ -40,6 +40,32 @@ HILLS = {
     "Falun": [("commons", "Lugnet ski jump Falun"), ("commons", "Lugnetbackarna"), ("commons", "Falun hoppbackar")],
     "Oslo": [("en", "Holmenkollbakken")],
     "Planica": [("en", "Letalnica bratov Gorišek")],
+}
+
+# Skocznie spoza tegorocznego kalendarza – do Skokdle (kraj i rozmiar do podpowiedzi).
+EXTRA = {
+    "Klingenthal": ("GER", "duża", [("en", "Vogtland Arena"), ("de", "Vogtland Arena")]),
+    "Bad Mitterndorf": ("AUT", "mamucia", [("en", "Kulm (ski flying hill)"), ("de", "Kulm (Skiflugschanze)")]),
+    "Harrachov": ("CZE", "mamucia", [("en", "Čerťák"), ("cs", "Čerťák")]),
+    "Trondheim": ("NOR", "duża", [("en", "Granåsen"), ("no", "Granåsen")]),
+    "Kuopio": ("FIN", "duża", [("commons", "Puijo ski jumps winter 2013")]),
+    "Predazzo": ("ITA", "duża", [("en", "Trampolino dal Ben"), ("it", "Trampolino dal Ben")]),
+    "Szczyrk": ("POL", "normalna", [("pl", "Skalite (skocznia narciarska)"), ("commons", "Skalite Szczyrk skocznia")]),
+    "Kranj": ("SLO", "normalna", [("en", "Bauhenk"), ("sl", "Bauhenk")]),
+    "Rasnov": ("ROU", "normalna", [("en", "Trambulina Valea Cărbunării"), ("ro", "Trambulina Valea Cărbunării")]),
+    "Nizhny Tagil": ("RUS", "duża", [("en", "Aist (ski jumping hill)"), ("ru", "Аист (трамплин)"), ("commons", "Nizhny Tagil ski jump")]),
+    "Seefeld": ("AUT", "normalna", [("de", "Toni-Seelos-Olympiaschanze"), ("en", "Toni-Seelos-Olympiaschanze")]),
+    "Hinterzarten": ("GER", "normalna", [("de", "Adler-Skistadion"), ("en", "Adler Ski Stadium")]),
+    "Liberec": ("CZE", "duża", [("en", "Ještěd ski jumps"), ("cs", "Skokanské můstky Ještěd")]),
+    "Pyeongchang": ("KOR", "duża", [("en", "Alpensia Ski Jumping Stadium")]),
+    "Whistler": ("CAN", "duża", [("en", "Whistler Olympic Park")]),
+    "Courchevel": ("FRA", "duża", [("en", "Tremplin du Praz"), ("fr", "Tremplin du Praz")]),
+    "Hakuba": ("JPN", "duża", [("en", "Hakuba Ski Jumping Stadium"), ("ja", "白馬ジャンプ競技場")]),
+    "Almaty": ("KAZ", "duża", [("en", "Sunkar International Ski Jumping Complex")]),
+    "Iron Mountain": ("USA", "duża", [("en", "Pine Mountain Ski Jump")]),
+    "Oberhof": ("GER", "duża", [("de", "Kanzlersgrundschanze"), ("en", "Kanzlersgrund")]),
+    "Brotterode": ("GER", "duża", [("de", "Inselbergschanze")]),
+    "Krasnaya Polyana": ("RUS", "duża", [("en", "RusSki Gorki Jumping Center")]),
 }
 
 
@@ -113,7 +139,7 @@ def main():
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
     with open(os.path.join(args.out, "calendar.json"), encoding="utf-8") as f:
-        places = sorted({e["place"] for e in json.load(f)["events"]})
+        places = sorted({e["place"] for e in json.load(f)["events"]} | set(EXTRA))
     index_path = os.path.join(args.out, "hills.json")
     index = {}
     if os.path.exists(index_path) and not args.force:
@@ -124,7 +150,7 @@ def main():
         if place in index and os.path.exists(os.path.join(args.out, index[place]["file"])):
             continue
         found = None
-        for lang, title in HILLS.get(place, []) + [("en", f"{place} ski jump")]:
+        for lang, title in HILLS.get(place, []) + (EXTRA[place][2] if place in EXTRA else []) + [("en", f"{place} ski jump")]:
             try:
                 fname, real_title = (commons_search(title), title) if lang == "commons" else page_image(lang, title)
             except Exception as e:  # noqa: BLE001
@@ -140,13 +166,19 @@ def main():
         if not info:
             print(f"  {place}: brak danych pliku {found[2]}")
             continue
-        data = fetch(info["url"])
+        try:
+            data = fetch(info["url"])
+        except Exception as e:  # noqa: BLE001
+            print(f"  {place}: nie udało się pobrać zdjęcia ({e}) – spróbuję przy następnym uruchomieniu")
+            continue
         ext = os.path.splitext(urllib.parse.urlparse(info["url"]).path)[1].lower() or ".jpg"
         rel = f"hills/{slug(place)}{ext}"
         with open(os.path.join(args.out, rel), "wb") as f:
             f.write(data)
         index[place] = {"file": rel, "hill": found[1], "author": info["author"][:120],
                         "license": info["license"], "source": info["page"]}
+        if place in EXTRA:
+            index[place].update(nation=EXTRA[place][0], type=EXTRA[place][1], extra=True)
         print(f"  {place}: {found[1]} ({found[0]}) – {info['author'][:40]}, {info['license']}")
         with open(index_path, "w", encoding="utf-8") as f:
             json.dump(index, f, ensure_ascii=False, indent=1)

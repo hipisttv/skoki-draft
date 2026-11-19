@@ -884,3 +884,23 @@ body.sk-lock { overflow: hidden; }
 .sk-share-bg { z-index: 120; }
 .sk-share { max-width: 520px; }
 .sk-share img { display: block; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; border: 1px solid var(--line); background: #0a1220; }
+
+/* własna drużyna – wyraźnie wyróżniona */
+.team.mine, .pcard.mine {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), var(--shadow);
+}
+.team.mine .team-head { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%); }
+.mybadge {
+  background: var(--accent); color: #fff; font-size: .7rem; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; padding: .3rem 1.1rem;
+}
+.pcard.mine::after {
+  content: "★ Ty"; position: absolute; top: .55rem; right: .7rem;
+  background: var(--accent); color: #fff; font-size: .66rem; font-weight: 800; padding: .15rem .5rem; border-radius: 999px;
+}
+
+/* zawodnik spoza listy startowej */
+.tag.out { background: var(--bad); color: #fff; border-color: transparent; margin-left: .4rem; font-size: .66rem; }
+.player.isout .ath { opacity: .55; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 70%, transparent); }
+.tag.muted { color: var(--muted); }

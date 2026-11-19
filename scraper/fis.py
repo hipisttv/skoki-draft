@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 import urllib.request
 
 BASE = "https://www.fis-ski.com/DB"
@@ -367,6 +368,19 @@ def program_times(eh, ev_id):
         elif is_qua and re.search(r"(?i)\b(wom[ae]n|ladies|men)\b", txt):
             g = "W" if re.search(r"(?i)\b(wom[ae]n|ladies)\b", txt) else "M"
             untagged.append((day.isoformat(), "QUA", g, hhmm))
+        elif is_qua:
+            untagged.append((day.isoformat(), "QUA", "?", hhmm))
+    # kwalifikacje bez płci w opisie – płeć najbliższego konkursu po nich tego samego dnia
+    comps = sorted((d, hhmm, g) for (_, cat, g), lst in tagged.items() if cat != "QUA" for d, hhmm in lst)
+    resolved = []
+    for d, cat, g, hhmm in untagged:
+        if g == "?":
+            nxt = next((c for c in comps if c[0] == d and c[1] > hhmm), None)
+            if not nxt:
+                continue
+            g = nxt[2]
+        resolved.append((d, cat, g, hhmm))
+    untagged[:] = resolved
     for v in tagged.values():
         v.sort()
     return tagged, untagged
@@ -426,7 +440,48 @@ def program_only_qualis(ev_id, races, tagged, untagged):
     return out
 
 
-def build_calendar(season):
+def name_key(name, nation):
+    """Klucz do dopasowania nazwiska z PDF FIS do zawodnika z bazy (bez ogonków i wielkości liter)."""
+    n = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().upper()
+    return re.sub(r"[^A-Z]+", " ", n).strip() + "|" + nation
+
+
+def event_startlists(eh, races, index):
+    """Listy startowe (trening, kwalifikacje, 1. seria) konkursów indywidualnych zawodów.
+
+    Zwraca {płeć: [id zawodników]} – tylko dla płci, dla których FIS opublikował już jakąś listę.
+    """
+    gender = {r["id"]: r["gender"] for r in races}
+    out, unknown = {}, set()
+    for row in re.split(r'<div class="table-row', eh)[1:]:
+        rid = re.search(r"raceid=(\d+)", row)
+        if not rid or rid.group(1) not in gender:
+            continue
+        g = gender[rid.group(1)]
+        for url, kind in re.findall(r'href="([^"]+)"[^>]*data-ga-download="(Start List[^"]*)"', row):
+            try:
+                import io
+                import pypdf
+                data, _ = fetch_bytes(url)
+                t = "\n".join(pg.extract_text() or "" for pg in pypdf.PdfReader(io.BytesIO(data)).pages)
+            except Exception as e:  # noqa: BLE001
+                print(f"  lista startowa {rid.group(1)} {kind}: {e}", file=sys.stderr)
+                continue
+            ids = out.setdefault(g, set())
+            # wiersz zawodnika: „NAZWISKO Imię NSA”
+            for m in re.finditer(r"^([A-Z][A-Z'\-]+(?: [A-Z][A-Z'\-]+)*) ([A-Z][^\n]*?) ([A-Z]{3})\s*$", t, re.M):
+                given = re.sub(r"\s+YC$", "", m.group(2))  # „YC” = żółta kartka przy nazwisku
+                aid = index.get(name_key(f"{m.group(1)} {given}", m.group(3)))
+                if aid:
+                    ids.add(aid)
+                elif m.group(1) != "BIB NAME" and m.group(3) != "CUP":
+                    unknown.add(f"{m.group(1)} {given} ({m.group(3)})")
+    if unknown:
+        print(f"  listy startowe – spoza bazy: {', '.join(sorted(unknown))}")
+    return {g: sorted(v) for g, v in out.items() if v}
+
+
+def build_calendar(season, athletes=None):
     # cykle (Turniej Czterech Skoczni, Two Nights Tour…) mają kraj "FIS" i zawierają tylko
     # klasyfikacje łączne, które nie są osobnymi konkursami
     events = [e for e in parse_calendar(fetch(calendar_url(season, "WC")), season) if e["nation"] != "FIS"]
@@ -455,6 +510,14 @@ def build_calendar(season):
         ev["start"] = min([ev["start"]] + [r["date"] for r in races])
         ev["end"] = max([ev["end"]] + [r["date"] for r in races])
         ev["cancelled"] = all(r["cancelled"] for r in races)
+        # listy startowe zbliżających się zawodów – kto faktycznie skacze w ten weekend
+        soon = (dt.date.fromisoformat(ev["start"]) - dt.date.today()).days <= 4 and ev["end"] >= dt.date.today().isoformat()
+        if athletes and soon:
+            index = {name_key(a["name"], a["nation"]): a["id"] for a in athletes}
+            sl = event_startlists(eh, races, index)
+            if sl:
+                ev["startlist"] = sl
+                print(f"  {ev['place']}: listy startowe " + ", ".join(f"{g} {len(v)}" for g, v in sl.items()))
         parts = split_by_gap(ev, races) if ev.get("championship") else [{**ev, "races": races}]
         out.extend(parts)
         for p in parts:
@@ -675,7 +738,9 @@ def main():
         save({"season": args.season, "generated": today, "athletes": lst}, athletes_path)
 
     print("Kalendarz...")
-    events = build_calendar(args.season)
+    with open(athletes_path, encoding="utf-8") as f:
+        known = json.load(f)["athletes"]
+    events = build_calendar(args.season, known)
 
     print("Wyniki...")
     for ev in events:

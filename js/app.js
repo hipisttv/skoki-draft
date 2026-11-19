@@ -450,7 +450,9 @@ function nextWeekendHero() {
     const capName = l.captain ? prettyName(athInfo(l.captain).name) : null;
     const used = state.triples?.[m.id];
     const ur = used && weekends.flatMap((x) => x.races).find((r) => r.id === used);
+    const outs = l.starters.filter((id) => notStarting(w, id));
     const todo = [
+      ...outs.map((id) => `<span class="todo warn">${icon('info')}${esc(prettyName(athInfo(id).name).last)} nie startuje — wstaw rezerwowego${l.captain === id ? ' i zmień kapitana' : ''}</span>`),
       capName ? `<span class="todo ok">${icon('check')}Kapitan: ${esc(capName.last)}</span>` : `<span class="todo warn">${icon('info')}Wybierz kapitana</span>`,
       ur ? `<span class="todo ok">${icon('star')}×${TRIPLE}: ${raceLabel(ur)}, ${esc(ur.place)}</span>` : `<span class="todo">${icon('star')}Mnożnik ×${TRIPLE} dostępny</span>`,
     ].join('');
@@ -483,7 +485,7 @@ function ranking() {
 
   if (!ps.length) return html;
   if (!played.length) {
-    return html + `<div class="section"><div class="row"><h2>Gracze</h2></div><div class="podium">${ps.map((p) => `<div class="pcard">${avatar(p, 'lg')}
+    return html + `<div class="section"><div class="row"><h2>Gracze</h2></div><div class="podium">${ps.map((p) => `<div class="pcard ${p.id === me()?.id ? 'mine' : ''}">${avatar(p, 'lg')}
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
       <div class="gap">${(calc.teams[p.id] || []).length}/${TEAM_SIZE} zawodników${(calc.teams[p.id] || []).length ? ` · śr. wiek ${fmt1(avgAge(calc.teams[p.id]))}` : ''}</div></div>
       <div class="bar" style="background:${p.color};width:100%"></div></div>`).join('')}</div></div>
@@ -493,7 +495,7 @@ function ranking() {
   }
   html += `<div class="section"><div class="podium">${ps.map((p, i) => {
     const pos = i > 0 && calc.totals[ps[i - 1].id] === calc.totals[p.id] ? '=' : i + 1;
-    return `<div class="pcard p${i + 1}">
+    return `<div class="pcard p${i + 1} ${p.id === me()?.id ? 'mine' : ''}">
       <div class="pos">${pos}</div>${avatar(p, 'lg')}
       <div class="who"><div class="nm">${esc(tname(p))}${p.id === me()?.id ? ' <span class="tag acc">Ty</span>' : ''}</div><div class="login">${esc(p.name)}</div>
         <div class="pts">${calc.totals[p.id]}<small>pkt</small></div>
@@ -929,9 +931,21 @@ function druzyny() {
       ${locked ? `<span class="tag ${st === 'live' ? 'warn live' : ''}">${icon('lock')}${st === 'live' ? 'Weekend trwa — składy zablokowane' : 'Składy zablokowane'}</span>`
         : `<span class="tag good">${icon('unlock')}Zmiany do ${lockLabel(w)}</span>`}
       ${isAdmin() && locked ? '<span class="tag warn">admin może edytować</span>' : ''}
+      ${weekendStatus(w) !== 'past' ? (hasStartlist(w) ? `<span class="tag">${icon('check')}Listy startowe FIS pobrane — „nie startuje” = brak na liście</span>` : '<span class="tag muted">Listy startowe FIS pojawią się ok. dzień przed zawodami</span>') : ''}
     </div>
     <div class="grid">${order.map((p) => teamCard(p, w, false)).join('')}</div>`;
 }
+
+// Listy startowe FIS weekendu (scraper pobiera je ~dzień przed zawodami).
+// null = lista dla tej płci jeszcze nie wyszła; inaczej Set id zawodników na liście.
+function startlistOf(w, g) {
+  let s = null;
+  for (const e of w?.events || []) for (const id of e.startlist?.[g] || []) (s = s || new Set()).add(id);
+  return s;
+}
+const hasStartlist = (w) => ['M', 'W'].some((g) => startlistOf(w, g));
+const notStarting = (w, id) => { const s = startlistOf(w, byId[id]?.gender); return !!s && !s.has(id); };
+const OUT_TAG = '<span class="tag out" title="Nie ma go na liście startowej FIS na ten weekend">nie startuje</span>';
 
 function teamCard(p, w, drafting) {
   if (!p) return '';
@@ -957,16 +971,19 @@ function teamCard(p, w, drafting) {
       ctrl = `<button class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw tego zawodnika do składu">${icon('swap')}Wstaw</button>`;
     }
     const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
-    return `<div class="player ${starter ? '' : 'res'}">${ath(id, { gender: false, photo: true })}
+    const out = !drafting && notStarting(w, id);
+    return `<div class="player ${starter ? '' : 'res'} ${out ? 'isout' : ''}">${ath(id, { gender: false, photo: true })}${out ? OUT_TAG : ''}
       ${drafting || !calc.playedW[a?.gender] ? '' : `<span class="muted xs avgpp" title="Średnio punktów ligi na weekend w tym sezonie (bez kapitana)">śr. ${fmt1(avgNow(id))}</span>`}
       ${drafting ? '' : `<span class="pp ${v ? '' : 'z'}">${v}</span>`}${ctrl}</div>`;
   };
   const men = l.starters.filter((id) => byId[id]?.gender === 'M');
   const women = l.starters.filter((id) => byId[id]?.gender === 'W');
   const label = hasRes ? 'pkt w weekendzie' : 'pkt w sezonie';
-  return `<div class="card team">
+  const mine = p.id === me()?.id;
+  return `<div class="card team ${mine ? 'mine' : ''}">
+    ${mine ? '<div class="mybadge">★ Twoja drużyna</div>' : ''}
     <div class="team-head" style="--c:${p.color}">${avatar(p)}<div><div class="nm">${esc(tname(p))}</div>
-      <div class="muted xs">${esc(p.name)}${p.id === me()?.id ? ' · Twoja drużyna' : ''}${ids.length ? ` · śr. wiek ${fmt1(avgAge(ids))}` : ''}</div></div><span class="spacer"></span>
+      <div class="muted xs">${esc(p.name)}${ids.length ? ` · śr. wiek ${fmt1(avgAge(ids))}` : ''}</div></div><span class="spacer"></span>
       ${drafting ? '' : `<div class="tot"><div class="v">${hasRes ? calc.byWeekend[w.id]?.[p.id] || 0 : calc.totals[p.id]}</div><div class="l">${hasRes ? 'weekend' : 'sezon'}</div></div>`}</div>
     <div class="team-body">
       ${drafting ? (ids.map((id) => line(id, true)).join('') || '<div class="muted small" style="padding:.6rem 0">Jeszcze nikogo nie wybrano</div>') : `
@@ -1257,23 +1274,59 @@ function skHash(str) {
   return h >>> 0;
 }
 const skNorm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
-// pula: wszyscy punktujący w PŚ zeszłego sezonu (od 14.11.2026 także ci, którzy zakończyli karierę –
-// zmiana od następnego dnia, żeby nie podmienić zagadki komuś w trakcie gry)
+// pula: punktujący w PŚ zeszłego sezonu (od 14.11.2026 także ci, którzy zakończyli karierę),
+// od 20.11.2026 z kobiet tylko top 10 zeszłego sezonu + Polki. Zmiany zawsze od następnego dnia,
+// żeby nie podmienić zagadki komuś w trakcie gry.
 const skPool = () => {
-  const active = athletes.filter((a) => a.wc > 0);
-  if (skDay() < '2026-11-14') return active;
-  return [...active, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
+  const day = skDay();
+  let pool = athletes.filter((a) => a.wc > 0);
+  if (day >= '2026-11-14') pool = [...pool, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
+  if (day >= '2026-11-20') pool = pool.filter((a) => a.gender === 'M' || (a.wcRank && a.wcRank <= 10) || a.nation === 'POL');
+  return pool;
 };
-const skHills = () => Object.keys(hills).sort();
+// skocznie: z kalendarza sezonu, od 20.11.2026 także znane skocznie spoza kalendarza (extra w hills.json)
+const skHills = () => Object.keys(hills).filter((k) => !hills[k].extra || skDay() >= '2026-11-20').sort();
 // SK_SEED: zmiana = reset Skokdle (nowe zagadki i czysty postęp u wszystkich)
 const SK_SEED = 'v2';
 const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skoczek`) % pool.length] : null; };
 const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skocznia`) % pool.length] : null; };
 const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}${a.retired ? ' (emeryt)' : ''}`; };
 const skKey = () => `skokdle-${SK_SEED}-${skDay()}`;
-const skLoad = () => LS.get(skKey(), { a: [], h: [] });
-const skSave = (v) => LS.set(skKey(), v);
+// Postęp dnia: zapisany na koncie gracza w bazie ligi (ga/gh = próby), kopia w przeglądarce.
+// Bierzemy dłuższą listę prób – inna przeglądarka czy wyczyszczone dane nie dają nowych prób.
+function skLoad() {
+  const local = LS.get(skKey(), { a: [], h: [] });
+  const m = me();
+  const srv = m && state.skokdle?.[skDay()]?.[m.id];
+  const pick = (a, b) => ((a || []).length >= (b || []).length ? a || [] : b || []);
+  return { a: [...pick(srv?.ga, local.a)], h: [...pick(srv?.gh, local.h)] };
+}
+function skSave(prog) {
+  LS.set(skKey(), prog);
+  const m = me();
+  if (!m) return;
+  const day = skDay();
+  const tA = skTargetA();
+  const tH = skTargetH();
+  const res = (list, hit, max) => (list.includes(hit) ? list.indexOf(hit) + 1 : list.length >= max ? 'x' : undefined);
+  save((s) => {
+    s.skokdle = s.skokdle || {};
+    // listy prób trzymamy tylko z dzisiaj – do rankingu wystarczy wynik (a/h)
+    for (const [d, byP] of Object.entries(s.skokdle)) if (d !== day && byP[m.id]) { delete byP[m.id].ga; delete byP[m.id].gh; }
+    const d = (s.skokdle[day] = s.skokdle[day] || {});
+    const cur = d[m.id] || {};
+    const next = { ...cur, ga: prog.a, gh: prog.h };
+    const a = res(prog.a, tA?.id, SK_A_MAX);
+    const h = res(prog.h, tH, SK_H_MAX);
+    if (a !== undefined) next.a = a; else delete next.a;
+    if (h !== undefined) next.h = h; else delete next.h;
+    d[m.id] = next;
+    return s;
+  });
+}
 function hillInfo(place) {
+  const h = hills[place];
+  if (h?.extra) return { nation: h.nation || '', type: h.type || '?' };
   const evs = calendar.events.filter((e) => e.place === place);
   const race = evs.flatMap((e) => e.races).find((r) => r.category !== 'QUA') || evs[0]?.races[0];
   return { nation: evs[0]?.nation || '', type: race ? hillShort(race.discipline) : '?' };
@@ -1307,7 +1360,7 @@ function skokdleCard() {
   const doneA = prog.a.includes(tA?.id) || prog.a.length >= SK_A_MAX;
   const doneH = prog.h.includes(tH) || prog.h.length >= SK_H_MAX;
   const solvers = state.skokdle?.[skDay()] || {};
-  const solved = Object.entries(solvers).filter(([pid]) => P(pid));
+  const solved = Object.entries(solvers).filter(([pid, v]) => P(pid) && (v.a || v.h));
   return `<div class="card skok">
     <div class="sk-head"><div><h2>🎯 Skokdle</h2><div class="muted">Codzienna zagadka · ${fmtLong(skDay())} · nowa o północy</div></div>
       <div class="seg">${[['a', 'Skoczek dnia', doneA], ['h', 'Skocznia dnia', doneH], ['r', '🏆 Ranking', false]].map(([k, l, d]) =>
@@ -1341,7 +1394,7 @@ function skRanking() {
     let prev = null;
     for (const d of days) {
       const v = all[d][p.id];
-      if (!v) continue;
+      if (!v || (!v.a && !v.h)) continue;
       r.played++;
       if (typeof v.a === 'number') { r.a++; r.tries.push(v.a); }
       if (typeof v.h === 'number') { r.h++; r.tries.push(v.h); }
@@ -1403,7 +1456,7 @@ function skHill(prog, t, done) {
     wrong >= 3 && `skocznia ${esc(info.type)}`,
     wrong >= 4 && `miejscowość na „${esc(t.charAt(0))}”`,
   ].filter(Boolean);
-  return `<p class="muted small" style="margin:.6rem 0">Która to skocznia z kalendarza tego sezonu? Każda nietrafiona próba wyostrza zdjęcie i odkrywa podpowiedź.</p>
+  return `<p class="muted small" style="margin:.6rem 0">Która to skocznia? Z kalendarza tego sezonu albo inna znana skocznia Pucharu Świata. Każda nietrafiona próba wyostrza zdjęcie i odkrywa podpowiedź.</p>
     <div class="sk-hill">
       <figure><img src="${DATA}/${esc(h.file)}" alt="" style="filter:blur(${blur}px);transform:scale(${blur ? 1.12 : 1})">
         <figcaption>${done ? `${esc(h.hill)} · ` : ''}fot. ${esc(h.author)}, ${esc(h.license)}</figcaption></figure>
@@ -1419,19 +1472,6 @@ function skHill(prog, t, done) {
         ${prog.h.length ? `<div class="sk-hguess">${prog.h.map((x) => `<span class="skc ${x === t ? 'ok' : 'bad'}">${x === t ? '✓' : '✗'} ${esc(x)}</span>`).join('')}</div>` : ''}
       </div>
     </div>`;
-}
-
-// zapis wyniku w lidze (cała historia sezonu – kilkadziesiąt bajtów dziennie, do rankingu Skokdle)
-function skRecord(kind, value) {
-  const m = me();
-  if (!m) return;
-  const day = skDay();
-  save((s) => {
-    s.skokdle = s.skokdle || {};
-    const d = (s.skokdle[day] = s.skokdle[day] || {});
-    d[m.id] = { ...(d[m.id] || {}), [kind]: value };
-    return s;
-  });
 }
 
 // po próbie czyścimy pole, żeby kolejne nazwisko nie doklejało się do poprzedniego
@@ -1453,8 +1493,7 @@ function skGuessA(text, err) {
   prog.a.push(hit.id);
   skSave(prog);
   skClear();
-  if (hit.id === t.id) { skRecord('a', prog.a.length); toast(`Brawo! Skoczek dnia odgadnięty w ${prog.a.length} ${pl(prog.a.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
-  else if (prog.a.length >= SK_A_MAX) skRecord('a', 'x');
+  if (hit.id === t.id) { toast(`Brawo! Skoczek dnia odgadnięty w ${prog.a.length} ${pl(prog.a.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
   render();
 }
 
@@ -1469,8 +1508,7 @@ function skGuessH(text, err) {
   prog.h.push(hit);
   skSave(prog);
   skClear();
-  if (hit === t) { skRecord('h', prog.h.length); toast(`Brawo! Skocznia dnia odgadnięta w ${prog.h.length} ${pl(prog.h.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
-  else if (prog.h.length >= SK_H_MAX) skRecord('h', 'x');
+  if (hit === t) { toast(`Brawo! Skocznia dnia odgadnięta w ${prog.h.length} ${pl(prog.h.length, 'próbie', 'próbach', 'próbach')}`, 'ok'); }
   render();
 }
 

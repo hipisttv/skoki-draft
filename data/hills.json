@@ -152,5 +152,225 @@
   "author": "Suz-b",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Zao_Ski-jump_Schanze_Winter.JPG"
+ },
+ "Almaty": {
+  "file": "hills/almaty.jpg",
+  "hill": "Sunkar International Ski Jumping Complex",
+  "author": "Mattun0211",
+  "license": "CC0",
+  "source": "https://commons.wikimedia.org/wiki/File:AlmatySkiJump.jpg",
+  "nation": "KAZ",
+  "type": "duża",
+  "extra": true
+ },
+ "Bad Mitterndorf": {
+  "file": "hills/bad-mitterndorf.jpg",
+  "hill": "Kulm (Skiflugschanze)",
+  "author": "Taxiarchos228",
+  "license": "FAL",
+  "source": "https://commons.wikimedia.org/wiki/File:Kulm_-_Skiflugschanze2.jpg",
+  "nation": "AUT",
+  "type": "mamucia",
+  "extra": true
+ },
+ "Brotterode": {
+  "file": "hills/brotterode.jpg",
+  "hill": "Inselbergschanze",
+  "author": "Rainer Lippert",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Inselbergschanze,_2008.jpg",
+  "nation": "GER",
+  "type": "duża",
+  "extra": true
+ },
+ "Courchevel": {
+  "file": "hills/courchevel.jpg",
+  "hill": "Tremplin du Praz",
+  "author": "Manuguf",
+  "license": "CC BY-SA 2.5",
+  "source": "https://commons.wikimedia.org/wiki/File:Hill_Pratz_Courchevel_1.JPG",
+  "nation": "FRA",
+  "type": "duża",
+  "extra": true
+ },
+ "Hakuba": {
+  "file": "hills/hakuba.jpg",
+  "hill": "Hakuba Ski Jumping Stadium",
+  "author": "Ans~jawiki at Japanese Wikipedia",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Hakuba-jump-dai.jpg",
+  "nation": "JPN",
+  "type": "duża",
+  "extra": true
+ },
+ "Harrachov": {
+  "file": "hills/harrachov.jpg",
+  "hill": "Čerťák",
+  "author": "The foe at Polish Wikipedia",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Certakbynight.jpg",
+  "nation": "CZE",
+  "type": "mamucia",
+  "extra": true
+ },
+ "Hinterzarten": {
+  "file": "hills/hinterzarten.jpg",
+  "hill": "Adler-Skistadion",
+  "author": "Manuguf",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Hinterzarten_Adler_Skistadion.jpg",
+  "nation": "GER",
+  "type": "normalna",
+  "extra": true
+ },
+ "Iron Mountain": {
+  "file": "hills/iron-mountain.jpg",
+  "hill": "Pine Mountain Jump",
+  "author": "BenjaminSmithChef",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Pine_Mountain_Ski_Jump_2026.jpg",
+  "nation": "USA",
+  "type": "duża",
+  "extra": true
+ },
+ "Klingenthal": {
+  "file": "hills/klingenthal.jpg",
+  "hill": "Vogtland Arena",
+  "author": "gravitat~on from Germany",
+  "license": "CC BY 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Vogtland_Arena.jpg",
+  "nation": "GER",
+  "type": "duża",
+  "extra": true
+ },
+ "Kranj": {
+  "file": "hills/kranj.jpg",
+  "hill": "Bauhenk",
+  "author": "Mihael Grmek",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Kranj_-_skakalnica_Bauhenk.jpg",
+  "nation": "SLO",
+  "type": "normalna",
+  "extra": true
+ },
+ "Krasnaya Polyana": {
+  "file": "hills/krasnaya-polyana.jpg",
+  "hill": "RusSki Gorki Jumping Center",
+  "author": "Акутагава",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:RusSki_Gorki_Jumping_Center_during_2014_Winter_Olympics.JPG",
+  "nation": "RUS",
+  "type": "duża",
+  "extra": true
+ },
+ "Liberec": {
+  "file": "hills/liberec.jpg",
+  "hill": "Skokanský areál Ještěd",
+  "author": "Nelinjo",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Liberec_Jested_A,_B.jpg",
+  "nation": "CZE",
+  "type": "duża",
+  "extra": true
+ },
+ "Nizhny Tagil": {
+  "file": "hills/nizhny-tagil.jpg",
+  "hill": "Tramplin Aist",
+  "author": "Stoch1997",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Nizhny_76.jpg",
+  "nation": "RUS",
+  "type": "duża",
+  "extra": true
+ },
+ "Oberhof": {
+  "file": "hills/oberhof.jpg",
+  "hill": "Kanzlersgrund",
+  "author": "Christoph Radtke",
+  "license": "CC BY 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Schanzenanlage_im_Kanzelsgrund,_Oberhof.JPG",
+  "nation": "GER",
+  "type": "duża",
+  "extra": true
+ },
+ "Predazzo": {
+  "file": "hills/predazzo.jpg",
+  "hill": "Giuseppe Dal Ben Ski Jumping Arena",
+  "author": "Manuguf",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Stadio_del_salto_Giuseppe_dal_Ben_2012-24.JPG",
+  "nation": "ITA",
+  "type": "duża",
+  "extra": true
+ },
+ "Pyeongchang": {
+  "file": "hills/pyeongchang.jpg",
+  "hill": "Alpensia Ski Jumping Stadium",
+  "author": "Republic of  Korea from Seoul, Republic of Korea",
+  "license": "CC BY-SA 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Alpensia_20170202_08_(32537578151).jpg",
+  "nation": "KOR",
+  "type": "duża",
+  "extra": true
+ },
+ "Rasnov": {
+  "file": "hills/rasnov.jpg",
+  "hill": "Râșnov Ski Jump",
+  "author": "Myerge",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Valea_C%C4%83rbun%C4%83rii_Ski_Jumping_Hill.jpg",
+  "nation": "ROU",
+  "type": "normalna",
+  "extra": true
+ },
+ "Seefeld": {
+  "file": "hills/seefeld.jpg",
+  "hill": "Toni-Seelos-Olympiaschanze",
+  "author": "Leo-setä",
+  "license": "CC BY 2.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Ski_jumps_Seefeld.jpg",
+  "nation": "AUT",
+  "type": "normalna",
+  "extra": true
+ },
+ "Szczyrk": {
+  "file": "hills/szczyrk.jpg",
+  "hill": "Skalite",
+  "author": "Int-media-bielsko",
+  "license": "CC BY-SA 4.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Skocznia_narciarska_Skalite_-_Szczyrk.JPG",
+  "nation": "POL",
+  "type": "normalna",
+  "extra": true
+ },
+ "Trondheim": {
+  "file": "hills/trondheim.jpg",
+  "hill": "Granåsen",
+  "author": "Even Thorbergsen (User:Event)",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:Gran%C3%A5sen_Skijump_Arena.JPG",
+  "nation": "NOR",
+  "type": "duża",
+  "extra": true
+ },
+ "Whistler": {
+  "file": "hills/whistler.jpg",
+  "hill": "Whistler Olympic Park",
+  "author": "Earl Andrew at English Wikipedia",
+  "license": "Public domain",
+  "source": "https://commons.wikimedia.org/wiki/File:WOPskijump.jpg",
+  "nation": "CAN",
+  "type": "duża",
+  "extra": true
+ },
+ "Kuopio": {
+  "file": "hills/kuopio.jpeg",
+  "hill": "Puijo",
+  "author": "fi:User:Opa",
+  "license": "CC BY-SA 3.0",
+  "source": "https://commons.wikimedia.org/wiki/File:Puijo_ski_jumps_winter_2013.jpeg",
+  "nation": "FIN",
+  "type": "duża",
+  "extra": true
  }
 }
