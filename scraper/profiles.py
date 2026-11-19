@@ -95,6 +95,69 @@ def parse_medals(h, cat):
     return out
 
 
+WC_POINTS = [100, 80, 60, 50, 45, 40, 36, 32, 29, 26, 24, 22, 20, 18, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+TCS_PLACES = ("Oberstdorf", "Garmisch-Partenkirchen", "Innsbruck", "Bischofshofen")
+
+
+def season_tours(season, out):
+    """Klasyfikacje cykli sezonu policzone z oficjalnych wyników konkursów.
+
+    FIS w biogramach i na stronach cykli nie ma jeszcze sezonu 2025/26 (podstawia poprzedni rok), więc:
+      - Turniej Czterech Skoczni (mężczyźni) / Two Nights Tour (kobiety, Garmisch + Oberstdorf):
+        suma not łącznych z konkursów turnieju,
+      - PŚ w lotach: suma punktów PŚ z konkursów indywidualnych na skoczniach mamucich.
+    Wynik w data/tours-<sezon>.json: {id: {"Four Hills": [miejsce, punkty], ...}}.
+    """
+    path = os.path.join(out, f"tours-{season}.json")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    from fis import calendar_url, parse_calendar, parse_event, parse_results
+    sums = {}  # (cykl, płeć) -> {id: punkty}
+    for ev in parse_calendar(fetch(calendar_url(season, "WC")), season):
+        if ev["nation"] == "FIS":
+            continue
+        eh = fetch(f"{BASE}/general/event-details.html?sectorcode=JP&eventid={ev['id']}&seasoncode={season}")
+        for r in parse_event(eh, season):
+            if r["category"] != "WC" or r["team"] or r["cancelled"]:
+                continue
+            md = r["date"][5:]
+            tcs = ev["place"] in TCS_PLACES and (md >= "12-25" or md <= "01-10")
+            flying = "Flying" in r["discipline"]
+            if not (tcs or flying):
+                continue
+            rows = parse_results(fetch(f"{BASE}/general/results.html?sectorcode=JP&raceid={r['id']}"))
+            for x in rows:
+                if tcs and x["total"]:
+                    key = ("Four Hills" if r["gender"] == "M" else "Two Nights Tour", r["gender"])
+                    sums.setdefault(key, {})[x["id"]] = sums.get(key, {}).get(x["id"], 0) + x["total"]
+                if flying and x["rank"] and x["rank"] <= 30:
+                    key = ("Ski Flying Standing", r["gender"])
+                    sums.setdefault(key, {})[x["id"]] = sums.get(key, {}).get(x["id"], 0) + WC_POINTS[x["rank"] - 1]
+    result = {}
+    for (name, _), pts in sums.items():
+        ranked = sorted(pts.items(), key=lambda kv: -kv[1])
+        rank = 0
+        for i, (aid, p) in enumerate(ranked):
+            if i == 0 or p != ranked[i - 1][1]:
+                rank = i + 1
+            result.setdefault(aid, {})[name] = [rank, round(p, 1) if name != "Ski Flying Standing" else int(p)]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"  cykle {season}: " + ", ".join(f"{n} ({g}) – {len(v)} zawodników" for (n, g), v in sums.items()))
+    return result
+
+
+def add_tours(prof, tours, season):
+    """Uzupełnia cykle sezonu, którego FIS nie ma w biogramie (puste „---”)."""
+    t = tours.get(prof["id"])
+    if not t:
+        return
+    for s in prof["seasons"]:
+        if s["season"] == season and not s.get("tours"):
+            s["tours"] = t
+
+
 def build_profile(cid):
     cups = parse_cups(fetch(bio_url(cid, type="cups")))
     podiums = parse_podiums(fetch(bio_url(cid, type="podiums")))
@@ -124,7 +187,14 @@ def main():
     folder = os.path.join(args.out, "profiles")
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(args.out, "athletes.json"), encoding="utf-8") as f:
-        people = [a for a in json.load(f)["athletes"] if a.get("wc")]
+        adata = json.load(f)
+    people = [a for a in adata["athletes"] if a.get("wc")]
+    prev = adata["season"] - 1
+    try:
+        tours = season_tours(prev, args.out)
+    except Exception as e:  # noqa: BLE001
+        print(f"  cykle {prev}: {e}", file=sys.stderr)
+        tours = {}
     try:
         with open(os.path.join(args.out, "standings.json"), encoding="utf-8") as f:
             people += json.load(f).get("previous", {}).get("retired", [])
@@ -147,6 +217,7 @@ def main():
     for a in todo:
         try:
             prof = build_profile(a["id"])
+            add_tours(prof, tours, prev)
         except Exception as e:  # noqa: BLE001
             print(f"  {a['name']}: {e}", file=sys.stderr)
             continue
@@ -160,6 +231,11 @@ def main():
         if name.endswith(".json") and name != "index.json":
             with open(os.path.join(folder, name), encoding="utf-8") as f:
                 p = json.load(f)
+            before = json.dumps(p, sort_keys=True)
+            add_tours(p, tours, prev)
+            if json.dumps(p, sort_keys=True) != before:
+                with open(os.path.join(folder, name), "w", encoding="utf-8") as f:
+                    json.dump(p, f, ensure_ascii=False, separators=(",", ":"))
             if p.get("career", {}).get("WC", {}).get("starts") or p.get("seasons"):
                 index.append(p["id"])
     with open(os.path.join(folder, "index.json"), "w", encoding="utf-8") as f:
