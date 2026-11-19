@@ -1455,6 +1455,9 @@ function careerStats(pr) {
     globes: ss.filter((x) => x.rank === 1).map((x) => x.season),
     tcs: tourWins('Four Hills'), flying: tourWins('Ski Flying Standing'), rawair: tourWins('RAW AIR Tournament'),
     medals: pr.medals,
+    // medale indywidualne wg bilansu FIS (podia na IO, MŚ i MŚ w lotach) – pełna liczba nawet gdy lista jest niepełna
+    indMedals: ['OWG', 'WSC', 'SFWC'].reduce((t, k) => t + (pr.career[k]?.podiums || 0), 0),
+    teamMedals: pr.medals.filter((m) => m.team).length,
     podRate: wc.starts ? wc.podiums / wc.starts : 0,
     winRate: wc.starts ? wc.wins / wc.starts : 0,
   };
@@ -1511,7 +1514,7 @@ function profileView(id) {
         <div><b>${st.wc.podiums}</b><span>podiów PŚ</span></div>
         <div><b>${st.wc.starts}</b><span>startów w PŚ</span></div>
         <div><b>${st.peak ? `${st.peak.rank}.` : '–'}</b><span>najlepsze miejsce w PŚ</span></div>
-        <div><b>${st.medals.length}</b><span>medali IO / MŚ</span></div></div>`;
+        <div><b>${st.indMedals}${st.teamMedals ? `<small> +${st.teamMedals}</small>` : ''}</b><span>medali IO / MŚ (ind.${st.teamMedals ? ' + druż.' : ''})</span></div></div>`;
     })() : ''}
   </div>`;
   if (!hasProfile(id)) return back + head + `<div class="section card empty">${icon('info')}<b>Brak szczegółowego profilu</b>Profile mają zawodnicy z punktami w PŚ ${seasonLabel(athSeason - 1)}.</div>${nowSeason(a)}`;
@@ -1607,7 +1610,7 @@ function compareBlock(pr, a) {
       return `<tr><td class="${win === 1 ? 'cmp-win' : ''}">${va == null ? '–' : fmt(va)}</td><th>${label}</th><td class="${win === 2 ? 'cmp-win' : ''}">${vo == null ? '–' : fmt(vo)}</td></tr>`;
     };
     const pct = (v) => `${(v * 100).toFixed(1).replace('.', ',')}%`;
-    const medals = (p) => p.medals.filter((m) => !m.team).length;
+    const medals = (p) => careerStats(p).indMedals;
     const serie = (p, x, color) => ({ name: prettyName(x.name).last, color, data: p.seasons.map((s) => ({ x: byAge ? ageIn(x, s.season) : s.season, y: s.points, rank: s.rank })).filter((d) => d.x != null) });
     body = `<div class="cmp-head"><div>${ath(a.id, { photo: true, gender: false })}</div><span class="muted">vs</span><div>${ath(other.id, { photo: true, gender: false })}</div></div>
       <div class="tablewrap"><table class="cmp-tab"><tbody>

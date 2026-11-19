@@ -1059,3 +1059,4 @@ a.race:not(.has-res):not(.has-sl):hover { border-color: var(--line); text-decora
 .tourchip.tc-pod { background: color-mix(in srgb, var(--silver) 22%, transparent); border-color: transparent; }
 .tourchip.tc-top { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 .tourchip.tc-top b { color: var(--accent); }
+.prof-kpis b small { font-size: .55em; color: var(--muted); margin-left: .15rem; }

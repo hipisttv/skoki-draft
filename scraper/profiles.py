@@ -87,9 +87,11 @@ def parse_career(h):
 def parse_medals(h, cat):
     t = text(h)
     out = []
+    # wpis: „DD-MM-RRRR Miejsce Miejsce [Team ]Large Hill HS140|K120 NAT OWG OWG Olympic Winter Games [Team ]Large Hill HS140 POZ //”
+    # pozycja tuż po powtórzonej nazwie skoczni (bywa DSQ/DNS – wtedy pomijamy, nie sięgamy do następnego wpisu)
     for d, place, hill, nation, pos in re.findall(
-            rf"(\d{{2}}-\d{{2}}-\d{{4}}) (.+?) \2 ((?:Mixed Team |Super Team |Team )?(?:Normal|Large|Flying) Hill(?: HS\d+)?) ([A-Z]{{3}}) {cat} {cat} .+? (\d+) //", t):
-        if int(pos) <= 3:
+            rf"(\d{{2}}-\d{{2}}-\d{{4}}) (.+?) \2 ((?:Mixed Team |Super Team |Team )?(?:Normal|Large|Flying) Hill(?: (?:HS|K)\d+)?) ([A-Z]{{3}}) {cat} {cat} [A-Za-z\- ]+? \3 (\S+) //", t):
+        if pos.isdigit() and int(pos) <= 3:
             out.append({"date": d, "place": place, "hill": hill, "nation": nation, "cat": cat, "pos": int(pos),
                         "team": bool(re.match(r"(Mixed |Super )?Team", hill))})
     return out
@@ -148,24 +150,28 @@ def season_tours(season, out):
     return result
 
 
-def add_tours(prof, tours, season):
-    """Uzupełnia cykle sezonu, którego FIS nie ma w biogramie (puste „---”)."""
-    t = tours.get(prof["id"])
-    if not t:
-        return
+# sezony, w których FIS nie ma klasyfikacji cykli w biogramach (np. TCS 2023/24 – brak u wszystkich)
+GAP_SEASONS = {2024: ("Four Hills", "Two Nights Tour")}  # sezon -> cykle do uzupełnienia
+
+
+def add_tours(prof, tours_by_season):
+    """Uzupełnia brakujące cykle (te, których FIS nie podaje – w biogramie „---”) policzonymi z wyników."""
     for s in prof["seasons"]:
-        if s["season"] == season and not s.get("tours"):
-            s["tours"] = t
+        t = tours_by_season.get(s["season"], {}).get(prof["id"])
+        for name, val in (t or {}).items():
+            s.setdefault("tours", {}).setdefault(name, val)
 
 
 def build_profile(cid):
     cups = parse_cups(fetch(bio_url(cid, type="cups")))
-    podiums = parse_podiums(fetch(bio_url(cid, type="podiums")))
+    # categorycode=WC – bez niego FIS pokazuje podia z innego pucharu (np. COC), gdy w PŚ nie ma żadnego
+    podiums = parse_podiums(fetch(bio_url(cid, type="podiums", categorycode="WC")))
     career, debut = parse_career(fetch(bio_url(cid, type="career")))
     medals = []
     for cat in ("OWG", "WSC", "SFWC"):
         if career.get(cat, {}).get("starts"):
-            medals += parse_medals(fetch(bio_url(cid, type="result", categorycode=cat, seasoncode="", position=3)), cat)
+            # bez filtra miejsca – w FIS „position=3” pomija trzecie miejsca; 1–3 wybieramy sami
+            medals += parse_medals(fetch(bio_url(cid, type="result", categorycode=cat, seasoncode="")), cat)
     seasons = []
     for s in sorted(set(cups) | set(podiums)):
         c = cups.get(s, {})
@@ -190,11 +196,14 @@ def main():
         adata = json.load(f)
     people = [a for a in adata["athletes"] if a.get("wc")]
     prev = adata["season"] - 1
-    try:
-        tours = season_tours(prev, args.out)
-    except Exception as e:  # noqa: BLE001
-        print(f"  cykle {prev}: {e}", file=sys.stderr)
-        tours = {}
+    tours = {}
+    for season in sorted(set(GAP_SEASONS) | {prev}):
+        try:
+            t = season_tours(season, args.out)
+            only = GAP_SEASONS.get(season) if season != prev else None
+            tours[season] = {aid: {k: v for k, v in c.items() if not only or k in only} for aid, c in t.items()}
+        except Exception as e:  # noqa: BLE001
+            print(f"  cykle {season}: {e}", file=sys.stderr)
     try:
         with open(os.path.join(args.out, "standings.json"), encoding="utf-8") as f:
             people += json.load(f).get("previous", {}).get("retired", [])
@@ -217,7 +226,7 @@ def main():
     for a in todo:
         try:
             prof = build_profile(a["id"])
-            add_tours(prof, tours, prev)
+            add_tours(prof, tours)
         except Exception as e:  # noqa: BLE001
             print(f"  {a['name']}: {e}", file=sys.stderr)
             continue
@@ -232,7 +241,7 @@ def main():
             with open(os.path.join(folder, name), encoding="utf-8") as f:
                 p = json.load(f)
             before = json.dumps(p, sort_keys=True)
-            add_tours(p, tours, prev)
+            add_tours(p, tours)
             if json.dumps(p, sort_keys=True) != before:
                 with open(os.path.join(folder, name), "w", encoding="utf-8") as f:
                     json.dump(p, f, ensure_ascii=False, separators=(",", ":"))
