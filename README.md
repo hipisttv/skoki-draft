@@ -127,6 +127,13 @@ zawodników”) – najlepiej tylko przed draftem.
 `data/hills/` – zdjęcia skoczni z Wikimedia Commons (wolne licencje, np. CC BY-SA); autor i licencja są w
 `data/hills.json` i wyświetlają się pod każdym zdjęciem. Brakujące pobiera `python scraper/hills.py`.
 
+## Profile zawodników
+
+`data/profiles/<id>.json` – kariera z bazy FIS dla zawodników z punktami PŚ zeszłego sezonu: miejsca i punkty
+w każdym sezonie, podia, bilans w PŚ / na igrzyskach / MŚ, medale, debiuty. `python scraper/profiles.py`
+odświeża profile starsze niż tydzień (bot: najwyżej 15 na uruchomienie), `--all` – wszystkie naraz.
+Profil otwiera się po kliknięciu w nazwisko lub zdjęcie zawodnika.
+
 ## Lokalnie
 
 ```bash

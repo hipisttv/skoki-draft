@@ -88,7 +88,7 @@ function ath(id, { fallback, short = false, gender = true, photo = false } = {})
   const a = athInfo(id, fallback);
   const n = prettyName(a.name);
   const g = gender && a.gender ? `<span class="g ${a.gender === 'W' ? 'w' : ''}">${a.gender === 'W' ? 'K' : 'M'}</span>` : '';
-  return `<span class="ath">${photo ? portrait(a) : g}${flag(a.nation)}<span class="nm">${short ? '' : esc(n.first) + ' '}<b>${esc(n.last)}</b></span></span>`;
+  return `<span class="ath${hasProfile(a.id) ? ' athlink' : ''}" ${hasProfile(a.id) ? `data-ath="${a.id}" title="Profil zawodnika"` : ''}>${photo ? portrait(a) : g}${flag(a.nation)}<span class="nm">${short ? '' : esc(n.first) + ' '}<b>${esc(n.last)}</b></span></span>`;
 }
 // Portret z FIS albo inicjały, gdy FIS nie ma zdjęcia.
 function portrait(a, cls = '') {
@@ -153,6 +153,7 @@ async function loadData() {
   };
   const [a, c, s, h, hd] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null),
     get('hills.json').catch(() => ({})), get('hilldata.json').catch(() => ({}))]);
+  profIndex = new Set(await get('profiles/index.json').catch(() => []));
   hills = h || {};
   hilldata = hd || {};
   athletes = a.athletes;
@@ -334,9 +335,9 @@ function render(scrollTop = false) {
   }
 
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, analityka, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej };
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, analityka, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej, zawodnik: profileView };
   const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
-  const active = view === 'race' ? 'kalendarz' : views[view] ? view : 'ranking';
+  const active = view === 'race' ? 'kalendarz' : view === 'zawodnik' ? 'zawodnicy' : views[view] ? view : 'ranking';
   const y = window.scrollY;
   const focusId = document.activeElement?.id;
   const sel = focusId && document.activeElement.selectionStart;
@@ -1416,6 +1417,223 @@ function zawodnicy() {
     </table></div></div>`;
 }
 
+// ================================================================ profil zawodnika
+
+// Profile z FIS (scraper/profiles.py): data/profiles/<id>.json, indeks: kto ma profil.
+let profIndex = new Set();
+const profiles = {};
+const hasProfile = (id) => profIndex.has(String(id));
+async function loadProfile(id) {
+  if (profiles[id] !== undefined) return;
+  profiles[id] = null;
+  try {
+    const r = await fetch(`${DATA}/profiles/${id}.json?v=${calendar.updated}`);
+    profiles[id] = r.ok ? await r.json() : false;
+  } catch { profiles[id] = false; }
+  render();
+}
+
+const CAT_NAME = { OWG: 'Igrzyska olimpijskie', WSC: 'Mistrzostwa świata', SFWC: 'MŚ w lotach' };
+const TOUR_NAME = {
+  'Four Hills': 'Turniej Czterech Skoczni', 'Ski Flying Standing': 'PŚ w lotach', 'RAW AIR Tournament': 'Raw Air',
+  'Nordic Tournament': 'Turniej Nordycki', 'Planica7': 'Planica 7', 'Willingen Six': 'Willingen Six', 'Two Nights Tour': 'Two Nights Tour',
+};
+const MEDAL = ['', '🥇', '🥈', '🥉'];
+const hillPl = (h) => `${/Team/.test(h) ? 'drużynowo, ' : ''}skocznia ${/Flying/.test(h) ? 'mamucia' : /Normal/.test(h) ? 'normalna' : 'duża'}`;
+const ageIn = (a, season) => (a?.born ? season - 1 - a.born : null);
+
+// Liczby kariery zebrane z profilu
+function careerStats(pr) {
+  const ss = pr.seasons.filter((x) => x.points);
+  const wc = pr.career.WC || { starts: 0, podiums: 0, wins: 0 };
+  const best = ss.reduce((b, x) => (!b || x.points > b.points ? x : b), null);
+  const peak = ss.reduce((b, x) => (x.rank && (!b || x.rank < b.rank) ? x : b), null);
+  const tourWins = (name) => pr.seasons.filter((x) => x.tours?.[name]?.[0] === 1).map((x) => x.season);
+  return {
+    wc, best, peak, seasons: ss.length,
+    globes: ss.filter((x) => x.rank === 1).map((x) => x.season),
+    tcs: tourWins('Four Hills'), flying: tourWins('Ski Flying Standing'), rawair: tourWins('RAW AIR Tournament'),
+    medals: pr.medals,
+    podRate: wc.starts ? wc.podiums / wc.starts : 0,
+    winRate: wc.starts ? wc.wins / wc.starts : 0,
+  };
+}
+
+// Słupki punktów PŚ w sezonach (1 zawodnik) albo dwa kolory obok siebie (porównanie)
+function profChart(series, byAge) {
+  const keys = [...new Set(series.flatMap((s) => s.data.map((d) => d.x)))].sort((a, b) => a - b);
+  if (!keys.length) return '<div class="muted small">Brak punktów w PŚ.</div>';
+  const W = 760; const H = 230; const L = 40; const B = 34; const T = 18;
+  const max = Math.max(100, ...series.flatMap((s) => s.data.map((d) => d.y || 0)));
+  const step = [100, 200, 250, 500, 1000].find((v) => max / v <= 5) || 1000;
+  const top = Math.ceil(max / step) * step;
+  const slot = (W - L - 8) / keys.length;
+  const bw = Math.min(34, (slot - 6) / series.length);
+  const y = (v) => T + (1 - v / top) * (H - T - B);
+  const ticks = []; for (let v = 0; v <= top; v += step) ticks.push(v);
+  const every = Math.ceil(keys.length / 14);
+  return `<svg class="chart profchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Punkty PŚ w kolejnych sezonach">
+    <g class="grid">${ticks.map((v) => `<line x1="${L}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join('')}</g>
+    ${keys.map((k, i) => {
+      const x0 = L + i * slot + (slot - bw * series.length) / 2;
+      return series.map((s, j) => {
+        const d = s.data.find((v) => v.x === k);
+        if (!d || !d.y) return '';
+        const x = x0 + j * bw;
+        return `<rect x="${x}" y="${y(d.y)}" width="${bw - 2}" height="${y(0) - y(d.y)}" rx="3" fill="${s.color}"><title>${esc(s.name)} · ${byAge ? `${k} lat` : seasonLabel(k)}: ${d.y} pkt${d.rank ? `, ${d.rank}. miejsce` : ''}</title></rect>
+          ${series.length === 1 && d.rank ? `<text x="${x + bw / 2 - 1}" y="${y(d.y) - 4}" text-anchor="middle" class="rk">${d.rank}.</text>` : ''}`;
+      }).join('') + (i % every === 0 ? `<text x="${L + i * slot + slot / 2}" y="${H - 12}" text-anchor="middle">${byAge ? k : `${String(k - 1).slice(2)}/${String(k).slice(2)}`}</text>` : '');
+    }).join('')}
+    <text x="${L}" y="${H - 1}" style="font-size:10px">${byAge ? 'wiek →' : 'sezon →'}</text>
+  </svg>`;
+}
+
+function profileView(id) {
+  const a = byId[id];
+  if (!a) return `<a class="back" href="#zawodnicy">${icon('back')}Zawodnicy</a><div class="card empty">${icon('info')}<b>Nie ma takiego zawodnika</b></div>`;
+  if (hasProfile(id) && profiles[id] === undefined) loadProfile(id);
+  const pr = profiles[id];
+  const n = prettyName(a.name);
+  const own = ownerOf(id);
+  const age = a.born ? Number(today().slice(0, 4)) - a.born : null;
+  const back = `<button type="button" class="back backbtn" data-action="goBack">${icon('back')}Wróć</button>`;
+  const head = `<div class="card prof-head">
+    <div class="prof-photo">${portrait(a, 'xl')}</div>
+    <div class="prof-id"><div class="prof-name">${esc(n.first)} <b>${esc(n.last)}</b></div>
+      <div class="prof-sub">${flag(a.nation)} ${esc(countryName(a.nation))} · ${age != null ? `${age} ${pl(age, 'rok', 'lata', 'lat')} (ur. ${a.born})` : 'wiek nieznany'} · ${a.gender === 'W' ? 'kobieta' : 'mężczyzna'}
+        ${a.retired ? ' · <span class="tag">zakończył(a) karierę</span>' : ''}</div>
+      <div class="prof-sub">${own ? `W lidze: ${owner(own)}` : a.retired ? '' : '<span class="muted">W lidze: wolny zawodnik</span>'}</div></div>
+    ${pr ? (() => {
+      const st = careerStats(pr);
+      return `<div class="prof-kpis">
+        <div><b>${st.wc.wins}</b><span>zwycięstw PŚ</span></div>
+        <div><b>${st.wc.podiums}</b><span>podiów PŚ</span></div>
+        <div><b>${st.wc.starts}</b><span>startów w PŚ</span></div>
+        <div><b>${st.peak ? `${st.peak.rank}.` : '–'}</b><span>najlepsze miejsce w PŚ</span></div>
+        <div><b>${st.medals.length}</b><span>medali IO / MŚ</span></div></div>`;
+    })() : ''}
+  </div>`;
+  if (!hasProfile(id)) return back + head + `<div class="section card empty">${icon('info')}<b>Brak szczegółowego profilu</b>Profile mają zawodnicy z punktami w PŚ ${seasonLabel(athSeason - 1)}.</div>${nowSeason(a)}`;
+  if (!pr) return back + head + `<div class="section card empty">${pr === false ? `${icon('info')}<b>Nie udało się wczytać profilu</b>` : `${icon('clock')}<b>Wczytuję karierę…</b>`}</div>`;
+  return back + head + successes(pr, a) + nowSeason(a) + seasonsBlock(pr, a) + analysis(pr, a) + compareBlock(pr, a);
+}
+
+function successes(pr) {
+  const st = careerStats(pr);
+  const items = [];
+  for (const m of pr.medals.filter((x) => !x.team)) items.push([`${MEDAL[m.pos]} ${CAT_NAME[m.cat]} ${m.date.slice(6)}`, `${esc(m.place)} · ${hillPl(m.hill)}`, m.pos]);
+  if (st.globes.length) items.push([`🏆 Kryształowa Kula × ${st.globes.length}`, st.globes.map(seasonLabel).join(', '), 0]);
+  if (st.tcs.length) items.push([`🦅 Turniej Czterech Skoczni × ${st.tcs.length}`, st.tcs.map(seasonLabel).join(', '), 0]);
+  if (st.flying.length) items.push([`✈️ Mała Kryształowa Kula w lotach × ${st.flying.length}`, st.flying.map(seasonLabel).join(', '), 0]);
+  if (st.rawair.length) items.push([`❄️ Raw Air × ${st.rawair.length}`, st.rawair.map(seasonLabel).join(', '), 0]);
+  for (const m of pr.medals.filter((x) => x.team)) items.push([`${MEDAL[m.pos]} ${CAT_NAME[m.cat]} ${m.date.slice(6)}`, `${esc(m.place)} · ${hillPl(m.hill)}`, m.pos]);
+  const firstWin = pr.seasons.find((x) => x.podiums?.[0]);
+  const c = pr.career;
+  return `<div class="section"><div class="row"><h2>Największe sukcesy</h2></div>
+    ${items.length ? `<div class="succ">${items.map(([t, d]) => `<div class="succ-i"><b>${t}</b><span>${d}</span></div>`).join('')}</div>`
+      : `<div class="card muted small">Na razie bez medali i trofeów. ${c.WC?.podiums ? `${c.WC.podiums} ${pl(c.WC.podiums, 'podium', 'podia', 'podiów')} w PŚ.` : ''}</div>`}
+    <div class="grid-4 prof-career">${['WC', 'OWG', 'WSC', 'SFWC'].filter((k) => c[k]?.starts).map((k) => `<div class="card">
+      <div class="muted xs">${k === 'WC' ? 'Puchar Świata' : CAT_NAME[k]}</div>
+      <div class="pc-row"><span>starty</span><b>${c[k].starts}</b></div><div class="pc-row"><span>podia</span><b>${c[k].podiums}</b></div><div class="pc-row"><span>zwycięstwa</span><b>${c[k].wins}</b></div></div>`).join('')}</div>
+    ${pr.debut?.WC ? `<p class="muted small" style="margin-top:.6rem">Debiut w PŚ: ${esc(pr.debut.WC.date)}, ${esc(pr.debut.WC.place)} (${pr.debut.WC.rank}. miejsce)${firstWin ? ` · pierwsze zwycięstwo w sezonie ${seasonLabel(firstWin.season)}` : ''}.</p>` : ''}
+  </div>`;
+}
+
+// Bieżący sezon z naszych danych (wyniki FIS w aplikacji + punkty ligi)
+function nowSeason(a) {
+  const races = weekends.flatMap((w) => w.races).filter((r) => r.category === 'WC' && r.gender === a.gender && results[r.id]);
+  if (!races.length) return '';
+  const res = races.map((r) => ({ r, x: results[r.id].results.find((y) => y.id === a.id) })).filter((v) => v.x);
+  const st = wcStandings(weekends, results, a.gender).rows.find((x) => x.id === a.id);
+  const best = res.reduce((b, v) => (v.x.rank && (!b || v.x.rank < b.x.rank) ? v : b), null);
+  return `<div class="section"><div class="row"><h2>Sezon ${seasonLabel(calendar.season)}</h2><span class="muted small">${races.length} ${pl(races.length, 'konkurs', 'konkursy', 'konkursów')} rozegranych</span></div>
+    <div class="grid-4">
+      <div class="card kpi"><div class="v">${st ? `${st.rank}.` : '–'}</div><div class="l">miejsce w PŚ</div></div>
+      <div class="card kpi"><div class="v">${st?.points || 0}</div><div class="l">punktów PŚ</div></div>
+      <div class="card kpi"><div class="v">${best ? `${best.x.rank}.` : '–'}</div><div class="l">najlepszy wynik${best ? ` (${esc(best.r.place)})` : ''}</div></div>
+      <div class="card kpi"><div class="v">${calc.raw[a.id] || 0}</div><div class="l">pkt ligi · śr. ${fmt1(avgNow(a.id))}/weekend</div></div>
+    </div></div>`;
+}
+
+function seasonsBlock(pr, a) {
+  const rows = pr.seasons.filter((x) => x.points || x.rank).slice().reverse();
+  if (!rows.length) return '';
+  return `<div class="section card"><div class="row"><h3>Punkty PŚ w kolejnych sezonach</h3><span class="spacer"></span><span class="muted xs">nad słupkiem: miejsce w klasyfikacji</span></div>
+    ${profChart([{ name: prettyName(a.name).last, color: 'var(--accent)', data: pr.seasons.map((x) => ({ x: x.season, y: x.points, rank: x.rank })) }], false)}
+    <div class="tablewrap" style="margin-top:.6rem"><table>
+      <thead><tr><th>Sezon</th><th class="num">Wiek</th><th class="num">Miejsce</th><th class="num">Punkty</th><th class="num">🥇</th><th class="num">Podia</th><th class="hide-sm">Cykle</th></tr></thead>
+      <tbody>${rows.map((x) => `<tr><td><b>${seasonLabel(x.season)}</b></td><td class="num muted">${ageIn(a, x.season) ?? '–'}</td>
+        <td class="num">${x.rank ? (x.rank <= 3 ? `<span class="medal m${x.rank}">${x.rank}</span>` : `${x.rank}.`) : '–'}</td><td class="pts">${x.points || '–'}</td>
+        <td class="num">${x.podiums?.[0] || ''}</td><td class="num">${x.podiums ? x.podiums[0] + x.podiums[1] + x.podiums[2] || '' : ''}</td>
+        <td class="hide-sm muted xs">${Object.entries(x.tours || {}).filter(([, v]) => v[0]).map(([k, v]) => `${esc(TOUR_NAME[k] || k)}: <b>${v[0]}.</b>`).join(' · ')}</td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+function analysis(pr, a) {
+  const st = careerStats(pr);
+  const ss = pr.seasons.filter((x) => x.points);
+  if (!ss.length) return '';
+  const last = ss[ss.length - 1];
+  const prev = ss[ss.length - 2];
+  const last3 = ss.slice(-3);
+  const avg3 = last3.reduce((t, x) => t + x.points, 0) / last3.length;
+  const trend = prev ? Math.round(((last.points - prev.points) / Math.max(1, prev.points)) * 100) : null;
+  const peakAge = st.best ? ageIn(a, st.best.season) : null;
+  const lines = [
+    st.best && `Najlepszy sezon: <b>${seasonLabel(st.best.season)}</b> — ${st.best.points} pkt, ${st.best.rank}. miejsce${peakAge != null ? ` (w wieku ${peakAge} lat)` : ''}.`,
+    trend != null && `Ostatni sezon (${seasonLabel(last.season)}) względem poprzedniego: <b class="${trend >= 0 ? 'up' : 'down'}">${trend >= 0 ? '+' : ''}${trend}%</b> punktów (${prev.points} → ${last.points}).`,
+    `Średnio z ostatnich ${last3.length} ${pl(last3.length, 'sezonu', 'sezonów', 'sezonów')}: <b>${Math.round(avg3)} pkt</b> na sezon.`,
+    st.wc.starts ? `Skuteczność w PŚ: podium w <b>${(st.podRate * 100).toFixed(1).replace('.', ',')}%</b> startów, zwycięstwo w <b>${(st.winRate * 100).toFixed(1).replace('.', ',')}%</b>.` : '',
+    `W PŚ punktował(a) w <b>${st.seasons}</b> ${pl(st.seasons, 'sezonie', 'sezonach', 'sezonach')}${st.peak ? `, najwyżej na <b>${st.peak.rank}. miejscu</b> (${seasonLabel(st.peak.season)})` : ''}.`,
+  ].filter(Boolean);
+  return `<div class="section card"><h3>Analiza</h3><ul class="prof-an">${lines.map((l) => `<li>${l}</li>`).join('')}</ul></div>`;
+}
+
+function compareBlock(pr, a) {
+  const otherId = ui.cmp?.[a.id];
+  const other = otherId && byId[otherId];
+  if (other && hasProfile(otherId) && profiles[otherId] === undefined) loadProfile(otherId);
+  const op = other && profiles[otherId];
+  const byAge = ui.cmpAge;
+  const opts = [...profIndex].filter((x) => x !== a.id && byId[x]).map((x) => byId[x])
+    .sort((p, q) => (p.gender === a.gender ? 0 : 1) - (q.gender === a.gender ? 0 : 1) || (q.wc || 0) - (p.wc || 0));
+  let body = '<p class="muted small">Wybierz zawodnika, żeby porównać kariery i sezony.</p>';
+  if (other && op) {
+    const A = careerStats(pr); const O = careerStats(op);
+    const nA = prettyName(a.name).last; const nO = prettyName(other.name).last;
+    const row = (label, va, vo, better = 'high', fmt = (v) => v) => {
+      const win = better === 'none' || va == null || vo == null || va === vo ? 0 : (better === 'high' ? va > vo : va < vo) ? 1 : 2;
+      return `<tr><td class="${win === 1 ? 'cmp-win' : ''}">${va == null ? '–' : fmt(va)}</td><th>${label}</th><td class="${win === 2 ? 'cmp-win' : ''}">${vo == null ? '–' : fmt(vo)}</td></tr>`;
+    };
+    const pct = (v) => `${(v * 100).toFixed(1).replace('.', ',')}%`;
+    const medals = (p) => p.medals.filter((m) => !m.team).length;
+    const serie = (p, x, color) => ({ name: prettyName(x.name).last, color, data: p.seasons.map((s) => ({ x: byAge ? ageIn(x, s.season) : s.season, y: s.points, rank: s.rank })).filter((d) => d.x != null) });
+    body = `<div class="cmp-head"><div>${ath(a.id, { photo: true, gender: false })}</div><span class="muted">vs</span><div>${ath(other.id, { photo: true, gender: false })}</div></div>
+      <div class="tablewrap"><table class="cmp-tab"><tbody>
+        ${row('Wiek', a.born ? Number(today().slice(0, 4)) - a.born : null, other.born ? Number(today().slice(0, 4)) - other.born : null, 'none')}
+        ${row('Zwycięstwa PŚ', A.wc.wins, O.wc.wins)}
+        ${row('Podia PŚ', A.wc.podiums, O.wc.podiums)}
+        ${row('Starty w PŚ', A.wc.starts, O.wc.starts)}
+        ${row('% podiów', A.podRate, O.podRate, 'high', pct)}
+        ${row('% zwycięstw', A.winRate, O.winRate, 'high', pct)}
+        ${row('Najlepsze miejsce w PŚ', A.peak?.rank ?? null, O.peak?.rank ?? null, 'low', (v) => `${v}.`)}
+        ${row('Najlepszy sezon (pkt)', A.best?.points ?? null, O.best?.points ?? null)}
+        ${row('Kryształowe Kule', A.globes.length, O.globes.length)}
+        ${row('Turnieje Czterech Skoczni', A.tcs.length, O.tcs.length)}
+        ${row('Medale IO / MŚ (ind.)', medals(pr), medals(op))}
+        ${row(`PŚ ${seasonLabel(athSeason - 1)} (pkt)`, a.wc || 0, other.wc || 0)}
+      </tbody></table></div>
+      <div class="row" style="margin:.8rem 0 .3rem"><div class="legend"><span><i style="background:var(--accent)"></i>${esc(nA)}</span><span><i style="background:#f59e0b"></i>${esc(nO)}</span></div><span class="spacer"></span>
+        <div class="seg sm"><button data-action="cmpAge" data-v="0" class="${byAge ? '' : 'on'}">wg sezonu</button><button data-action="cmpAge" data-v="1" class="${byAge ? 'on' : ''}">wg wieku</button></div></div>
+      ${profChart([serie(pr, a, 'var(--accent)'), serie(op, other, '#f59e0b')], byAge)}`;
+  } else if (other) body = `<div class="muted small">${icon('clock')} Wczytuję ${esc(prettyName(other.name).last)}…</div>`;
+  return `<div class="section card"><div class="row"><h3>Porównaj z innym zawodnikiem</h3><span class="spacer"></span>
+      <form data-form="cmp" class="cmp-form" autocomplete="off"><input type="hidden" name="id" value="${a.id}">
+        <input id="cmp-q" name="q" list="cmp-list" placeholder="Wpisz nazwisko…" required><datalist id="cmp-list">${opts.map((x) => `<option value="${esc(skLabel(x))}"></option>`).join('')}</datalist>
+        <button class="primary sm" type="submit">Porównaj</button><div class="formerr"></div></form></div>
+    ${body}</div>`;
+}
+
 // ================================================================ zasady
 
 // ================================================================ skokdle (codzienna zagadka)
@@ -2159,6 +2377,14 @@ function newParticipant(s, username, passHash, team = '') {
 }
 
 const forms = {
+  async cmp(f, err) {
+    const q = skNorm(f.q);
+    const list = [...profIndex].map((x) => byId[x]).filter(Boolean);
+    const hit = list.find((x) => skNorm(skLabel(x)) === q) || (list.filter((x) => skNorm(skLabel(x)).includes(q)).length === 1 && list.find((x) => skNorm(skLabel(x)).includes(q)));
+    if (!hit) return err('Wybierz zawodnika z listy podpowiedzi');
+    ui.cmp = { ...(ui.cmp || {}), [f.id]: hit.id };
+    render();
+  },
   async skokA(f, err) { skGuessA(f.g, err); },
   async skokH(f, err) { skGuessH(f.g, err); },
   async create(f, err) {
@@ -2267,6 +2493,8 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  goBack: (el) => { if (history.length > 1) history.back(); else location.hash = '#zawodnicy'; },
+  cmpAge: (el) => { ui.cmpAge = el.dataset.v === '1'; render(); },
   skToggle: () => { ui.skOpen = !ui.skOpen; ui.skAnim = ui.skOpen; render(); },
   skTab: (el) => { ui.skTab = el.dataset.v; render(); },
   skShare: (el) => skShareDialog(el.dataset.v),
@@ -2591,6 +2819,9 @@ root.addEventListener('click', (e) => {
   }
   // klik w przyciemnione tło zamyka okno Skokdle
   if (e.target.classList?.contains('skpanel')) { ui.skOpen = false; render(); return; }
+  // nazwisko / zdjęcie zawodnika -> profil (nie w grze, żeby nie przerywać zgadywania)
+  const athEl = e.target.closest('[data-ath]');
+  if (athEl && !e.target.closest('.skwin, button, input, select')) { e.preventDefault(); location.hash = `#zawodnik/${athEl.dataset.ath}`; return; }
   const el = e.target.closest('[data-action]');
   if ((ui.menu || ui.navMore) && !e.target.closest('.menu') && !['menu', 'navMore'].includes(el?.dataset.action)) { ui.menu = false; ui.navMore = false; render(); }
   if (!el || el.tagName === 'SELECT' || el.type === 'checkbox') return;
