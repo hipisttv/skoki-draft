@@ -1003,9 +1003,12 @@ a.race:not(.has-res):not(.has-sl):hover { border-color: var(--line); text-decora
 .succ-i b { font-size: .92rem; }
 .succ-i span { font-size: .78rem; color: var(--text-2); }
 .prof-career { margin-top: .7rem; }
-.prof-career .card { padding: .8rem 1rem; }
-.pc-row { display: flex; justify-content: space-between; font-size: .85rem; padding: .15rem 0; }
-.pc-row b { font-variant-numeric: tabular-nums; }
+.prof-career .card { padding: .8rem 1rem; background: var(--card); color: var(--text); }
+.prof-career .card > .muted { color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: .68rem; margin-bottom: .3rem; }
+.pc-row { display: flex; justify-content: space-between; align-items: baseline; padding: .32rem 0; color: var(--text-2); opacity: 1; }
+.pc-row + .pc-row { border-top: 1px solid var(--line); }
+.pc-row span { font-size: .85rem; font-weight: 600; color: var(--text-2); }
+.pc-row b { font: 800 1.25rem/1 var(--font-d); color: var(--text); font-variant-numeric: tabular-nums; }
 .profchart .rk { font-size: 10px; fill: var(--text-2); font-weight: 700; }
 .prof-an { margin: .4rem 0 0; padding-left: 1.1rem; display: grid; gap: .35rem; font-size: .92rem; }
 .prof-an .up { color: var(--good); }
