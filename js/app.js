@@ -164,6 +164,42 @@ async function loadData() {
   for (const r of races) if (bundle[r.id]) results[r.id] = bundle[r.id];
 }
 
+// Ostatnie sprawdzenie FIS przez bota (GitHub Actions) – bot publikuje stronę tylko przy zmianach,
+// więc czas sprawdzenia bierzemy z publicznego API GitHuba (limit 60 zapytań/h – pytamy co 3 min).
+let lastCheck = null;
+async function fetchLastCheck() {
+  try {
+    const r = await fetch('https://api.github.com/repos/hipisttv/skoki-draft/actions/workflows/fis.yml/runs?per_page=5&status=success');
+    if (!r.ok) return;
+    const run = (await r.json()).workflow_runs?.find((x) => x.event !== 'push');
+    if (run) lastCheck = new Date(run.updated_at);
+  } catch { /* bez sieci / limit – zostaje poprzednia wartość */ }
+  updateSyncBar();
+}
+const agoLabel = (d) => {
+  const min = Math.round((Date.now() - d) / 60000);
+  if (min < 1) return 'przed chwilą';
+  if (min < 60) return `${min} min temu`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} godz. temu`;
+  return d.toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
+const clock = (d) => d.toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+function syncBar() {
+  if (!calendar) return '';
+  const changed = new Date(calendar.updated);
+  const stale = lastCheck && Date.now() - lastCheck > 90 * 60000;
+  return `<div class="syncbar ${stale ? 'stale' : ''}" id="syncbar" title="Bot sprawdza FIS co ok. 15 minut. Strona sama dociąga nowe dane co 3 minuty.">
+    <span class="sync-dot"></span>
+    <span>Dane FIS sprawdzone: <b>${lastCheck ? `${agoLabel(lastCheck)}` : '…'}</b>${lastCheck ? ` <span class="muted">(${clock(lastCheck)})</span>` : ''}</span>
+    <span class="sync-sep">·</span><span>ostatnia zmiana danych: <b>${clock(changed)}</b></span></div>`;
+}
+// aktualizacja samego paska (bez przerysowania całej strony)
+function updateSyncBar() {
+  const el = document.getElementById('syncbar');
+  if (el) el.outerHTML = syncBar();
+}
+
 // Bot publikuje calendar.json tylko przy nowych danych – zmiana „updated” = trzeba dociągnąć resztę.
 let refreshing = false;
 async function refreshData() {
@@ -211,8 +247,10 @@ async function init() {
   }
   window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; beat(); render(true); });
   // nowe dane z FIS (wyniki, listy startowe, godziny) – sprawdzamy co 3 min i po powrocie do karty
-  setInterval(refreshData, 3 * 60 * 1000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshData(); });
+  setInterval(() => { refreshData(); fetchLastCheck(); }, 3 * 60 * 1000);
+  setInterval(updateSyncBar, 60 * 1000);
+  fetchLastCheck();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshData(); fetchLastCheck(); } });
   // sygnał obecności co 15 s; poczekalnię i draft odświeżamy, gdy ktoś wejdzie lub wyjdzie
   store.onPresence((p) => {
     const before = lobbyKey();
@@ -361,6 +399,7 @@ function shell(active, content) {
   </div>
   ${ui.menu ? userMenu() : ''}
   </header>
+  ${syncBar()}
   ${store?.mode === 'local' ? '<div class="banner">Tryb testowy — dane ligi zapisują się tylko w tej przeglądarce. Podłącz Firebase, żeby grać razem (README).</div>' : ''}
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
