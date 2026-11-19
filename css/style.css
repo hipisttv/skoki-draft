@@ -821,7 +821,7 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .squadbtn .chev svg { width: 15px; height: 15px; }
 .squadbtn.on { color: var(--accent); }
 .squadbtn.on .chev { transform: rotate(90deg); }
-.ranksquad { margin-top: 1rem; animation: skIn .18s ease-out; }
+.ranksquad { margin-top: 1rem; }
 .ranksquad > .row { margin-bottom: .6rem; align-items: flex-start; }
 
 /* skokdle – okno na prawie cały ekran, gra skaluje się do jego rozmiaru */
@@ -830,13 +830,11 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
   background: rgba(4, 10, 20, .72); backdrop-filter: blur(3px);
   display: grid; place-items: center;
   padding: clamp(8px, 3vh, 36px) clamp(8px, 3vw, 48px) calc(clamp(8px, 3vh, 36px) + env(safe-area-inset-bottom));
-  animation: skFade .15s ease-out;
 }
 .skwin {
   width: min(1200px, 100%); height: 100%;
   display: flex; flex-direction: column; overflow: hidden;
   border-radius: 18px; box-shadow: 0 24px 64px rgba(0, 0, 0, .55);
-  animation: skIn .2s ease-out;
   /* wszystko w oknie w jednostkach em – rośnie razem z ekranem */
   font-size: clamp(13px, .55vw + 9px, 19px);
 }
@@ -862,6 +860,8 @@ a.race.has-res:hover .go { background: var(--accent); color: var(--accent-ink); 
 .skwin .sk-name { font-size: 1.6em; }
 .skwin table:not(.sk-table) { font-size: .95em; }
 @keyframes skFade { from { opacity: 0; } to { opacity: 1; } }
+.skpanel.opening { animation: skFade .15s ease-out; }
+.skpanel.opening .skwin { animation: skIn .2s ease-out; }
 body.sk-lock { overflow: hidden; }
 @media (max-width: 700px) {
   .skpanel { padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
@@ -894,10 +894,6 @@ body.sk-lock { overflow: hidden; }
 .mybadge {
   background: var(--accent); color: #fff; font-size: .7rem; font-weight: 800; letter-spacing: .08em;
   text-transform: uppercase; padding: .3rem 1.1rem;
-}
-.pcard.mine::after {
-  content: "★ Ty"; position: absolute; top: .55rem; right: .7rem;
-  background: var(--accent); color: #fff; font-size: .66rem; font-weight: 800; padding: .15rem .5rem; border-radius: 999px;
 }
 
 /* zawodnik spoza listy startowej */
@@ -949,7 +945,38 @@ a.race.has-sl:hover { border-color: var(--good); color: var(--text); text-decora
 .race .go.sl { color: var(--good); background: var(--good-soft); }
 a.race.has-sl:hover .go.sl { background: var(--good); color: #fff; }
 
-/* kalendarz: dane skoczni */
-.hillinfo { display: flex; align-items: flex-start; gap: .4rem; font-size: .78rem; color: var(--text-2); margin: -.15rem 0 .55rem; line-height: 1.4; }
-.hillinfo svg { width: 14px; height: 14px; flex: none; margin-top: .15rem; color: var(--accent); }
-.hillinfo b { color: var(--text); }
+/* dane skoczni – tabelka na zdjęciu (kalendarz i strona konkursu) */
+.hilltab {
+  border-collapse: separate; border-spacing: 0; font-size: .72rem; color: #fff; line-height: 1.25;
+  background: rgba(6, 14, 28, .72); backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 10px; overflow: hidden; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); width: auto; min-width: 0;
+}
+.hilltab th, .hilltab td { padding: .28rem .6rem; text-align: left; white-space: nowrap; border: 0; background: none; color: inherit; }
+.hilltab thead th { font-size: .62rem; text-transform: uppercase; letter-spacing: .06em; opacity: .75; font-weight: 700; padding-top: .4rem; }
+.hilltab tbody th { font-weight: 600; opacity: .8; text-transform: none; letter-spacing: 0; font-size: .7rem; }
+.hilltab tbody tr + tr th, .hilltab tbody tr + tr td { border-top: 1px solid rgba(255, 255, 255, .1); }
+.hilltab td b { font-weight: 800; font-size: .8rem; }
+.hilltab td small { display: block; font-size: .62rem; opacity: .8; }
+.hilltab .na { opacity: .5; }
+.hillpic.has-tab { height: 190px; }
+.hillpic .hilltab { position: absolute; top: .6rem; right: .6rem; }
+.hillpic.nophoto { background: linear-gradient(135deg, #1b3a6b, #0b1830); }
+.hillpic.nophoto > svg { position: absolute; inset: auto 0 0 0; width: 100%; opacity: .5; }
+.hero-hill { position: absolute; top: 1rem; right: 1rem; z-index: 2; }
+.hero-hill .hilltab { font-size: .8rem; }
+.hero-hill .hilltab td b { font-size: .9rem; }
+@media (max-width: 700px) {
+  .hillpic.has-tab { height: auto; display: flex; flex-direction: column; }
+  .hillpic.has-tab img { height: 130px; }
+  .hillpic .hilltab, .hero-hill { position: static; margin: 0; border-radius: 0; width: 100%; }
+  .hero-hill { margin: .9rem -1.4rem -1.3rem; width: auto; }
+  .hero-hill .hilltab { width: 100%; border-radius: 0; border-left: 0; border-right: 0; }
+  .hillpic.has-tab figcaption { position: absolute; top: 0; bottom: auto; height: 130px; display: flex; align-items: flex-end; }
+}
+
+/* kalendarz: konkurs bez listy i wyników – też do otwarcia */
+.race .go.wait { color: var(--text-2); background: var(--card-2); border: 1px solid var(--line); }
+a.race:not(.has-res):not(.has-sl):hover { border-color: var(--line); text-decoration: none; color: var(--text); }
+.empty-row { text-align: center; padding: 1.6rem 1rem !important; color: var(--muted); font-weight: 600; }
+.empty-row svg { width: 16px; height: 16px; vertical-align: -3px; margin-right: .35rem; }
+@media (min-width: 701px) { .race-hero:has(.hero-hill) { padding-right: 290px; min-height: 170px; } }
