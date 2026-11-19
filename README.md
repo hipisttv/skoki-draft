@@ -41,6 +41,17 @@ punktacji w Ustawieniach wszystko przelicza się od razu, także wstecz.
 3. **Actions → „Wyniki FIS + strona” → Run workflow** – pierwsze uruchomienie pobierze dane i opublikuje stronę.
 4. Strona będzie pod adresem `https://<twoj-login>.github.io/<nazwa-repo>/`.
 
+#### Częste odświeżanie wyników (cron-job.org)
+GitHub często pomija zaplanowane uruchomienia, więc bota co 15 min wywołuje darmowy [cron-job.org](https://cron-job.org):
+1. GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**:
+   dostęp tylko do tego repozytorium, uprawnienie **Actions: Read and write**, ważność np. 1 rok.
+2. cron-job.org → **Create cronjob**: co 15 minut,
+   URL `https://api.github.com/repos/<twoj-login>/<nazwa-repo>/actions/workflows/fis.yml/dispatches`,
+   w zakładce **Advanced**: metoda **POST**, nagłówki `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`,
+   treść `{"ref":"main"}`. Poprawna odpowiedź GitHuba to **204**.
+
+Bot zapisuje i publikuje stronę tylko wtedy, gdy w FIS są nowe dane; otwarta strona sama sprawdza je co 3 minuty.
+
 ### 3. Liga
 1. **Konto administratora:** pierwsza osoba, która wejdzie na stronę, zakłada ligę – nazwa, **login i hasło admina**,
    **liczba graczy** oraz **kod zaproszenia**. Konto admina służy tylko do zarządzania ligą (nie gra).

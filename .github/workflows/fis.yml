@@ -2,7 +2,8 @@ name: Wyniki FIS + strona
 
 on:
   schedule:
-    # co 2 godziny (czas UTC); w weekendy częściej, co 30 min w godzinach konkursów
+    # zapas – GitHub często pomija zaplanowane uruchomienia; główny wyzwalacz to cron-job.org
+    # (co 15 min wywołuje workflow_dispatch przez API GitHuba, instrukcja w README)
     - cron: "15 */2 * * 1-4"
     - cron: "*/30 8-22 * * 5,6,0"
   workflow_dispatch:
@@ -50,16 +51,27 @@ jobs:
           python scraper/hills.py || echo "zdjęcia skoczni pominięte"
 
       - name: Zapisz zmiany w repozytorium
+        id: save
         if: github.event_name != 'push'
         run: |
           git config user.name "fis-bot"
           git config user.email "fis-bot@users.noreply.github.com"
-          git add data
-          git diff --cached --quiet || git commit -m "Wyniki FIS $(date -u +%Y-%m-%dT%H:%MZ)" && git push
+          git add -A data
+          # sama zmiana znacznika „updated” to nie nowe dane – bez commita i bez wdrożenia strony
+          if git diff --cached --quiet -I '"updated":'; then
+            echo "Brak nowych danych"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Wyniki FIS $(date -u +%Y-%m-%dT%H:%MZ)" && git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: actions/configure-pages@v5
+        if: github.event_name == 'push' || steps.save.outputs.changed == 'true'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'push' || steps.save.outputs.changed == 'true'
         with:
           path: .
       - uses: actions/deploy-pages@v4
+        if: github.event_name == 'push' || steps.save.outputs.changed == 'true'
         id: deploy

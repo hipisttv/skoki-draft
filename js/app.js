@@ -164,6 +164,22 @@ async function loadData() {
   for (const r of races) if (bundle[r.id]) results[r.id] = bundle[r.id];
 }
 
+// Bot publikuje calendar.json tylko przy nowych danych – zmiana „updated” = trzeba dociągnąć resztę.
+let refreshing = false;
+async function refreshData() {
+  if (document.hidden || refreshing || !calendar) return;
+  refreshing = true;
+  try {
+    const r = await fetch(`${DATA}/calendar.json?v=${Date.now()}`);
+    if (r.ok && (await r.json()).updated !== calendar.updated) {
+      await loadData();
+      render();
+      toast('Nowe dane z FIS', 'ok');
+    }
+  } catch { /* brak sieci – spróbujemy przy następnym razie */ }
+  refreshing = false;
+}
+
 async function init() {
   try {
     await loadData();
@@ -194,6 +210,9 @@ async function init() {
     render();
   }
   window.addEventListener('hashchange', () => { ui.menu = false; ui.navMore = false; ui.editRecord = false; beat(); render(true); });
+  // nowe dane z FIS (wyniki, listy startowe, godziny) – sprawdzamy co 3 min i po powrocie do karty
+  setInterval(refreshData, 3 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshData(); });
   // sygnał obecności co 15 s; poczekalnię i draft odświeżamy, gdy ktoś wejdzie lub wyjdzie
   store.onPresence((p) => {
     const before = lobbyKey();
