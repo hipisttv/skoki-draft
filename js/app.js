@@ -927,6 +927,7 @@ function druzyny() {
   return head + `
     <div class="weeks" id="weeks">${weekends.map((x) => `<button data-action="weekend" data-v="${x.id}" class="${x.id === w.id ? 'on' : ''} ${x.champ ? 'champ' : ''}">
       <span class="d">${x.no}. · ${range(x.start, x.end)}${x.champ ? ' · MŚ' : ''}${weekendStatus(x) === 'live' ? ' · trwa' : ''}</span><span class="n">${esc(x.name)}</span></button>`).join('')}</div>
+    ${weekBanner(w)}
     <div class="row" style="margin:.5rem 0 1rem">
       ${locked ? `<span class="tag ${st === 'live' ? 'warn live' : ''}">${icon('lock')}${st === 'live' ? 'Weekend trwa — składy zablokowane' : 'Składy zablokowane'}</span>`
         : `<span class="tag good">${icon('unlock')}Zmiany do ${lockLabel(w)}</span>`}
@@ -934,6 +935,22 @@ function druzyny() {
       ${weekendStatus(w) !== 'past' ? (hasStartlist(w) ? `<span class="tag">${icon('check')}Listy startowe FIS pobrane — „nie startuje” = brak na liście</span>` : '<span class="tag muted">Listy startowe FIS pojawią się ok. dzień przed zawodami</span>') : ''}
     </div>
     <div class="grid">${order.map((p) => teamCard(p, w, false)).join('')}</div>`;
+}
+
+// Duży nagłówek wybranego weekendu w Drużynach, ze strzałkami do poprzedniego / następnego.
+function weekBanner(w) {
+  const i = weekends.indexOf(w);
+  const st = weekendStatus(w);
+  const n = w.races.filter((r) => r.category !== 'QUA').length;
+  const label = { live: 'Trwa teraz', next: i === weekends.indexOf(currentWeekend()) ? 'Najbliższy weekend' : 'Nadchodzący', past: 'Zakończony' }[st] || '';
+  const nav = (j, dir) => (weekends[j] ? `<button class="wb-nav" data-action="weekend" data-v="${weekends[j].id}" title="${esc(weekends[j].name)}" aria-label="${dir === 'l' ? 'Poprzedni' : 'Następny'} weekend">${dir === 'l' ? '‹' : '›'}</button>` : '<span class="wb-nav off"></span>');
+  return `<div class="weekbanner ${w.champ ? 'champ' : ''} ${st}">
+    ${nav(i - 1, 'l')}
+    <div class="wb-body"><div class="wb-eyebrow">Weekend ${w.no} z ${weekends.length}${label ? ` · ${label}` : ''}${w.champ ? ' · Mistrzostwa Świata' : ''}</div>
+      <div class="wb-name">${esc(w.name)}</div>
+      <div class="wb-sub">${range(w.start, w.end)} · ${n} ${pl(n, 'konkurs', 'konkursy', 'konkursów')}</div></div>
+    ${nav(i + 1, 'r')}
+  </div>`;
 }
 
 // Listy startowe FIS weekendu (scraper pobiera je ~dzień przed zawodami).
@@ -1275,19 +1292,19 @@ function skHash(str) {
 }
 const skNorm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 // pula: punktujący w PŚ zeszłego sezonu (od 14.11.2026 także ci, którzy zakończyli karierę),
-// od 20.11.2026 z kobiet tylko top 10 zeszłego sezonu + Polki. Zmiany zawsze od następnego dnia,
+// od 19.11.2026 z kobiet tylko top 10 zeszłego sezonu + Polki. Zmiany zawsze od następnego dnia,
 // żeby nie podmienić zagadki komuś w trakcie gry.
 const skPool = () => {
   const day = skDay();
   let pool = athletes.filter((a) => a.wc > 0);
   if (day >= '2026-11-14') pool = [...pool, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
-  if (day >= '2026-11-20') pool = pool.filter((a) => a.gender === 'M' || (a.wcRank && a.wcRank <= 10) || a.nation === 'POL');
+  if (day >= '2026-11-19') pool = pool.filter((a) => a.gender === 'M' || (a.wcRank && a.wcRank <= 10) || a.nation === 'POL');
   return pool;
 };
-// skocznie: z kalendarza sezonu, od 20.11.2026 także znane skocznie spoza kalendarza (extra w hills.json)
-const skHills = () => Object.keys(hills).filter((k) => !hills[k].extra || skDay() >= '2026-11-20').sort();
+// skocznie: z kalendarza sezonu, od 19.11.2026 także znane skocznie spoza kalendarza (extra w hills.json)
+const skHills = () => Object.keys(hills).filter((k) => !hills[k].extra || skDay() >= '2026-11-19').sort();
 // SK_SEED: zmiana = reset Skokdle (nowe zagadki i czysty postęp u wszystkich)
-const SK_SEED = 'v2';
+const SK_SEED = 'v3';
 const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skoczek`) % pool.length] : null; };
 const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skocznia`) % pool.length] : null; };
 const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}${a.retired ? ' (emeryt)' : ''}`; };

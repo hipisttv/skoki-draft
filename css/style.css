@@ -904,3 +904,29 @@ body.sk-lock { overflow: hidden; }
 .tag.out { background: var(--bad); color: #fff; border-color: transparent; margin-left: .4rem; font-size: .66rem; }
 .player.isout .ath { opacity: .55; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 70%, transparent); }
 .tag.muted { color: var(--muted); }
+
+/* Drużyny – wyraźnie wybrany weekend */
+.weeks button.on {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); transform: translateY(-1px);
+}
+.weeks button.on .d, .weeks button.on .n { color: #fff; }
+.weeks button.champ.on { background: var(--champ-2); border-color: var(--champ-2); }
+.weekbanner {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .8rem;
+  margin: .6rem 0 .2rem; padding: 1rem 1.1rem; border-radius: var(--radius);
+  background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #0b1830));
+  color: #fff; box-shadow: var(--shadow);
+}
+.weekbanner.champ { background: linear-gradient(120deg, var(--champ-2), color-mix(in srgb, var(--champ-2) 50%, #2a1a00)); }
+.weekbanner.past { background: linear-gradient(120deg, #475569, #1e293b); }
+.wb-body { text-align: center; min-width: 0; }
+.wb-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.wb-name { font: 800 clamp(1.6rem, 4vw, 2.4rem)/1.05 var(--font-d); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: .15rem 0; }
+.wb-sub { font-size: .9rem; font-weight: 600; opacity: .9; }
+.wb-nav {
+  width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35);
+  background: rgba(255, 255, 255, .14); color: #fff; font-size: 1.6rem; line-height: 1; display: grid; place-items: center; padding: 0; cursor: pointer;
+}
+.wb-nav:hover { background: rgba(255, 255, 255, .28); }
+.wb-nav.off { visibility: hidden; }
