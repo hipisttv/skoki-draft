@@ -23,6 +23,7 @@ let byId = {};
 let calendar = null;
 let standings = null;    // data/standings.json (końcowa klasyfikacja zeszłego sezonu)
 let hills = {};         // data/hills.json – zdjęcia skoczni z Wikimedia Commons
+let hilldata = {};      // data/hilldata.json – HS, punkt K i rekordy PŚ skoczni (z PDF FIS)
 let weekends = [];
 let results = {};        // raceId -> wyniki
 let calc = null;
@@ -108,6 +109,10 @@ const raceLabel = (r) => `${r.category === 'QUA' ? 'Kwalifikacje' : 'Konkurs'} $
 const CHAMP = 'Mistrzostwa Świata';
 const champTag = (cls = '') => `<span class="tag champ ${cls}">${icon('star')}${CHAMP}</span>`;
 const hillShort = (d) => (/Flying/.test(d) ? 'mamucia' : /Normal/.test(d) ? 'normalna' : 'duża');
+// dane skoczni konkursu: { hs, k, records: { M, W } }
+const hillOf = (r) => hilldata[`${r.place}|${/Flying/.test(r.discipline) ? 'F' : /Normal/.test(r.discipline) ? 'N' : 'L'}`];
+// „PREVC D.” -> „Prevc D.”
+const recName = (rec) => rec.name.replace(/^([A-Z'\- ]+?) ([A-Z][a-z]?\.)$/, (_, last, ini) => `${last.charAt(0)}${last.slice(1).toLowerCase()} ${ini}`);
 
 const raceStarted = (r) => new Date() >= raceStart(r);
 // godzina startu w czasie przeglądarki (FIS podaje czas lokalny skoczni)
@@ -146,8 +151,10 @@ async function loadData() {
     if (!r.ok) throw new Error(`${p}: ${r.status}`);
     return r.json();
   };
-  const [a, c, s, h] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null), get('hills.json').catch(() => ({}))]);
+  const [a, c, s, h, hd] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null),
+    get('hills.json').catch(() => ({})), get('hilldata.json').catch(() => ({}))]);
   hills = h || {};
+  hilldata = hd || {};
   athletes = a.athletes;
   athSeason = a.season;
   byId = Object.fromEntries(athletes.map((x, i) => [x.id, { ...x, idx: i + 1 }]));
@@ -1137,18 +1144,21 @@ function kalendarz() {
         <div class="races">${w.races.map((r) => {
           const res = results[r.id];
           const win = res?.results.find((x) => x.rank === 1);
-          const tag = res ? 'a' : 'div';
+          const sl = !res && !r.cancelled && r.startlist;
+          const tag = res || sl ? 'a' : 'div';
           const live = !res && !r.cancelled && r.date === today();
-          return `<${tag} class="race ${res ? 'has-res' : ''} ${r.cancelled ? 'off' : ''} ${r.category === 'QUA' ? 'qua' : ''}" ${res ? `href="#race/${r.id}" title="Zobacz wyniki i punkty"` : ''}>
+          const hd = hillOf(r);
+          return `<${tag} class="race ${res ? 'has-res' : ''} ${sl ? 'has-sl' : ''} ${r.cancelled ? 'off' : ''} ${r.category === 'QUA' ? 'qua' : ''}" ${res ? `href="#race/${r.id}" title="Zobacz wyniki i punkty"` : sl ? `href="#race/${r.id}" title="Zobacz listę startową"` : ''}>
             <span class="when" ${r.time ? '' : 'title="FIS nie opublikował jeszcze programu zawodów – dzień i godzina mogą się zmienić"'}>${fmtDow(r.date)}<b>${r.time ? localTime(r) : '<span class="tbd">wstępnie</span>'}</b></span>
             <span class="what"><span class="g ${r.gender === 'W' ? 'w' : ''}">${r.gender === 'W' ? 'K' : 'M'}</span>
-              <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
+              <span class="l">${raceLabel(r)}</span><span class="h">${r.champ ? `<b class="champ-ink">MŚ</b> · ` : ''}${esc(r.place)} · skocznia ${hillShort(r.discipline)}${hd ? ` HS ${hd.hs}` : ''}${r.cancelled ? ' · odwołany' : ''}${r.champ && !countsForLeague(r, state.settings) ? ' · nie liczy się do ligi' : ''}</span>
               ${win ? `<span class="win">· ${flag(win.nation)}${esc(prettyName(win.name).last)}</span>` : ''}</span>
             <span class="chips">${res && ps.length ? ps.map((p) => {
               const v = calc.byRace[r.id]?.[p.id]?.total || 0;
               return v ? `<span class="chip">${avatar(p, 'sm')}<b>+${v}</b></span>` : '';
             }).join('') : ''}</span>
             ${res ? `<span class="go">${(state.raceComments?.[r.id] || []).length ? `<span class="cmt-count">💬 ${state.raceComments[r.id].length}</span>` : ''}Wyniki${icon('chevron')}</span>`
+              : sl ? `<span class="go sl">Lista startowa${icon('chevron')}</span>`
               : `<span class="soon">${r.cancelled ? 'odwołany' : live ? 'dziś' : st === 'past' ? 'brak wyników' : 'wyniki po konkursie'}</span>`}
           </${tag}>`;
         }).join('')}</div>
@@ -1156,10 +1166,56 @@ function kalendarz() {
   }).join('')}`;
 }
 
+// Dane skoczni do nagłówka konkursu: HS, punkt K i rekord PŚ tej płci.
+function hillMeta(race) {
+  const hd = hillOf(race);
+  if (!hd) return '';
+  const rec = hd.records?.[race.gender];
+  return `<span>${icon('ruler')}HS ${hd.hs} m · punkt K ${hd.k} m</span>
+    ${rec ? `<span>${icon('star')}rekord PŚ ${race.gender === 'W' ? 'kobiet' : 'mężczyzn'}: <b>${rec.dist.toFixed(1).replace('.', ',')} m</b> — ${rec.nation ? flag(rec.nation) : ''}${esc(recName(rec))} (${esc(rec.date.slice(-4))})</span>` : ''}`;
+}
+
+// Przed konkursem: lista startowa FIS (kolejność startu) z pustymi polami odległości i punktów.
+function startlistView(w, race) {
+  const sl = race.startlist;
+  const m = me();
+  const lineups = Object.fromEntries(state.participants.map((p) => [p.id, lineupFor(state, weekends, w.id, p.id, calc.teams[p.id] || [], byId)]));
+  const ownerInfo = (aid) => {
+    const pid = aid && ownerOf(aid);
+    if (!pid) return '';
+    const l = lineups[pid];
+    return owner(pid, `${l.captain === aid ? ' <span class="cap">C</span>' : ''}${l.starters.includes(aid) ? '' : ' <span class="muted xs">(rez.)</span>'}`);
+  };
+  const training = sl.kind === 'Start List Training';
+  const photo = hills[race.place];
+  return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a>
+    <div class="hero race-hero ${race.champ ? 'champ' : ''} ${photo ? 'has-photo' : ''}" ${photo ? `style="--photo:url('${new URL(`${DATA}/${photo.file}`, location.href).href}')"` : ''}>${photo ? '' : MOUNTAINS}
+      <div class="eyebrow">Weekend ${w.no} · ${race.champ ? `${CHAMP} ${calendar.season}${race.category === 'QUA' ? ' · kwalifikacje' : ''}` : race.category === 'QUA' ? 'kwalifikacje' : 'Puchar Świata'} · lista startowa</div>
+      <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
+      <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${localTime(race)} (czasu polskiego)` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
+        ${hillMeta(race)}
+        <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${race.id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">FIS ↗</a></span></div>
+      ${photo ? `<div class="photo-credit">${esc(photo.hill)} · ${photoCredit(photo)}</div>` : ''}
+    </div>
+    <div class="section"><div class="row"><h2>Lista startowa</h2><span class="muted small">${sl.list.length} ${pl(sl.list.length, 'zawodnik', 'zawodników', 'zawodników')}</span><span class="spacer"></span>
+      <span class="tag">${training ? 'zgłoszeni (lista z treningu)' : 'oficjalna lista FIS'}</span></div>
+    ${training ? `<div class="hint" style="margin-bottom:.8rem">${icon('info')}<span>FIS nie opublikował jeszcze listy startowej tych kwalifikacji — poniżej zawodnicy zgłoszeni na trening. Kolejność może się zmienić.</span></div>` : ''}
+    <div class="card pad0"><div class="tablewrap"><table>
+      <thead><tr><th class="num">Nr</th><th>Zawodnik</th><th class="num">${race.category === 'QUA' ? 'Odl.' : 'Skoki'}</th><th class="num hide-sm">Nota</th><th class="num">Pkt ligi</th><th>Drużyna</th></tr></thead>
+      <tbody>${sl.list.map((x, i) => {
+        const mine = m && x.id && ownerOf(x.id) === m.id;
+        return `<tr class="${mine ? 'mine' : ''}"><td class="rank muted">${i + 1}</td>
+          <td>${ath(x.id, { fallback: { ...x, gender: race.gender }, gender: false, photo: true })}</td>
+          <td class="num muted">–</td><td class="num hide-sm muted">–</td><td class="num muted">–</td><td>${ownerInfo(x.id)}</td></tr>`;
+      }).join('')}</tbody></table></div></div>
+    <p class="muted xs" style="margin-top:.6rem">Nr = kolejność startu. Odległości i punkty pojawią się po konkursie.${m ? ' Podświetlone wiersze to Twoi zawodnicy.' : ''}</p></div>`;
+}
+
 function raceView(id) {
   const w = weekends.find((x) => x.races.some((r) => r.id === id));
   const race = w?.races.find((r) => r.id === id);
   const res = results[id];
+  if (race && !res && race.startlist) return startlistView(w, race);
   if (!race || !res) return `<a class="back" href="#kalendarz">${icon('back')}Kalendarz</a><div class="card empty">${icon('calendar')}<b>Brak wyników</b>Ten konkurs jeszcze się nie odbył.</div>`;
   const records = recordIds(state, id, res);
   const pts = racePoints(race, res, state.settings, records);
@@ -1183,6 +1239,7 @@ function raceView(id) {
       <div class="big">${raceLabel(race)} — ${esc(race.place)}</div>
       <div class="meta"><span>${icon('calendar')}${fmtLong(race.date)}${race.time ? `, ${localTime(race)} (czasu polskiego)` : ''}</span><span>${flag(race.nation)}skocznia ${hillShort(race.discipline)}</span>
         ${lj ? `<span>${icon('ruler')}najdłuższy skok: <b>${lj} m</b></span>` : ''}
+        ${hillOf(race) ? `<span>${icon('ruler')}HS ${hillOf(race).hs} m · punkt K ${hillOf(race).k} m</span>` : ''}
         ${hr ? `<span>${icon('star')}rekord skoczni: <b>${hr.distance} m</b>${records.length ? ' — <b>POBITY!</b>' : ''}</span>` : ''}
         <span><a href="https://www.fis-ski.com/DB/general/results.html?sectorcode=JP&raceid=${id}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">wyniki FIS ↗</a></span></div>
       ${hills[race.place] ? `<div class="photo-credit">${esc(hills[race.place].hill)} · ${photoCredit(hills[race.place])}</div>` : ''}

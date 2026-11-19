@@ -1,0 +1,378 @@
+{
+ "Lillehammer|L": {
+  "hs": 140,
+  "k": 123,
+  "records": {
+   "W": {
+    "dist": 141.5,
+    "date": "11 MAR 2019",
+    "name": "LUNDBY M.",
+    "nation": "NOR"
+   },
+   "M": {
+    "dist": 146.0,
+    "date": "6 DEC 2009",
+    "name": "AMMAN S.",
+    "nation": "SUI"
+   }
+  }
+ },
+ "Ruka|L": {
+  "hs": 142,
+  "k": 120,
+  "records": {
+   "M": {
+    "dist": 150.5,
+    "date": "27 NOV 2022",
+    "name": "GRANERUD H.",
+    "nation": "NOR"
+   }
+  }
+ },
+ "Hinzenbach|N": {
+  "hs": 90,
+  "k": 85,
+  "records": {
+   "W": {
+    "dist": 98.0,
+    "date": "7 FEB 2016",
+    "name": "TAKANASHI S.",
+    "nation": "JPN"
+   }
+  }
+ },
+ "Wisla|L": {
+  "hs": 134,
+  "k": 120,
+  "records": {
+   "W": {
+    "dist": 131.0,
+    "date": "6 NOV 2022",
+    "name": "SCHMID K.",
+    "nation": "GER"
+   },
+   "M": {
+    "dist": 144.5,
+    "date": "13 JAN 2024",
+    "name": "WELLINGER A.",
+    "nation": "GER"
+   }
+  }
+ },
+ "Titisee-Neustadt|L": {
+  "hs": 142,
+  "k": 125,
+  "tried": "2026-11-19",
+  "records": {
+   "M": {
+    "dist": 148.0,
+    "date": "11 MAR 2016",
+    "name": "PREVC D.",
+    "nation": "SLO"
+   }
+  }
+ },
+ "Engelberg|L": {
+  "hs": 140,
+  "k": 125,
+  "records": {
+   "M": {
+    "dist": 144.0,
+    "date": "18 DEC 2016",
+    "name": "PREVC D.",
+    "nation": "SLO"
+   },
+   "W": {
+    "dist": 140.0,
+    "date": "21 DEC 2024",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   }
+  }
+ },
+ "Oberstdorf|L": {
+  "hs": 137,
+  "k": 120,
+  "records": {
+   "W": {
+    "dist": 141.5,
+    "date": "1 FEB 2020",
+    "name": "KREUZER C.",
+    "nation": "AUT"
+   },
+   "M": {
+    "dist": 143.5,
+    "date": "29 DEC 2003",
+    "name": "PETTERSEN S.",
+    "nation": "NOR"
+   }
+  }
+ },
+ "Garmisch-Partenkirchen|L": {
+  "hs": 142,
+  "k": 125,
+  "records": {
+   "M": {
+    "dist": 145.5,
+    "date": "31 DEC 2025",
+    "name": "EMBACHER S.",
+    "nation": "AUT"
+   },
+   "W": {
+    "dist": 137.5,
+    "date": "31 DEC 2024",
+    "name": "PINKELNIG E.",
+    "nation": "AUT"
+   }
+  }
+ },
+ "Innsbruck|L": {
+  "hs": 128,
+  "k": 120,
+  "records": {
+   "M": {
+    "dist": 138.0,
+    "date": "4 JAN 2015",
+    "name": "HAYBOECK M.",
+    "nation": "AUT"
+   }
+  },
+  "tried": "2026-11-19"
+ },
+ "Bischofshofen|L": {
+  "hs": 142,
+  "k": 125,
+  "records": {
+   "M": {
+    "dist": 145.0,
+    "date": "6 JAN 2019",
+    "name": "KUBACKI D.",
+    "nation": "POL"
+   }
+  },
+  "tried": "2026-11-19"
+ },
+ "Ljubno|N": {
+  "hs": 94,
+  "k": 85,
+  "records": {
+   "W": {
+    "dist": 97.0,
+    "date": "15 FEB 2025",
+    "name": "BJOERSETH T.",
+    "nation": "NOR"
+   }
+  }
+ },
+ "Zhangjiakou|L": {
+  "hs": 140,
+  "k": 125,
+  "records": {
+   "W": {
+    "dist": 128.5,
+    "date": "15 JAN 2026",
+    "name": "ZENG P.",
+    "nation": "CHN"
+   }
+  }
+ },
+ "Zakopane|L": {
+  "hs": 140,
+  "k": 125,
+  "records": {
+   "M": {
+    "dist": 147.0,
+    "date": "25 JAN 2020",
+    "name": "SATO Y.",
+    "nation": "JPN"
+   }
+  }
+ },
+ "Zao|N": {
+  "hs": 102,
+  "k": 95,
+  "records": {
+   "W": {
+    "dist": 106.0,
+    "date": "22 JAN 2016",
+    "name": "TAKANASHI S.",
+    "nation": ""
+   }
+  }
+ },
+ "Sapporo|L": {
+  "hs": 137,
+  "k": 123,
+  "records": {
+   "M": {
+    "dist": 148.5,
+    "date": "26 JAN 2019",
+    "name": "STOCH K.",
+    "nation": "POL"
+   },
+   "W": {
+    "dist": 139.5,
+    "date": "12 JAN 2020",
+    "name": "LUNDBY M.",
+    "nation": ""
+   }
+  }
+ },
+ "Willingen|L": {
+  "hs": 147,
+  "k": 130,
+  "records": {
+   "M": {
+    "dist": 155.5,
+    "date": "3 FEB 2024",
+    "name": "FORFANG J.",
+    "nation": "NOR"
+   },
+   "W": {
+    "dist": 151.0,
+    "date": "30 JAN 2022",
+    "name": "VODAN N.",
+    "nation": "SLO"
+   }
+  }
+ },
+ "Lake Placid|L": {
+  "hs": 128,
+  "k": 115,
+  "tried": "2026-11-19",
+  "records": {
+   "W": {
+    "dist": 128.0,
+    "date": "6 FEB 2025",
+    "name": "LOUTITT A.",
+    "nation": "CAN"
+   },
+   "M": {
+    "dist": 136.0,
+    "date": "11 FEB 2023",
+    "name": "KOBAYASHI R.",
+    "nation": "JPN"
+   }
+  }
+ },
+ "Lahti|L": {
+  "hs": 130,
+  "k": 116,
+  "records": {
+   "W": {
+    "dist": 135.5,
+    "date": "20 MAR 2025",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   },
+   "M": {
+    "dist": 138.0,
+    "date": "4 MAR 2017",
+    "name": "FORFANG J.",
+    "nation": "NOR"
+   }
+  }
+ },
+ "Vikersund|F": {
+  "hs": 240,
+  "k": 200,
+  "records": {
+   "W": {
+    "dist": 236.0,
+    "date": "14 MAR 2025",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   },
+   "M": {
+    "dist": 253.5,
+    "date": "18 MAR 2017",
+    "name": "KRAFT S.",
+    "nation": "AUT"
+   }
+  }
+ },
+ "Villach|N": {
+  "hs": 98,
+  "k": 90,
+  "records": {
+   "W": {
+    "dist": 102.0,
+    "date": "5 JAN 2025",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   }
+  }
+ },
+ "Falun|N": {
+  "hs": 95,
+  "k": 90,
+  "records": {
+   "M": {
+    "dist": 97.0,
+    "date": "22 FEB 2015",
+    "name": "FREUND S.",
+    "nation": "GER"
+   },
+   "W": {
+    "dist": 98.5,
+    "date": "22 FEB 2015",
+    "name": "HENDRICKSON S.",
+    "nation": "USA"
+   }
+  }
+ },
+ "Falun|L": {
+  "hs": 132,
+  "k": 120,
+  "records": {
+   "M": {
+    "dist": 135.5,
+    "date": "26 FEB 2015",
+    "name": "FREUND S.",
+    "nation": "GER"
+   },
+   "W": {
+    "dist": 132.0,
+    "date": "30 NOV 2025",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   }
+  }
+ },
+ "Oslo|L": {
+  "hs": 134,
+  "k": 120,
+  "records": {
+   "M": {
+    "dist": 144.0,
+    "date": "9 MAR 2019",
+    "name": "JOHANSSON R.",
+    "nation": "NOR"
+   },
+   "W": {
+    "dist": 137.5,
+    "date": "4 FEB 2016",
+    "name": "TAKANASHI S.",
+    "nation": "JPN"
+   }
+  }
+ },
+ "Planica|F": {
+  "hs": 240,
+  "k": 200,
+  "records": {
+   "M": {
+    "dist": 254.5,
+    "date": "30 MAR 2025",
+    "name": "PREVC D.",
+    "nation": "SLO"
+   },
+   "W": {
+    "dist": 242.5,
+    "date": "27 MAR 2026",
+    "name": "PREVC N.",
+    "nation": "SLO"
+   }
+  }
+ }
+}

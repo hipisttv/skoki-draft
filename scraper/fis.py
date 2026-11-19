@@ -446,39 +446,158 @@ def name_key(name, nation):
     return re.sub(r"[^A-Z]+", " ", n).strip() + "|" + nation
 
 
+def pdf_text(url):
+    import io
+    import pypdf
+    data, _ = fetch_bytes(url)
+    return "\n".join(pg.extract_text() or "" for pg in pypdf.PdfReader(io.BytesIO(data)).pages)
+
+
+def startlist_names(t):
+    """Zawodnicy z PDF listy startowej FIS w kolejności startu: [(„NAZWISKO Imię”, NSA)]."""
+    out = []
+    # wiersz zawodnika: „NAZWISKO Imię NSA”
+    for m in re.finditer(r"^([A-Z][A-Z'\-]+(?: [A-Z][A-Z'\-]+)*) ([A-Z][^\n]*?) ([A-Z]{3})\s*$", t, re.M):
+        if m.group(1).startswith("BIB") or m.group(3) in ("CUP", "NSA"):
+            continue
+        given = re.sub(r"\s+YC$", "", m.group(2))  # „YC” = żółta kartka przy nazwisku
+        out.append((f"{m.group(1)} {given}", m.group(3)))
+    return out
+
+
+def hill_data(t):
+    """HS, punkt K i rekord skoczni z nagłówka PDF FIS (lista startowa / wyniki)."""
+    hs = re.search(r"HILL SIZE HS\s*/\s*\(95%\)\s*(\d{2,3})\s*m", t)
+    k = re.search(r"K-POINT\s+(\d{2,3})\s*m", t)
+    if not hs or not k:
+        return None
+    out = {"hs": int(hs.group(1)), "k": int(k.group(1))}
+    # „(26 JAN 2019 STOCH K. POL G9/86.8km/h)” – kraj bywa pominięty
+    rec = re.search(r"Hill Record\s+(\d{2,3}(?:\.\d)?)\s*m\s*\(\s*(\d{1,2} [A-Z]{3} \d{4})\s+([A-Z][A-Z'\- ]*?) ([A-Z][a-z]?)\.(?:\s+([A-Z]{3}))?\s+G", t)
+    if rec:
+        out["record"] = {"dist": float(rec.group(1)), "date": rec.group(2), "name": f"{rec.group(3).strip()} {rec.group(4)}.", "nation": rec.group(5) or ""}
+    return out
+
+
 def event_startlists(eh, races, index):
     """Listy startowe (trening, kwalifikacje, 1. seria) konkursów indywidualnych zawodów.
 
-    Zwraca {płeć: [id zawodników]} – tylko dla płci, dla których FIS opublikował już jakąś listę.
+    Zwraca (by_gender, by_race, hills):
+      by_gender = {płeć: [id]} – wszyscy z jakiejkolwiek listy (do oznaczania „nie startuje”),
+      by_race   = {raceId: {"kind": ..., "list": [{"id"|None, "name", "nation"}]}} – lista do pokazania przy konkursie,
+      hills     = {raceId: dane skoczni z nagłówka PDF}.
     """
-    gender = {r["id"]: r["gender"] for r in races}
-    out, unknown = {}, set()
+    by_id = {r["id"]: r for r in races}
+    out, by_race, hills, unknown = {}, {}, {}, set()
     for row in re.split(r'<div class="table-row', eh)[1:]:
         rid = re.search(r"raceid=(\d+)", row)
-        if not rid or rid.group(1) not in gender:
+        if not rid or rid.group(1) not in by_id:
             continue
-        g = gender[rid.group(1)]
-        for url, kind in re.findall(r'href="([^"]+)"[^>]*data-ga-download="(Start List[^"]*)"', row):
+        race = by_id[rid.group(1)]
+        docs = dict((kind, url) for url, kind in re.findall(r'href="([^"]+)"[^>]*data-ga-download="(Start List[^"]*)"', row))
+        # przy konkursie pokazujemy jego listę: kwalifikacji / 1. serii, a zanim wyjdzie – zgłoszonych z treningu
+        own = ["Start List Qualification", "Start List Training"] if race["category"] == "QUA" else ["Start List 1st Round"]
+        for kind, url in docs.items():
             try:
-                import io
-                import pypdf
-                data, _ = fetch_bytes(url)
-                t = "\n".join(pg.extract_text() or "" for pg in pypdf.PdfReader(io.BytesIO(data)).pages)
+                t = pdf_text(url)
             except Exception as e:  # noqa: BLE001
-                print(f"  lista startowa {rid.group(1)} {kind}: {e}", file=sys.stderr)
+                print(f"  lista startowa {race['id']} {kind}: {e}", file=sys.stderr)
                 continue
-            ids = out.setdefault(g, set())
-            # wiersz zawodnika: „NAZWISKO Imię NSA”
-            for m in re.finditer(r"^([A-Z][A-Z'\-]+(?: [A-Z][A-Z'\-]+)*) ([A-Z][^\n]*?) ([A-Z]{3})\s*$", t, re.M):
-                given = re.sub(r"\s+YC$", "", m.group(2))  # „YC” = żółta kartka przy nazwisku
-                aid = index.get(name_key(f"{m.group(1)} {given}", m.group(3)))
+            names = startlist_names(t)
+            ids = out.setdefault(race["gender"], set())
+            rows = []
+            for name, nsa in names:
+                aid = index.get(name_key(name, nsa))
                 if aid:
                     ids.add(aid)
-                elif m.group(1) != "BIB NAME" and m.group(3) != "CUP":
-                    unknown.add(f"{m.group(1)} {given} ({m.group(3)})")
+                else:
+                    unknown.add(f"{name} ({nsa})")
+                rows.append({"id": aid, "name": name, "nation": nsa})
+            if kind in own and rows and (race["id"] not in by_race or own.index(kind) < own.index(by_race[race["id"]]["kind"])):
+                by_race[race["id"]] = {"kind": kind, "list": rows}
+            hd = hill_data(t)
+            if hd:
+                hills[race["id"]] = hd
     if unknown:
         print(f"  listy startowe – spoza bazy: {', '.join(sorted(unknown))}")
-    return {g: sorted(v) for g, v in out.items() if v}
+    return {g: sorted(v) for g, v in out.items() if v}, by_race, hills
+
+
+FRESH_HILLS = {}  # (miejsce, typ skoczni, płeć) -> dane z tegorocznych list startowych
+
+
+def hill_type(discipline):
+    return "F" if "Flying" in discipline else "N" if "Normal" in discipline else "L"
+
+
+def update_hilldata(season, events, path):
+    """data/hilldata.json: {"Miejsce|N/L/F": {"hs", "k", "records": {"M": {...}, "W": {...}}}}.
+
+    Najpierw tegoroczne listy startowe (aktualny rekord), a czego brakuje – PDF z ostatnich zawodów
+    w tym miejscu w zeszłym sezonie (raz dziennie, tylko dla brakujących skoczni).
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    need = {}
+    for ev in events:
+        for r in ev["races"]:
+            need.setdefault(f"{ev['place']}|{hill_type(r['discipline'])}", set()).add(r["gender"])
+    for (place, typ, g), hd in FRESH_HILLS.items():
+        e = data.setdefault(f"{place}|{typ}", {})
+        e.update(hs=hd["hs"], k=hd["k"])
+        if hd.get("record"):
+            e.setdefault("records", {})[g] = hd["record"]
+    today = dt.date.today().isoformat()
+    missing = {key: gs for key, gs in need.items()
+               if (not data.get(key, {}).get("hs") or not gs <= set(data.get(key, {}).get("records", {})))
+               and data.get(key, {}).get("tried") != today}
+    if missing:
+        # trzy poprzednie sezony (np. Titisee-Neustadt czy Lake Placid nie co roku są w kalendarzu)
+        past = []
+        for prev in (season - 1, season - 2, season - 3):
+            for cat in ("WC", "WSC"):
+                try:
+                    past += [{**x, "season": prev} for x in parse_calendar(fetch(calendar_url(prev, cat)), prev)]
+                except Exception as e:  # noqa: BLE001
+                    print(f"  dane skoczni – kalendarz {prev} {cat}: {e}", file=sys.stderr)
+        for key, gs in missing.items():
+            place, typ = key.split("|")
+            e = data.setdefault(key, {})
+            e["tried"] = today
+            for pev in sorted((x for x in past if x["place"] == place), key=lambda x: x["start"], reverse=True):
+                try:
+                    eh = fetch(f"{BASE}/general/event-details.html?sectorcode=JP&eventid={pev['id']}&seasoncode={pev['season']}")
+                except Exception:  # noqa: BLE001
+                    continue
+                races = {r["id"]: r for r in parse_event(eh, pev["season"]) if not r["team"] and hill_type(r["discipline"]) == typ}
+                for row in re.split(r'<div class="table-row', eh)[1:]:
+                    rid = re.search(r"raceid=(\d+)", row)
+                    if not rid or rid.group(1) not in races:
+                        continue
+                    g = races[rid.group(1)]["gender"]
+                    if g not in gs or g in e.get("records", {}):
+                        continue
+                    for url, kind in re.findall(r'href="([^"]+\.pdf)"[^>]*data-ga-download="([^"]+)"', row):
+                        if not re.search(r"Results|Start List", kind):
+                            continue
+                        try:
+                            hd = hill_data(pdf_text(url))
+                        except Exception:  # noqa: BLE001
+                            hd = None
+                        if hd:
+                            e.setdefault("hs", hd["hs"])
+                            e.setdefault("k", hd["k"])
+                            if hd.get("record"):
+                                e.setdefault("records", {})[g] = hd["record"]
+                            break
+                if e.get("hs") and gs <= set(e.get("records", {})):
+                    break
+            print(f"  skocznia {key}: HS {e.get('hs')} K {e.get('k')} rekordy {sorted(e.get('records', {}))}")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
 
 
 def build_calendar(season, athletes=None):
@@ -514,7 +633,13 @@ def build_calendar(season, athletes=None):
         soon = (dt.date.fromisoformat(ev["start"]) - dt.date.today()).days <= 4 and ev["end"] >= dt.date.today().isoformat()
         if athletes and soon:
             index = {name_key(a["name"], a["nation"]): a["id"] for a in athletes}
-            sl = event_startlists(eh, races, index)
+            sl, by_race, hd = event_startlists(eh, races, index)
+            for r in races:
+                if r["id"] in hd:
+                    FRESH_HILLS[(ev["place"], hill_type(r["discipline"]), r["gender"])] = hd[r["id"]]
+            for r in races:
+                if r["id"] in by_race:
+                    r["startlist"] = by_race[r["id"]]
             if sl:
                 ev["startlist"] = sl
                 print(f"  {ev['place']}: listy startowe " + ", ".join(f"{g} {len(v)}" for g, v in sl.items()))
@@ -751,6 +876,7 @@ def main():
             race["hasResults"] = bool(res)
             if res:
                 print(f"  {race['date']} {ev['place']} {race['category']} {race['gender']}: {len(res['results'])} zawodników")
+    update_hilldata(args.season, events, os.path.join(out, "hilldata.json"))
     save({"season": args.season, "updated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
           "events": events}, os.path.join(out, "calendar.json"))
 
