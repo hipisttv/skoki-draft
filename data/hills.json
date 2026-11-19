@@ -15,7 +15,7 @@
  },
  "Falun": {
   "file": "hills/falun.jpg",
-  "hill": "Lugnet ski jump Falun",
+  "hill": "Lugnet",
   "author": "Matthias Wilke",
   "license": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Lugnet_Falun.jpg"
@@ -36,21 +36,21 @@
  },
  "Innsbruck": {
   "file": "hills/innsbruck.jpg",
-  "hill": "Bergisel Ski Jump",
+  "hill": "Bergisel",
   "author": "Daniel Wagner at de.wikipedia",
   "license": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Bergiselschanze04.jpg"
  },
  "Lahti": {
   "file": "hills/lahti.jpg",
-  "hill": "Salpausselän hyppyrimäet",
+  "hill": "Salpausselkä",
   "author": "kallerna",
   "license": "CC BY-SA 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Lahti_Ski_Jumping_Hills_2.jpg"
  },
  "Lake Placid": {
   "file": "hills/lake-placid.jpg",
-  "hill": "Lake Placid Olympic Ski Jumping Complex",
+  "hill": "MacKenzie Intervale",
   "author": "Mwanner",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Lake_Placid_Olympic_Ski_Jumping_Complex_from_below.jpg"
@@ -64,14 +64,14 @@
  },
  "Ljubno": {
   "file": "hills/ljubno.jpg",
-  "hill": "Savina Ski Jumping Center",
+  "hill": "Savina",
   "author": "Zoran Kurelić Rabko",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Ljubno_ob_Savinji_-_Ski_Jump.jpg"
  },
  "Oberstdorf": {
   "file": "hills/oberstdorf.jpg",
-  "hill": "ORLEN Arena Oberstdorf",
+  "hill": "Schattenbergschanze",
   "author": "Arne Müseler",
   "license": "CC BY-SA 3.0 de",
   "source": "https://commons.wikimedia.org/wiki/File:Ski_jumping_hill_oberstdorf_germany_2.jpg"
@@ -85,28 +85,28 @@
  },
  "Planica": {
   "file": "hills/planica.jpg",
-  "hill": "Letalnica bratov Gorišek",
+  "hill": "Letalnica braci Gorišek",
   "author": "Borut Podgoršek",
   "license": "CC BY 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Slovenska_vojska_je_tudi_letos_podprla_Smu%C4%8Darsko_zvezo_Slovenije_pri_izvedbi_zaklju%C4%8Dka_svetovnega_pokala_v_smu%C4%8Darskih_poletih_v_Planici_7.jpg"
  },
  "Ruka": {
   "file": "hills/ruka.jpg",
-  "hill": "Rukatunturi ski jumping hill",
+  "hill": "Rukatunturi",
   "author": "Nelinjo",
   "license": "CC BY-SA 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Kuusamo_Rukatunturi_K-120.jpg"
  },
  "Sapporo": {
   "file": "hills/sapporo.jpg",
-  "hill": "大倉山ジャンプ競技場",
+  "hill": "Ōkurayama",
   "author": "Hwoarang17",
   "license": "Public domain",
   "source": "https://commons.wikimedia.org/wiki/File:Okurayama_August_2007.jpg"
  },
  "Titisee-Neustadt": {
   "file": "hills/titisee-neustadt.jpg",
-  "hill": "Hochfirst Ski Jump",
+  "hill": "Hochfirstschanze",
   "author": "Taxiarchos228",
   "license": "FAL",
   "source": "https://commons.wikimedia.org/wiki/File:Hochfirstschanze3.jpg"
@@ -134,7 +134,7 @@
  },
  "Wisla": {
   "file": "hills/wisla.jpg",
-  "hill": "Skocznia narciarska im. Adama Małysza",
+  "hill": "Malinka im. Adama Małysza",
   "author": "D T G",
   "license": "CC BY 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:POL_Wis%C5%82a_Malinka_DW942_pod_skoczni%C4%85_3.JPG"
@@ -148,14 +148,14 @@
  },
  "Zao": {
   "file": "hills/zao.jpg",
-  "hill": "Kuraray Zao Schanze",
+  "hill": "Kuraray Zaō Schanze",
   "author": "Suz-b",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Zao_Ski-jump_Schanze_Winter.JPG"
  },
  "Almaty": {
   "file": "hills/almaty.jpg",
-  "hill": "Sunkar International Ski Jumping Complex",
+  "hill": "Sunkar",
   "author": "Mattun0211",
   "license": "CC0",
   "source": "https://commons.wikimedia.org/wiki/File:AlmatySkiJump.jpg",
@@ -195,7 +195,7 @@
  },
  "Hakuba": {
   "file": "hills/hakuba.jpg",
-  "hill": "Hakuba Ski Jumping Stadium",
+  "hill": "Hakuba",
   "author": "Ans~jawiki at Japanese Wikipedia",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Hakuba-jump-dai.jpg",
@@ -225,7 +225,7 @@
  },
  "Iron Mountain": {
   "file": "hills/iron-mountain.jpg",
-  "hill": "Pine Mountain Jump",
+  "hill": "Pine Mountain",
   "author": "BenjaminSmithChef",
   "license": "CC BY-SA 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Pine_Mountain_Ski_Jump_2026.jpg",
@@ -255,7 +255,7 @@
  },
  "Krasnaya Polyana": {
   "file": "hills/krasnaya-polyana.jpg",
-  "hill": "RusSki Gorki Jumping Center",
+  "hill": "RusSki Gorki",
   "author": "Акутагава",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:RusSki_Gorki_Jumping_Center_during_2014_Winter_Olympics.JPG",
@@ -265,7 +265,7 @@
  },
  "Liberec": {
   "file": "hills/liberec.jpg",
-  "hill": "Skokanský areál Ještěd",
+  "hill": "Ještěd",
   "author": "Nelinjo",
   "license": "CC BY-SA 4.0",
   "source": "https://commons.wikimedia.org/wiki/File:Liberec_Jested_A,_B.jpg",
@@ -295,7 +295,7 @@
  },
  "Predazzo": {
   "file": "hills/predazzo.jpg",
-  "hill": "Giuseppe Dal Ben Ski Jumping Arena",
+  "hill": "Trampolino Giuseppe Dal Ben",
   "author": "Manuguf",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Stadio_del_salto_Giuseppe_dal_Ben_2012-24.JPG",
@@ -305,7 +305,7 @@
  },
  "Pyeongchang": {
   "file": "hills/pyeongchang.jpg",
-  "hill": "Alpensia Ski Jumping Stadium",
+  "hill": "Alpensia",
   "author": "Republic of  Korea from Seoul, Republic of Korea",
   "license": "CC BY-SA 2.0",
   "source": "https://commons.wikimedia.org/wiki/File:Alpensia_20170202_08_(32537578151).jpg",
@@ -315,7 +315,7 @@
  },
  "Rasnov": {
   "file": "hills/rasnov.jpg",
-  "hill": "Râșnov Ski Jump",
+  "hill": "Trambulina Valea Cărbunării",
   "author": "Myerge",
   "license": "CC BY-SA 3.0",
   "source": "https://commons.wikimedia.org/wiki/File:Valea_C%C4%83rbun%C4%83rii_Ski_Jumping_Hill.jpg",

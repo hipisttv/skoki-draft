@@ -948,3 +948,8 @@ a.race.has-sl { border-left: 3px dashed var(--good); cursor: pointer; background
 a.race.has-sl:hover { border-color: var(--good); color: var(--text); text-decoration: none; transform: translateY(-1px); }
 .race .go.sl { color: var(--good); background: var(--good-soft); }
 a.race.has-sl:hover .go.sl { background: var(--good); color: #fff; }
+
+/* kalendarz: dane skoczni */
+.hillinfo { display: flex; align-items: flex-start; gap: .4rem; font-size: .78rem; color: var(--text-2); margin: -.15rem 0 .55rem; line-height: 1.4; }
+.hillinfo svg { width: 14px; height: 14px; flex: none; margin-top: .15rem; color: var(--accent); }
+.hillinfo b { color: var(--text); }

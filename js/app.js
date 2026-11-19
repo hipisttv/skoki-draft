@@ -1,14 +1,14 @@
-import { createStore } from './store.js';
-import { leagueId } from '../firebase-config.js';
+import { createStore } from './store.js?v=dev';
+import { leagueId } from '../firebase-config.js?v=dev';
 import {
   FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
   snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
   countsForLeague, isMain, recordIds, scoringSettings,
   raceStart, lockTime, firstRace, canTriple,
-} from './scoring.js';
+} from './scoring.js?v=dev';
 import {
   esc, icon, flag, countryName, fold, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
-} from './ui.js';
+} from './ui.js?v=dev';
 
 // ================================================================ stan
 
@@ -1121,6 +1121,21 @@ function tripleBox(p, w, editable) {
 
 // ================================================================ kalendarz
 
+// Dane skoczni weekendu (każda skocznia raz): nazwa, rozmiar, HS, punkt K, rekordy PŚ płci, które tu skaczą.
+function hillsLine(w) {
+  const seen = new Map();
+  for (const r of w.races) {
+    const hd = hillOf(r);
+    const key = `${r.place}|${hillShort(r.discipline)}`;
+    if (hd && !seen.has(key)) seen.set(key, { r, hd });
+  }
+  return [...seen.values()].map(({ r, hd }) => {
+    const recs = ['M', 'W'].filter((g) => hd.records?.[g] && w.races.some((x) => x.place === r.place && x.gender === g))
+      .map((g) => `${g === 'W' ? 'kobiety' : 'mężczyźni'} <b>${hd.records[g].dist.toFixed(1).replace('.', ',')} m</b> (${esc(recName(hd.records[g]))})`);
+    return `<div class="hillinfo">${icon('ruler')}<span><b>${esc(hills[r.place]?.hill || r.place)}</b> · skocznia ${hillShort(r.discipline)} · <b>HS ${hd.hs} m</b> · punkt K ${hd.k} m${recs.length ? ` · rekord PŚ: ${recs.join(', ')}` : ''}</span></div>`;
+  }).join('');
+}
+
 function kalendarz() {
   const cur = currentWeekend();
   const ps = state.participants;
@@ -1141,6 +1156,7 @@ function kalendarz() {
           <span class="spacer"></span>
           ${hasRes && ps.length ? `<div class="chips">${ps.map((p, i) => `<span class="chip ${wpts[i] === wmax && wmax > 0 ? 'top' : ''}">${avatar(p, 'sm')}<b>${wpts[i]}</b></span>`).join('')}</div>` : ''}
         </div>
+        ${hillsLine(w)}
         <div class="races">${w.races.map((r) => {
           const res = results[r.id];
           const win = res?.results.find((x) => x.rank === 1);

@@ -1,7 +1,7 @@
 // Wspólny stan ligi (uczestnicy, draft, składy, kapitanowie).
 // Z konfiguracją Firebase – zapis w Firestore, widoczny na żywo dla wszystkich.
 // Bez niej – zapis tylko w tej przeglądarce (tryb testowy).
-import { firebaseConfig, leagueId } from '../firebase-config.js';
+import { firebaseConfig, leagueId } from '../firebase-config.js?v=dev';
 
 export const EMPTY_STATE = {
   setup: null,          // { leagueName, salt, adminUser, adminHash, invite, maxPlayers, created }
