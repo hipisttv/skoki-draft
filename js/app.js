@@ -154,6 +154,7 @@ async function loadData() {
   const [a, c, s, h, hd] = await Promise.all([get('athletes.json'), get('calendar.json'), get('standings.json').catch(() => null),
     get('hills.json').catch(() => ({})), get('hilldata.json').catch(() => ({}))]);
   profIndex = new Set(await get('profiles/index.json').catch(() => []));
+  profSummary = await get('profiles/summary.json').catch(() => ({}));
   hills = h || {};
   hilldata = hd || {};
   athletes = a.athletes;
@@ -330,6 +331,7 @@ const NAV = [
   ['druzyny', 'Drużyny', 'team'],
   ['kalendarz', 'Kalendarz', 'calendar'],
   ['puchar', 'Puchar Świata', 'globe'],
+  ['gry', 'Kącik gier', 'game'],
   ['analityka', 'Analityka', 'chart'],
   ['draft', 'Draft', 'draft'],
   ['zawodnicy', 'Zawodnicy', 'list'],
@@ -350,7 +352,7 @@ function render(scrollTop = false) {
   }
 
   const [view, arg] = (location.hash.slice(1) || 'ranking').split('/');
-  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, analityka, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej, zawodnik: profileView };
+  const views = { ranking, druzyny, kalendarz, race: raceView, puchar, analityka, draft, zawodnicy, zasady, nagrody, admin: adminView, wiecej, zawodnik: profileView, gry, gra: graView };
   const fn = views[view] && (view !== 'admin' || isAdmin()) ? views[view] : ranking;
   const active = view === 'race' ? 'kalendarz' : view === 'zawodnik' ? 'zawodnicy' : views[view] ? view : 'ranking';
   const y = window.scrollY;
@@ -402,11 +404,12 @@ function shell(active, content) {
   const myTurn = ph === 'draft' && m && snakeOrder(state.draftOrder)[state.picks.length]?.pid === m.id;
   // w górnym pasku najważniejsze zakładki + Zasady; reszta pod „Więcej”
   // w sezonie Draft chowa się pod „Więcej”, przed sezonem – Analityka
-  const MORE = ['zawodnicy', 'admin', ph === 'season' ? 'draft' : 'analityka'];
+  const MORE = ['zawodnicy', 'nagrody', 'admin', ph === 'season' ? 'draft' : 'analityka'];
   const nav = NAV.filter(([k]) => !MORE.includes(k));
   const more = NAV.filter(([k]) => MORE.includes(k) && (k !== 'admin' || isAdmin()));
   const moreActive = MORE.includes(active);
-  const dot = (k) => (k === 'draft' && (myTurn || (ph === 'draft' && !m)) ? '<span class="dot"></span>' : '');
+  const gameTurns = myGameTurns();
+  const dot = (k) => ((k === 'draft' && (myTurn || (ph === 'draft' && !m))) || (k === 'gry' && gameTurns) ? '<span class="dot"></span>' : '');
   const fifth = ph === 'draft' ? ['draft', 'Draft', 'draft'] : ['wiecej', 'Więcej', 'menu'];
   const tabs = [NAV[0], NAV[1], NAV[2], ['puchar', 'PŚ', 'globe'], fifth];
   const who = m || { name: state.setup.adminUser, color: '#64748b' };
@@ -427,7 +430,7 @@ function shell(active, content) {
   <main class="wrap">${content}</main>
   <footer class="foot"><span>Dane: oficjalne wyniki FIS</span><span>Aktualizacja: ${new Date(calendar.updated).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></footer>
   ${skBubble()}
-  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'analityka', 'wiecej'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${k === 'draft' && myTurn ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
+  <nav class="tabbar">${tabs.map(([k, l, i]) => `<a href="#${k}" class="${active === k || (k === 'wiecej' && ['zawodnicy', 'admin', 'draft', 'zasady', 'nagrody', 'analityka', 'wiecej', 'gry', 'gra'].includes(active)) ? 'active' : ''}">${icon(i)}${l}${(k === 'draft' && myTurn) || (k === 'wiecej' && gameTurns) ? '<span class="dot"></span>' : ''}</a>`).join('')}</nav>`;
 }
 
 function userMenu() {
@@ -1654,6 +1657,182 @@ function compareBlock(pr, a) {
     ${body}</div>`;
 }
 
+// ================================================================ kącik gier
+
+// Kółko i krzyżyk skoczków (jak piłkarskie Tiki-Taka-Toe): wiersze – kraje, kolumny – osiągnięcia.
+// Pole zajmuje się zawodnikiem, który pasuje do obu; zły strzał oddaje ruch. Gry między graczami ligi, w bazie ligi.
+let profSummary = {};
+const TTT_NATIONS = ['POL', 'AUT', 'NOR', 'SLO', 'GER', 'JPN', 'SUI', 'FIN', 'ITA', 'CZE', 'USA', 'CAN'];
+const TTT_CATS = {
+  win: ['🥇', 'Zwycięstwo w PŚ', (a, x) => x.w >= 1],
+  pod: ['🏅', 'Podium w PŚ', (a, x) => x.p >= 1],
+  w10: ['🔟', '10+ zwycięstw w PŚ', (a, x) => x.w >= 10],
+  olymp: ['⭕', 'Medal igrzysk', (a, x) => x.og >= 1],
+  wsc: ['🌍', 'Medal MŚ', (a, x) => x.ws >= 1],
+  sfwc: ['✈️', 'Medal MŚ w lotach', (a, x) => x.sf >= 1],
+  globe: ['🏆', 'Kryształowa Kula', (a, x) => x.gl >= 1],
+  tcs: ['🦅', 'Wygrany TCS', (a, x) => x.tc >= 1],
+  top10: ['🔝', 'Top 10 klasyfikacji PŚ', (a, x) => x.b != null && x.b <= 10],
+  k1000: ['💯', '1000+ pkt w sezonie PŚ', (a, x) => x.mx >= 1000],
+  pts25: ['📈', '300+ pkt w PŚ 2025/26', (a) => (a.wc || 0) >= 300],
+  young: ['🐣', 'Rocznik 2002 lub młodszy', (a) => a.born >= 2002],
+  old: ['🧓', 'Rocznik 1995 lub starszy', (a) => a.born && a.born <= 1995],
+  women: ['👩', 'Kobieta', (a) => a.gender === 'W'],
+  vet: ['📅', '10+ sezonów z punktami PŚ', (a, x) => x.ss >= 10],
+};
+const tttPool = () => Object.keys(profSummary).map((id) => byId[id]).filter(Boolean);
+const tttFits = (a, row, col) => !!a && a.nation === row && TTT_CATS[col][2](a, profSummary[a.id] || {});
+const tttAnswers = (row, col) => tttPool().filter((a) => tttFits(a, row, col));
+
+// Losowanie planszy – każde pole musi mieć co najmniej 2 poprawne odpowiedzi
+function tttGrid(seed) {
+  let n = skHash(seed);
+  const rnd = () => { n = Math.imul(n ^ (n >>> 15), 2246822507) >>> 0; n = (n ^ (n >>> 13)) >>> 0; return n / 4294967296; };
+  const shuffle = (arr) => arr.map((x) => [rnd(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  for (let i = 0; i < 800; i++) {
+    const rows = shuffle(TTT_NATIONS).slice(0, 3);
+    const cols = shuffle(Object.keys(TTT_CATS)).slice(0, 3);
+    if (rows.every((r) => cols.every((c) => tttAnswers(r, c).length >= 2))) return { rows, cols };
+  }
+  return { rows: ['POL', 'AUT', 'NOR'], cols: ['pod', 'win', 'wsc'] };
+}
+const TTT_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+const tttWinner = (cells) => { for (const l of TTT_LINES) { const [a, b, c] = l.map((i) => cells[i]?.p); if (a && a === b && b === c) return { p: a, line: l }; } return null; };
+const myGameTurns = () => { const m = me(); return m ? Object.values(state.games || {}).filter((g) => g.status === 'play' && g[g.turn] === m.id).length : 0; };
+const tttMark = (p) => `<span class="ttt-mark ${p}">${p === 'x' ? '✕' : '◯'}</span>`;
+const catHead = (c) => `<span class="ttt-ico">${TTT_CATS[c][0]}</span><span>${esc(TTT_CATS[c][1])}</span>`;
+const natHead = (n) => `${flag(n)}<span>${esc(countryName(n))}</span>`;
+
+function gry() {
+  const m = me();
+  const games = Object.values(state.games || {}).sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+  const mine = m ? games.filter((g) => g.x === m.id || g.o === m.id) : games;
+  const turn = mine.filter((g) => g.status === 'play' && g[g.turn] === m?.id);
+  const wait = mine.filter((g) => g.status === 'play' && g[g.turn] !== m?.id);
+  const done = games.filter((g) => g.status === 'done').slice(0, 12);
+  const others = state.participants.filter((p) => p.id !== m?.id);
+  const score = Object.fromEntries(state.participants.map((p) => [p.id, { w: 0, d: 0, l: 0 }]));
+  for (const g of games.filter((x) => x.status === 'done')) {
+    if (g.winner === 'draw') { score[g.x] && score[g.x].d++; score[g.o] && score[g.o].d++; } else {
+      const w = g[g.winner]; const l = g[g.winner === 'x' ? 'o' : 'x'];
+      if (score[w]) score[w].w++; if (score[l]) score[l].l++;
+    }
+  }
+  const row = (g) => {
+    const opp = P(m && g.x === m.id ? g.o : g.x);
+    const vs = m ? `z ${esc(opp ? tname(opp) : '?')}` : `${esc(tname(P(g.x)) || '?')} vs ${esc(tname(P(g.o)) || '?')}`;
+    const res = g.status === 'done' ? (g.winner === 'draw' ? '<span class="tag">remis</span>' : `<span class="tag ${m && g[g.winner] === m.id ? 'good' : m ? 'bad' : ''}">${m ? (g[g.winner] === m.id ? 'wygrana' : 'porażka') : `wygrał(a) ${esc(tname(P(g[g.winner])) || '?')}`}</span>`)
+      : g[g.turn] === m?.id ? '<span class="tag acc">Twój ruch</span>' : '<span class="tag muted">czeka na ruch rywala</span>';
+    return `<a class="game-row" href="#gra/${g.id}">${avatar(opp || P(g.o) || { name: '?', color: '#64748b' }, 'sm')}<span class="grow"><b>Kółko i krzyżyk</b> ${vs}<span class="muted xs"> · ${g.cells.filter(Boolean).length}/9 pól</span></span>${res}${icon('chevron')}</a>`;
+  };
+  return `<div class="page-head"><div><h1>Kącik gier</h1><div class="sub">Gry dla graczy ligi — każdy rusza się, kiedy ma czas</div></div></div>
+    <div class="card game-hero">
+      <div class="gh-text"><div class="eyebrow">Gra 1</div><h2>Kółko i krzyżyk skoczków</h2>
+        <p>Jak piłkarskie Tiki-Taka-Toe. Wiersze to kraje, kolumny — osiągnięcia. Zajmujesz pole, podając zawodnika, który pasuje do obu
+        (np. <b>Polska × Medal igrzysk</b>). Każdy zawodnik raz na grę. Zła odpowiedź = ruch przeciwnika. Wygrywa trzy w linii.</p></div>
+      ${m ? (others.length ? `<form data-form="newGame" class="newgame"><label>Zagraj z
+          <select name="opp">${others.map((o) => `<option value="${o.id}">${esc(tname(o))} (${esc(o.name)})</option>`).join('')}</select></label>
+          <button class="primary" type="submit">${icon('plus')}Nowa gra</button><div class="formerr"></div></form>` : '<p class="muted">Potrzebny drugi gracz w lidze.</p>')
+        : '<p class="muted">Grać mogą gracze ligi (zaloguj się na konto gracza).</p>'}
+    </div>
+    ${turn.length ? `<div class="section"><div class="row"><h2>Twój ruch</h2><span class="tag acc">${turn.length}</span></div><div class="card pad0 game-list">${turn.map(row).join('')}</div></div>` : ''}
+    ${wait.length ? `<div class="section"><div class="row"><h2>Czekasz na rywala</h2></div><div class="card pad0 game-list">${wait.map(row).join('')}</div></div>` : ''}
+    ${done.length ? `<div class="section"><div class="row"><h2>Zakończone</h2></div><div class="card pad0 game-list">${done.map(row).join('')}</div></div>` : ''}
+    ${games.some((g) => g.status === 'done') ? `<div class="section card pad0"><div class="card-head"><h3>Tabela kółka i krzyżyka</h3></div><div class="tablewrap"><table>
+      <thead><tr><th>Gracz</th><th class="num">Wygrane</th><th class="num">Remisy</th><th class="num">Porażki</th></tr></thead>
+      <tbody>${state.participants.map((p) => ({ p, ...score[p.id] })).filter((r) => r.w + r.d + r.l).sort((a, b) => b.w - a.w || a.l - b.l)
+        .map((r) => `<tr class="${r.p.id === m?.id ? 'mine' : ''}"><td>${owner(r.p.id)}</td><td class="pts">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td></tr>`).join('')}</tbody></table></div></div>` : ''}`;
+}
+
+function graView(id) {
+  const g = state.games?.[id];
+  const back = `<a class="back" href="#gry">${icon('back')}Kącik gier</a>`;
+  if (!g) return back + `<div class="card empty">${icon('info')}<b>Nie ma takiej gry</b></div>`;
+  const m = me();
+  const myP = m && (g.x === m.id ? 'x' : g.o === m.id ? 'o' : null);
+  const myTurn = g.status === 'play' && myP === g.turn;
+  const win = tttWinner(g.cells);
+  const used = new Set(g.cells.filter(Boolean).map((c) => c.a));
+  const sel = ui.tttCell?.[id];
+  const player = (p) => `<div class="ttt-player ${g.status === 'play' && g.turn === p ? 'on' : ''} ${g.winner === p ? 'won' : ''}">${tttMark(p)}${avatar(P(g[p]) || { name: '?', color: '#64748b' }, 'sm')}<b>${esc(tname(P(g[p])) || '?')}</b>${myP === p ? '<span class="tag acc">Ty</span>' : ''}</div>`;
+  const status = g.status === 'done'
+    ? (g.winner === 'draw' ? 'Remis' : `Wygrywa ${esc(tname(P(g[g.winner])) || '?')} ${tttMark(g.winner)}`)
+    : myTurn ? 'Twój ruch — wybierz pole' : `Ruch: ${esc(tname(P(g[g.turn])) || '?')}`;
+  const cell = (i) => {
+    const r = g.rows[Math.floor(i / 3)]; const c = g.cols[i % 3]; const v = g.cells[i];
+    if (v) return `<div class="ttt-cell taken ${v.p} ${win?.line.includes(i) ? 'line' : ''}">${tttMark(v.p)}${portrait(byId[v.a] || { name: '?' })}<span class="ttt-name">${esc(prettyName(athInfo(v.a).name).last)}</span></div>`;
+    if (!myTurn) return `<div class="ttt-cell empty ${g.status === 'done' ? 'over' : ''}">${g.status === 'done' ? `<span class="muted xs">${tttAnswers(r, c).filter((a) => !used.has(a.id)).length} możliwych</span>` : ''}</div>`;
+    return `<button class="ttt-cell pick ${sel === i ? 'sel' : ''}" data-action="tttCell" data-g="${id}" data-i="${i}" title="${esc(countryName(r))} × ${esc(TTT_CATS[c][1])}">＋</button>`;
+  };
+  const log = (g.log || []).slice().reverse().slice(0, 14).map((e) => {
+    const who = esc(tname(P(g[e.p])) || '?');
+    const where = e.cell != null ? `${esc(countryName(g.rows[Math.floor(e.cell / 3)]))} × ${esc(TTT_CATS[g.cols[e.cell % 3]][1])}` : '';
+    const ath = e.a ? esc(prettyName(athInfo(e.a).name).first + ' ' + prettyName(athInfo(e.a).name).last) : '';
+    const txt = e.k === 'move' ? `${tttMark(e.p)} <b>${who}</b>: ${ath} ✓ <span class="muted">(${where})</span>`
+      : e.k === 'miss' ? `${tttMark(e.p)} <b>${who}</b>: ${ath} ✗ <span class="muted">(${where}) — nie pasuje</span>`
+        : e.k === 'pass' ? `${tttMark(e.p)} <b>${who}</b> pasuje` : e.k === 'resign' ? `${tttMark(e.p)} <b>${who}</b> poddaje się` : '';
+    return `<li>${txt}</li>`;
+  }).join('');
+  const opts = tttPool().filter((a) => !used.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
+  return back + `<div class="card ttt-top">${player('x')}<div class="ttt-status">${status}</div>${player('o')}</div>
+    <div class="ttt-wrap">
+      <div class="ttt-board">
+        <div class="ttt-corner">${icon('team')}</div>
+        ${g.cols.map((c) => `<div class="ttt-head col">${catHead(c)}</div>`).join('')}
+        ${[0, 1, 2].map((r) => `<div class="ttt-head row">${natHead(g.rows[r])}</div>${[0, 1, 2].map((c) => cell(r * 3 + c)).join('')}`).join('')}
+      </div>
+      <div class="ttt-side">
+        ${myTurn ? (sel != null ? `<div class="card ttt-ask"><div class="muted xs">Wybrane pole</div>
+            <div class="ttt-q">${natHead(g.rows[Math.floor(sel / 3)])} <span class="muted">×</span> ${catHead(g.cols[sel % 3])}</div>
+            <form data-form="tttMove" class="ttt-form" autocomplete="off"><input type="hidden" name="g" value="${id}"><input type="hidden" name="i" value="${sel}">
+              <input id="ttt-q" name="q" list="ttt-list" placeholder="Wpisz nazwisko zawodnika…" required autofocus>
+              <datalist id="ttt-list">${opts.map((a) => `<option value="${esc(skLabel(a))}"></option>`).join('')}</datalist>
+              <button class="primary" type="submit">Zatwierdź</button><div class="formerr"></div></form>
+            <p class="muted xs">Zła odpowiedź oddaje ruch przeciwnikowi.</p></div>`
+          : '<div class="card ttt-ask muted small">Kliknij wolne pole (＋), żeby je zająć.</div>')
+          + `<div class="row ttt-actions"><button class="sm" data-action="tttPass" data-g="${id}">Pas</button><button class="sm danger ghost" data-action="tttResign" data-g="${id}">Poddaj się</button></div>` : ''}
+        ${g.status === 'done' ? `<div class="row ttt-actions">${myP ? `<button class="primary" data-action="tttRematch" data-g="${id}">${icon('plus')}Rewanż</button>` : ''}</div>` : ''}
+        <div class="card ttt-log"><h3>Przebieg</h3><ol>${log || '<li class="muted">Jeszcze nikt się nie ruszył.</li>'}</ol></div>
+      </div>
+    </div>
+    ${g.status === 'done' ? `<div class="section card"><h3>Możliwe odpowiedzi</h3><div class="ttt-ans">${g.cells.map((v, i) => {
+      const list = tttAnswers(g.rows[Math.floor(i / 3)], g.cols[i % 3]);
+      return `<div><div class="muted xs">${esc(countryName(g.rows[Math.floor(i / 3)]))} × ${esc(TTT_CATS[g.cols[i % 3]][1])}</div>${list.map((a) => esc(prettyName(a.name).last)).join(', ')}</div>`;
+    }).join('')}</div></div>` : ''}`;
+}
+
+// Zapis ruchów – w transakcji, z kontrolą kolejki
+function tttUpdate(id, fn) {
+  const m = me();
+  return save((s) => {
+    const g = s.games?.[id];
+    if (!g || g.status !== 'play') fail('Ta gra już się skończyła');
+    const p = g.x === m?.id ? 'x' : g.o === m?.id ? 'o' : null;
+    if (!p) fail('To nie Twoja gra');
+    fn(g, p);
+    g.updated = new Date().toISOString();
+    return s;
+  });
+}
+function tttNextTurn(g) {
+  const w = tttWinner(g.cells);
+  if (w) { g.status = 'done'; g.winner = w.p; return; }
+  if (g.cells.every(Boolean) || (g.passes || 0) >= 4) { g.status = 'done'; g.winner = 'draw'; return; }
+  g.turn = g.turn === 'x' ? 'o' : 'x';
+}
+function tttNew(s, a, b) {
+  const id = randomId(8);
+  const [x, o] = Math.random() < 0.5 ? [a, b] : [b, a];
+  const { rows, cols } = tttGrid(`${id}|${Date.now()}`);
+  s.games = s.games || {};
+  // trzymamy 40 ostatnich zakończonych gier
+  const old = Object.values(s.games).filter((g) => g.status === 'done').sort((p, q) => (q.updated || '').localeCompare(p.updated || '')).slice(40);
+  for (const g of old) delete s.games[g.id];
+  s.games[id] = { id, type: 'ttt', x, o, rows, cols, cells: Array(9).fill(null), turn: 'x', status: 'play', winner: null, passes: 0, log: [],
+    created: new Date().toISOString(), updated: new Date().toISOString() };
+  return id;
+}
+
 // ================================================================ zasady
 
 // ================================================================ skokdle (codzienna zagadka)
@@ -2309,7 +2488,7 @@ function zasady() {
 // ================================================================ więcej (telefon)
 
 function wiecej() {
-  const items = [['analityka', 'Analityka', 'chart'], ['zasady', 'Zasady', 'info'], ['nagrody', 'Nagrody', 'trophy'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
+  const items = [['gry', `Kącik gier${myGameTurns() ? ` <span class="tag acc">${myGameTurns()}</span>` : ''}`, 'game'], ['analityka', 'Analityka', 'chart'], ['zasady', 'Zasady', 'info'], ['nagrody', 'Nagrody', 'trophy'], ['draft', 'Draft', 'draft'], ['zawodnicy', 'Zawodnicy', 'list'], ['puchar', 'Puchar Świata', 'globe']];
   if (isAdmin()) items.push(['admin', 'Panel admina', 'settings']);
   return `<div class="page-head"><h1>Więcej</h1></div>
     <div class="card menu" style="position:static;box-shadow:none;min-width:0">
@@ -2416,6 +2595,37 @@ function newParticipant(s, username, passHash, team = '') {
 }
 
 const forms = {
+  async newGame(f, err) {
+    const m = me();
+    if (!m) return err('Grać mogą gracze ligi');
+    if (!P(f.opp) || f.opp === m.id) return err('Wybierz rywala');
+    if (!Object.keys(profSummary).length) return err('Brak danych zawodników – spróbuj za chwilę');
+    let id;
+    if (await save((s) => { id = tttNew(s, m.id, f.opp); return s; })) location.hash = `#gra/${id}`;
+  },
+  async tttMove(f, err) {
+    const g = state.games?.[f.g];
+    const i = Number(f.i);
+    if (!g) return err('Nie ma takiej gry');
+    const q = skNorm(f.q);
+    const pool = tttPool();
+    const hit = pool.find((a) => skNorm(skLabel(a)) === q) || (pool.filter((a) => skNorm(skLabel(a)).includes(q)).length === 1 && pool.find((a) => skNorm(skLabel(a)).includes(q)));
+    if (!hit) return err('Wybierz zawodnika z listy podpowiedzi');
+    if (g.cells.some((c) => c?.a === hit.id)) return err('Ten zawodnik już jest na planszy');
+    let ok = false;
+    const saved = await tttUpdate(f.g, (gg, p) => {
+      if (gg.turn !== p) fail('Teraz ruch rywala');
+      if (gg.cells[i]) fail('To pole jest już zajęte');
+      ok = tttFits(hit, gg.rows[Math.floor(i / 3)], gg.cols[i % 3]);
+      if (ok) { gg.cells[i] = { p, a: hit.id }; gg.passes = 0; gg.log.push({ k: 'move', p, cell: i, a: hit.id }); }
+      else gg.log.push({ k: 'miss', p, cell: i, a: hit.id });
+      tttNextTurn(gg);
+    });
+    if (!saved) return;
+    ui.tttCell = { ...(ui.tttCell || {}), [f.g]: null };
+    toast(ok ? `${prettyName(hit.name).last} — dobrze! Pole Twoje.` : `${prettyName(hit.name).last} nie pasuje — ruch przechodzi na rywala.`, ok ? 'ok' : 'warn');
+    render();
+  },
   async cmp(f, err) {
     const q = skNorm(f.q);
     const list = [...profIndex].map((x) => byId[x]).filter(Boolean);
@@ -2532,6 +2742,22 @@ const actions = {
 
   gender: (el) => { ui.gender = el.dataset.v; ui.limit = 150; render(); },
   more: () => { ui.limit += 150; render(); },
+  tttCell: (el) => { ui.tttCell = { ...(ui.tttCell || {}), [el.dataset.g]: Number(el.dataset.i) }; render(); setTimeout(() => document.getElementById('ttt-q')?.focus(), 30); },
+  tttPass: async (el) => {
+    if (!await confirmModal('Spasować?', 'Oddajesz ruch bez zajmowania pola. Po 4 pasach z rzędu gra kończy się remisem.', 'Pas')) return;
+    tttUpdate(el.dataset.g, (g, p) => { if (g.turn !== p) fail('Teraz ruch rywala'); g.passes = (g.passes || 0) + 1; g.log.push({ k: 'pass', p }); tttNextTurn(g); });
+  },
+  tttResign: async (el) => {
+    if (!await confirmModal('Poddać się?', 'Rywal wygra tę grę.', 'Poddaj się', true)) return;
+    tttUpdate(el.dataset.g, (g, p) => { g.log.push({ k: 'resign', p }); g.status = 'done'; g.winner = p === 'x' ? 'o' : 'x'; });
+  },
+  tttRematch: async (el) => {
+    const g0 = state.games?.[el.dataset.g];
+    const m = me();
+    if (!g0 || !m) return;
+    let nid;
+    if (await save((s) => { nid = tttNew(s, g0.x, g0.o); return s; })) location.hash = `#gra/${nid}`;
+  },
   goBack: (el) => { if (history.length > 1) history.back(); else location.hash = '#zawodnicy'; },
   cmpAge: (el) => { ui.cmpAge = el.dataset.v === '1'; render(); },
   skToggle: () => { ui.skOpen = !ui.skOpen; ui.skAnim = ui.skOpen; render(); },

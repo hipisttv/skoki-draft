@@ -162,6 +162,23 @@ def add_tours(prof, tours_by_season):
             s.setdefault("tours", {}).setdefault(name, val)
 
 
+def profile_summary(p):
+    """w/p – zwycięstwa/podia PŚ, og/ws/sf – medale IO/MŚ/MŚ w lotach (z drużynowymi), gl – Kryształowe Kule,
+    tc – wygrane TCS, fl – Małe Kule w lotach, b – najlepsze miejsce w PŚ, mx – rekord punktów w sezonie, ss – sezony z punktami."""
+    c = p.get("career", {})
+    ss = [s for s in p.get("seasons", []) if s.get("points")]
+    medals = lambda cat: max(c.get(cat, {}).get("podiums", 0), 0) + sum(1 for m in p.get("medals", []) if m["cat"] == cat and m["team"])
+    return {
+        "w": c.get("WC", {}).get("wins", 0), "p": c.get("WC", {}).get("podiums", 0),
+        "og": medals("OWG"), "ws": medals("WSC"), "sf": medals("SFWC"),
+        "gl": sum(1 for s in ss if s.get("rank") == 1),
+        "tc": sum(1 for s in p.get("seasons", []) if (s.get("tours") or {}).get("Four Hills", [0])[0] == 1),
+        "fl": sum(1 for s in p.get("seasons", []) if (s.get("tours") or {}).get("Ski Flying Standing", [0])[0] == 1),
+        "b": min((s["rank"] for s in ss if s.get("rank")), default=None),
+        "mx": max((s["points"] for s in ss), default=0), "ss": len(ss),
+    }
+
+
 def build_profile(cid):
     cups = parse_cups(fetch(bio_url(cid, type="cups")))
     # categorycode=WC – bez niego FIS pokazuje podia z innego pucharu (np. COC), gdy w PŚ nie ma żadnego
@@ -236,8 +253,9 @@ def main():
         print(f"  {a['name']}: {len(prof['seasons'])} sezonów, PŚ {wc.get('wins', 0)} zw. / {wc.get('podiums', 0)} podiów, medale {len(prof['medals'])}")
     # indeks: kto ma profil (tylko ci z jakimkolwiek startem w PŚ)
     index = []
+    summary = {}
     for name in sorted(os.listdir(folder)):
-        if name.endswith(".json") and name != "index.json":
+        if name.endswith(".json") and name not in ("index.json", "summary.json"):
             with open(os.path.join(folder, name), encoding="utf-8") as f:
                 p = json.load(f)
             before = json.dumps(p, sort_keys=True)
@@ -247,8 +265,12 @@ def main():
                     json.dump(p, f, ensure_ascii=False, separators=(",", ":"))
             if p.get("career", {}).get("WC", {}).get("starts") or p.get("seasons"):
                 index.append(p["id"])
+                summary[p["id"]] = profile_summary(p)
     with open(os.path.join(folder, "index.json"), "w", encoding="utf-8") as f:
         json.dump(index, f)
+    # skrót kariery do gier (kategorie w kółku i krzyżyku) – jeden mały plik zamiast 145 profili
+    with open(os.path.join(folder, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, separators=(",", ":"))
     print(f"Profile: {len(index)} (zaktualizowano {len(todo)})")
 
 
