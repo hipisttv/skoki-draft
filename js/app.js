@@ -1655,19 +1655,38 @@ const skNorm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 // pula: punktujący w PŚ zeszłego sezonu (od 14.11.2026 także ci, którzy zakończyli karierę),
 // od 19.11.2026 z kobiet tylko top 10 zeszłego sezonu + Polki. Zmiany zawsze od następnego dnia,
 // żeby nie podmienić zagadki komuś w trakcie gry.
-const skPool = () => {
-  const day = skDay();
+const skPool = (day = skDay()) => {
   let pool = athletes.filter((a) => a.wc > 0);
   if (day >= '2026-11-14') pool = [...pool, ...(standings?.previous?.retired || []).map((r) => byId[r.id]).filter(Boolean)];
   if (day >= '2026-11-19') pool = pool.filter((a) => a.gender === 'M' || (a.wcRank && a.wcRank <= 10) || a.nation === 'POL');
   return pool;
 };
 // skocznie: z kalendarza sezonu, od 19.11.2026 także znane skocznie spoza kalendarza (extra w hills.json)
-const skHills = () => Object.keys(hills).filter((k) => !hills[k].extra || skDay() >= '2026-11-19').sort();
+const skHills = (day = skDay()) => Object.keys(hills).filter((k) => !hills[k].extra || day >= '2026-11-19').sort();
 // SK_SEED: zmiana = reset Skokdle (nowe zagadki i czysty postęp u wszystkich)
-const SK_SEED = 'v3';
-const skTargetA = () => { const pool = skPool(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skoczek`) % pool.length] : null; };
-const skTargetH = () => { const pool = skHills(); return pool.length ? pool[skHash(`${SK_SEED}|${skDay()}|skocznia`) % pool.length] : null; };
+const SK_SEED = 'v4';
+// Od SK_EPOCH zagadki losujemy dzień po dniu bez powtórek: skoczek nie wraca przez 30 dni, skocznia przez 14
+// (przy małej puli – przez tyle dni, ile się da). Ten sam wynik na każdym urządzeniu.
+const SK_EPOCH = '2026-11-20';
+const skNext = (d) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+const skSeq = {};
+function skPick(kind, poolFn, keyOf, window, day = skDay()) {
+  const memo = `${kind}|${day}`;
+  if (memo in skSeq) return skSeq[memo];
+  const recent = [];
+  let pick = null;
+  for (let d = day < SK_EPOCH ? day : SK_EPOCH; d <= day; d = skNext(d)) {
+    const pool = poolFn(d);
+    if (!pool.length) continue;
+    const block = new Set(recent.slice(-Math.min(window, pool.length - 1)));
+    const order = pool.map((x) => [skHash(`${SK_SEED}|${d}|${kind}|${keyOf(x)}`), x]).sort((a, b) => a[0] - b[0]);
+    pick = (order.find(([, x]) => !block.has(keyOf(x))) || order[0])[1];
+    recent.push(keyOf(pick));
+  }
+  return (skSeq[memo] = pick);
+}
+const skTargetA = () => skPick('skoczek', skPool, (a) => a.id, 30);
+const skTargetH = () => skPick('skocznia', skHills, (h) => h, 14);
 const skLabel = (a) => { const n = prettyName(a.name); return `${n.first} ${n.last.toUpperCase()} · ${a.nation}${a.retired ? ' (emeryt)' : ''}`; };
 const skKey = () => `skokdle-${SK_SEED}-${skDay()}`;
 // Postęp dnia: zapisany na koncie gracza w bazie ligi (ga/gh = próby), kopia w przeglądarce.
