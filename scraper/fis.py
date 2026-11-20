@@ -814,8 +814,11 @@ def build_results(race, outdir):
             return old
     h = fetch(f"{BASE}/general/results.html?sectorcode=JP&raceid={race['id']}")
     rows = parse_results(h)
-    if not rows:
-        return None
+    # przed konkursem FIS pokazuje tu listę startową (numery bez odległości i not) – to nie są wyniki;
+    # przyjmujemy wyniki dopiero, gdy każdy sklasyfikowany ma odległość albo notę
+    ranked = [r for r in rows if r["rank"]]
+    if not ranked or not all(r["jumps"] or r["total"] for r in ranked):
+        return old
     record = old.get("hillRecord") if old else None
     if not record:
         url = results_pdf_url(h)
