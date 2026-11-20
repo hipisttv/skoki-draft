@@ -71,6 +71,7 @@ const COUNTRY = {
   LAT: 'Łotwa', LTU: 'Litwa', GEO: 'Gruzja', BLR: 'Białoruś', HUN: 'Węgry', NED: 'Holandia', ESP: 'Hiszpania',
   BEL: 'Belgia', DEN: 'Dania', RSA: 'RPA', ISR: 'Izrael', AND: 'Andora', KGZ: 'Kirgistan', ARG: 'Argentyna',
   AZE: 'Azerbejdżan', KOS: 'Kosowo', SGP: 'Singapur', SRB: 'Serbia', THA: 'Tajlandia',
+  GDR: 'NRD', FRG: 'RFN', TCH: 'Czechosłowacja', URS: 'ZSRR', YUG: 'Jugosławia', EUN: 'WNP',
 };
 export const countryName = (nation) => COUNTRY[nation] || nation;
 // tekst do wyszukiwania: małe litery bez polskich znaków („slowenia” znajdzie Słowenię)

@@ -176,6 +176,8 @@ def profile_summary(p):
         "fl": sum(1 for s in p.get("seasons", []) if (s.get("tours") or {}).get("Ski Flying Standing", [0])[0] == 1),
         "b": min((s["rank"] for s in ss if s.get("rank")), default=None),
         "mx": max((s["points"] for s in ss), default=0), "ss": len(ss),
+        "ow": c.get("OWG", {}).get("wins", 0), "ww": c.get("WSC", {}).get("wins", 0),
+        "f": min((s["season"] for s in ss), default=None), "l": max((s["season"] for s in ss), default=None),
     }
 
 

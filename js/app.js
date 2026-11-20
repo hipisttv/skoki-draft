@@ -155,6 +155,7 @@ async function loadData() {
     get('hills.json').catch(() => ({})), get('hilldata.json').catch(() => ({}))]);
   profIndex = new Set(await get('profiles/index.json').catch(() => []));
   profSummary = await get('profiles/summary.json').catch(() => ({}));
+  const legends = await get('legends.json').catch(() => ({}));
   hills = h || {};
   hilldata = hd || {};
   athletes = a.athletes;
@@ -164,6 +165,11 @@ async function loadData() {
   standings = s;
   // emeryci z punktami zeszłego sezonu – nie do draftu, tylko do Skokdle i wyświetlania
   for (const r of s?.previous?.retired || []) byId[r.id] = byId[r.id] || { ...r, idx: 9999 };
+  // legendy i emeryci (wszyscy punktujący w PŚ od 1979/80) – do gier; aktywni są już w byId z athletes.json
+  for (const [id, L] of Object.entries(legends)) {
+    if (!byId[id]) byId[id] = { id, name: L.n, nation: L.c, gender: L.g, born: L.y, wc: 0, idx: 99999, retired: true, legend: true };
+    if (!profSummary[id]) profSummary[id] = L;
+  }
   weekends = buildWeekends(c.events.filter((e) => !e.cancelled));
   const races = weekends.flatMap((w) => w.races).filter((r) => r.hasResults);
   const bundle = await get('results.json').catch(() => ({}));
@@ -1662,7 +1668,7 @@ function compareBlock(pr, a) {
 // Kółko i krzyżyk skoczków (jak piłkarskie Tiki-Taka-Toe): wiersze – kraje, kolumny – osiągnięcia.
 // Pole zajmuje się zawodnikiem, który pasuje do obu; zły strzał oddaje ruch. Gry między graczami ligi, w bazie ligi.
 let profSummary = {};
-const TTT_NATIONS = ['POL', 'AUT', 'NOR', 'SLO', 'GER', 'JPN', 'SUI', 'FIN', 'ITA', 'CZE', 'USA', 'CAN'];
+const TTT_NATIONS = ['POL', 'AUT', 'NOR', 'SLO', 'GER', 'JPN', 'SUI', 'FIN', 'ITA', 'CZE', 'USA', 'CAN', 'RUS', 'FRA'];
 const TTT_CATS = {
   win: ['🥇', 'Zwycięstwo w PŚ', (a, x) => x.w >= 1],
   pod: ['🏅', 'Podium w PŚ', (a, x) => x.p >= 1],
@@ -1679,9 +1685,21 @@ const TTT_CATS = {
   old: ['🧓', 'Rocznik 1995 lub starszy', (a) => a.born && a.born <= 1995],
   women: ['👩', 'Kobieta', (a) => a.gender === 'W'],
   vet: ['📅', '10+ sezonów z punktami PŚ', (a, x) => x.ss >= 10],
+  ss15: ['🗓️', '15+ sezonów z punktami PŚ', (a, x) => x.ss >= 15],
+  goldO: ['🟡', 'Złoto igrzysk (ind.)', (a, x) => x.ow >= 1],
+  goldW: ['🌟', 'Złoto MŚ (ind.)', (a, x) => x.ww >= 1],
+  w30: ['👑', '30+ zwycięstw w PŚ', (a, x) => x.w >= 30],
+  p50: ['🎖️', '50+ podiów w PŚ', (a, x) => x.p >= 50],
+  retired: ['🏁', 'Zakończył(a) karierę', (a) => !!a.retired],
+  active: ['🔥', 'Wciąż skacze w PŚ', (a) => !a.retired],
+  born80: ['📼', 'Rocznik 1980 lub starszy', (a) => a.born && a.born <= 1980],
+  pre2000: ['📺', 'Punktował(a) w PŚ przed 2000', (a, x) => x.f && x.f < 2000],
+  flying: ['🛩️', 'Kula w lotach (od 2010)', (a, x) => x.fl >= 1],
 };
 const tttPool = () => Object.keys(profSummary).map((id) => byId[id]).filter(Boolean);
-const tttFits = (a, row, col) => !!a && a.nation === row && TTT_CATS[col][2](a, profSummary[a.id] || {});
+// dawne państwa liczą się jak dzisiejsze (Weissflog z NRD = Niemcy itd.)
+const NATION_NOW = { GDR: 'GER', FRG: 'GER', TCH: 'CZE', URS: 'RUS', YUG: 'SLO' };
+const tttFits = (a, row, col) => !!a && (NATION_NOW[a.nation] || a.nation) === row && TTT_CATS[col][2](a, profSummary[a.id] || {});
 const tttAnswers = (row, col) => tttPool().filter((a) => tttFits(a, row, col));
 
 // Losowanie planszy – każde pole musi mieć co najmniej 2 poprawne odpowiedzi
@@ -1742,7 +1760,8 @@ function gry() {
     <div class="card game-hero">
       <div class="gh-text"><div class="eyebrow">Gra 1</div><h2>Kółko i krzyżyk skoczków</h2>
         <p>Jak piłkarskie Tiki-Taka-Toe. Wiersze to kraje, kolumny — osiągnięcia. Zajmujesz pole, podając zawodnika, który pasuje do obu
-        (np. <b>Polska × Medal igrzysk</b>). Każdy zawodnik raz na grę. Zła odpowiedź = ruch przeciwnika. Wygrywa trzy w linii.</p></div>
+        (np. <b>Polska × Medal igrzysk</b>). Każdy zawodnik raz na grę. Zła odpowiedź = ruch przeciwnika. Wygrywa trzy w linii.</p>
+        <p class="muted small">Baza: ${Object.keys(profSummary).length} zawodników i zawodniczek — wszyscy, którzy punktowali w PŚ od sezonu 1979/80, razem z legendami i emerytami.</p></div>
       <div class="gh-modes">
         <div class="gh-mode"><b>${icon('team')}Ze znajomym</b>
           ${m ? `<button class="primary" data-action="tttLobby">${icon('plus')}Utwórz grę i dostań kod</button>
