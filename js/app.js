@@ -209,10 +209,25 @@ function updateSyncBar() {
 }
 
 // Bot publikuje calendar.json tylko przy nowych danych – zmiana „updated” = trzeba dociągnąć resztę.
+// Wersja kodu (skrót commita z adresu skryptu, wstawiany przy wdrożeniu). Gdy na serwerze jest nowsza,
+// otwarta karta przeładowuje się sama – inaczej działałaby na starym kodzie aż do ręcznego odświeżenia.
+const APP_VER = new URL(import.meta.url).searchParams.get('v') || 'dev';
+async function checkAppVersion() {
+  if (APP_VER === 'dev') return false;
+  try {
+    const html = await (await fetch(`index.html?x=${Date.now()}`, { cache: 'no-store' })).text();
+    const ver = html.match(/app\.js\?v=([a-z0-9]+)/)?.[1];
+    const typing = document.activeElement?.matches?.('input, textarea') && document.activeElement.value;
+    if (ver && ver !== 'dev' && ver !== APP_VER && !typing) { location.reload(); return true; }
+  } catch { /* bez sieci */ }
+  return false;
+}
+
 let refreshing = false;
 async function refreshData() {
   if (document.hidden || refreshing || !calendar) return;
   refreshing = true;
+  if (await checkAppVersion()) return;
   try {
     const r = await fetch(`${DATA}/calendar.json?v=${Date.now()}`);
     if (r.ok && (await r.json()).updated !== calendar.updated) {
