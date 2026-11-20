@@ -1126,3 +1126,20 @@ button.ttt-cell.pick:hover, button.ttt-cell.pick.sel { background: var(--accent-
   .ttt-status { grid-column: 1 / -1; grid-row: 1; justify-content: center; }
   .ttt-ans { grid-template-columns: 1fr; }
 }
+
+/* kącik gier – tryby, poczekalnia z kodem, komputer */
+.gh-modes { display: grid; gap: .7rem; }
+.gh-mode { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: .8rem .9rem; display: flex; flex-direction: column; gap: .5rem; }
+.gh-mode > b { display: flex; align-items: center; gap: .4rem; font-size: .95rem; }
+.gh-mode > b svg { width: 18px; height: 18px; color: var(--accent); }
+.gh-mode .seg { display: flex; }
+.gh-mode .seg button { flex: 1; }
+.joingame { display: flex; gap: .4rem; flex-wrap: wrap; }
+.joingame input { flex: 1; min-width: 120px; text-transform: uppercase; letter-spacing: .18em; font-weight: 800; text-align: center; }
+.joingame .formerr { width: 100%; margin: 0; }
+.lobby-card { text-align: center; padding: 1.6rem 1.2rem; display: grid; gap: .8rem; justify-items: center; }
+.lobby-card .eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.lobby-code { font: 800 clamp(2.4rem, 9vw, 3.6rem)/1 var(--font-d); letter-spacing: .25em; padding: .5rem 1rem .5rem 1.25rem;
+  border: 2px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); color: var(--accent); }
+.lobby-card p { max-width: 460px; color: var(--text-2); }
+.avatar.cpu { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--card-2); border: 1px solid var(--line); font-size: .95rem; }

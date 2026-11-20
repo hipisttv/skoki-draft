@@ -1703,14 +1703,26 @@ const tttMark = (p) => `<span class="ttt-mark ${p}">${p === 'x' ? '✕' : '◯'}
 const catHead = (c) => `<span class="ttt-ico">${TTT_CATS[c][0]}</span><span>${esc(TTT_CATS[c][1])}</span>`;
 const natHead = (n) => `${flag(n)}<span>${esc(countryName(n))}</span>`;
 
+// Gra z komputerem – tylko w tej przeglądarce (nie zapisuje się w bazie ligi)
+const CPU_LEVELS = { easy: ['Łatwy', 0.5], mid: ['Średni', 0.75], hard: ['Trudny', 0.93] };
+const SOLO_KEY = 'ttt-solo';
+const soloGame = () => LS.get(SOLO_KEY, null);
+const getGame = (id) => (id === 'solo' ? soloGame() : state.games?.[id]);
+const meId = () => me()?.id || 'guest';
+const gName = (g, pid) => (pid === 'cpu' ? `Komputer · ${CPU_LEVELS[g.level]?.[0] || ''}` : pid === 'guest' ? 'Ty' : P(pid) ? tname(P(pid)) : pid ? '?' : 'czeka…');
+const gAvatar = (g, pid) => (pid === 'cpu' ? '<span class="avatar sm cpu">🤖</span>' : avatar(P(pid) || { name: pid === 'guest' ? 'Ty' : '?', color: '#64748b' }, 'sm'));
+const LOBBY_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const lobbyCode = () => Array.from({ length: 6 }, () => LOBBY_CHARS[Math.floor(Math.random() * LOBBY_CHARS.length)]).join('');
+
 function gry() {
   const m = me();
   const games = Object.values(state.games || {}).sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
-  const mine = m ? games.filter((g) => g.x === m.id || g.o === m.id) : games;
+  const mine = m ? games.filter((g) => g.x === m.id || g.o === m.id) : [];
+  const lobbies = mine.filter((g) => g.status === 'lobby');
   const turn = mine.filter((g) => g.status === 'play' && g[g.turn] === m?.id);
   const wait = mine.filter((g) => g.status === 'play' && g[g.turn] !== m?.id);
   const done = games.filter((g) => g.status === 'done').slice(0, 12);
-  const others = state.participants.filter((p) => p.id !== m?.id);
+  const solo = soloGame();
   const score = Object.fromEntries(state.participants.map((p) => [p.id, { w: 0, d: 0, l: 0 }]));
   for (const g of games.filter((x) => x.status === 'done')) {
     if (g.winner === 'draw') { score[g.x] && score[g.x].d++; score[g.o] && score[g.o].d++; } else {
@@ -1719,25 +1731,33 @@ function gry() {
     }
   }
   const row = (g) => {
-    const opp = P(m && g.x === m.id ? g.o : g.x);
-    const vs = m ? `z ${esc(opp ? tname(opp) : '?')}` : `${esc(tname(P(g.x)) || '?')} vs ${esc(tname(P(g.o)) || '?')}`;
-    const res = g.status === 'done' ? (g.winner === 'draw' ? '<span class="tag">remis</span>' : `<span class="tag ${m && g[g.winner] === m.id ? 'good' : m ? 'bad' : ''}">${m ? (g[g.winner] === m.id ? 'wygrana' : 'porażka') : `wygrał(a) ${esc(tname(P(g[g.winner])) || '?')}`}</span>`)
-      : g[g.turn] === m?.id ? '<span class="tag acc">Twój ruch</span>' : '<span class="tag muted">czeka na ruch rywala</span>';
-    return `<a class="game-row" href="#gra/${g.id}">${avatar(opp || P(g.o) || { name: '?', color: '#64748b' }, 'sm')}<span class="grow"><b>Kółko i krzyżyk</b> ${vs}<span class="muted xs"> · ${g.cells.filter(Boolean).length}/9 pól</span></span>${res}${icon('chevron')}</a>`;
+    const oppId = m && g.x === m.id ? g.o : g.x;
+    const vs = m ? `z ${esc(gName(g, oppId))}` : `${esc(gName(g, g.x))} vs ${esc(gName(g, g.o))}`;
+    const res = g.status === 'lobby' ? `<span class="tag acc">kod ${esc(g.code)}</span>`
+      : g.status === 'done' ? (g.winner === 'draw' ? '<span class="tag">remis</span>' : `<span class="tag ${m && g[g.winner] === m.id ? 'good' : m ? 'bad' : ''}">${m ? (g[g.winner] === m.id ? 'wygrana' : 'porażka') : `wygrał(a) ${esc(gName(g, g[g.winner]))}`}</span>`)
+        : g[g.turn] === m?.id ? '<span class="tag acc">Twój ruch</span>' : '<span class="tag muted">czeka na ruch rywala</span>';
+    return `<a class="game-row" href="#gra/${g.id}">${gAvatar(g, oppId)}<span class="grow"><b>Kółko i krzyżyk</b> ${g.status === 'lobby' ? 'czeka na drugiego gracza' : vs}<span class="muted xs"> · ${g.cells.filter(Boolean).length}/9 pól</span></span>${res}${icon('chevron')}</a>`;
   };
-  return `<div class="page-head"><div><h1>Kącik gier</h1><div class="sub">Gry dla graczy ligi — każdy rusza się, kiedy ma czas</div></div></div>
+  return `<div class="page-head"><div><h1>Kącik gier</h1><div class="sub">Zagraj ze znajomym (kod zaproszenia) albo z komputerem</div></div></div>
     <div class="card game-hero">
       <div class="gh-text"><div class="eyebrow">Gra 1</div><h2>Kółko i krzyżyk skoczków</h2>
         <p>Jak piłkarskie Tiki-Taka-Toe. Wiersze to kraje, kolumny — osiągnięcia. Zajmujesz pole, podając zawodnika, który pasuje do obu
         (np. <b>Polska × Medal igrzysk</b>). Każdy zawodnik raz na grę. Zła odpowiedź = ruch przeciwnika. Wygrywa trzy w linii.</p></div>
-      ${m ? (others.length ? `<form data-form="newGame" class="newgame"><label>Zagraj z
-          <select name="opp">${others.map((o) => `<option value="${o.id}">${esc(tname(o))} (${esc(o.name)})</option>`).join('')}</select></label>
-          <button class="primary" type="submit">${icon('plus')}Nowa gra</button><div class="formerr"></div></form>` : '<p class="muted">Potrzebny drugi gracz w lidze.</p>')
-        : '<p class="muted">Grać mogą gracze ligi (zaloguj się na konto gracza).</p>'}
+      <div class="gh-modes">
+        <div class="gh-mode"><b>${icon('team')}Ze znajomym</b>
+          ${m ? `<button class="primary" data-action="tttLobby">${icon('plus')}Utwórz grę i dostań kod</button>
+            <form data-form="joinGame" class="joingame" autocomplete="off"><input name="code" placeholder="Kod zaproszenia" maxlength="6" required>
+              <button type="submit">Dołącz</button><div class="formerr"></div></form>`
+            : '<p class="muted small">Gra ze znajomym – po zalogowaniu na konto gracza.</p>'}</div>
+        <div class="gh-mode"><b>🤖 Z komputerem</b>
+          <div class="seg">${Object.entries(CPU_LEVELS).map(([k, [l]]) => `<button data-action="tttSolo" data-v="${k}">${l}</button>`).join('')}</div>
+          ${solo && solo.status === 'play' ? '<a class="small" href="#gra/solo">Wróć do rozpoczętej gry ›</a>' : ''}</div>
+      </div>
     </div>
+    ${lobbies.length ? `<div class="section"><div class="row"><h2>Twoje zaproszenia</h2></div><div class="card pad0 game-list">${lobbies.map(row).join('')}</div></div>` : ''}
     ${turn.length ? `<div class="section"><div class="row"><h2>Twój ruch</h2><span class="tag acc">${turn.length}</span></div><div class="card pad0 game-list">${turn.map(row).join('')}</div></div>` : ''}
     ${wait.length ? `<div class="section"><div class="row"><h2>Czekasz na rywala</h2></div><div class="card pad0 game-list">${wait.map(row).join('')}</div></div>` : ''}
-    ${done.length ? `<div class="section"><div class="row"><h2>Zakończone</h2></div><div class="card pad0 game-list">${done.map(row).join('')}</div></div>` : ''}
+    ${done.length ? `<div class="section"><div class="row"><h2>Zakończone w lidze</h2></div><div class="card pad0 game-list">${done.map(row).join('')}</div></div>` : ''}
     ${games.some((g) => g.status === 'done') ? `<div class="section card pad0"><div class="card-head"><h3>Tabela kółka i krzyżyka</h3></div><div class="tablewrap"><table>
       <thead><tr><th>Gracz</th><th class="num">Wygrane</th><th class="num">Remisy</th><th class="num">Porażki</th></tr></thead>
       <tbody>${state.participants.map((p) => ({ p, ...score[p.id] })).filter((r) => r.w + r.d + r.l).sort((a, b) => b.w - a.w || a.l - b.l)
@@ -1745,19 +1765,26 @@ function gry() {
 }
 
 function graView(id) {
-  const g = state.games?.[id];
+  const g = getGame(id);
   const back = `<a class="back" href="#gry">${icon('back')}Kącik gier</a>`;
-  if (!g) return back + `<div class="card empty">${icon('info')}<b>Nie ma takiej gry</b></div>`;
-  const m = me();
-  const myP = m && (g.x === m.id ? 'x' : g.o === m.id ? 'o' : null);
+  if (!g) return back + `<div class="card empty">${icon('info')}<b>Nie ma takiej gry</b>${id === 'solo' ? 'Zacznij grę z komputerem w Kąciku gier.' : ''}</div>`;
+  const solo = id === 'solo';
+  const myP = g.x === meId() ? 'x' : g.o === meId() ? 'o' : null;
+  if (g.status === 'lobby') {
+    return back + `<div class="card lobby-card"><div class="eyebrow">Kod zaproszenia</div><div class="lobby-code">${esc(g.code)}</div>
+      <p>Wyślij ten kod znajomemu z ligi. Gdy wpisze go w <b>Kąciku gier → Dołącz</b>, gra ruszy (kto zaczyna — losujemy).</p>
+      <div class="row" style="justify-content:center;gap:.5rem"><button class="primary" data-action="copyCode" data-v="${esc(g.code)}">${icon('copy')}Kopiuj kod</button>
+      ${myP ? `<button class="danger ghost" data-action="tttCancel" data-g="${id}">Anuluj</button>` : ''}</div>
+      <p class="muted small">${icon('clock')} Czekamy na drugiego gracza…</p></div>`;
+  }
   const myTurn = g.status === 'play' && myP === g.turn;
   const win = tttWinner(g.cells);
   const used = new Set(g.cells.filter(Boolean).map((c) => c.a));
   const sel = ui.tttCell?.[id];
-  const player = (p) => `<div class="ttt-player ${g.status === 'play' && g.turn === p ? 'on' : ''} ${g.winner === p ? 'won' : ''}">${tttMark(p)}${avatar(P(g[p]) || { name: '?', color: '#64748b' }, 'sm')}<b>${esc(tname(P(g[p])) || '?')}</b>${myP === p ? '<span class="tag acc">Ty</span>' : ''}</div>`;
+  const player = (p) => `<div class="ttt-player ${g.status === 'play' && g.turn === p ? 'on' : ''} ${g.winner === p ? 'won' : ''}">${tttMark(p)}${gAvatar(g, g[p])}<b>${esc(gName(g, g[p]))}</b>${myP === p ? '<span class="tag acc">Ty</span>' : ''}</div>`;
   const status = g.status === 'done'
-    ? (g.winner === 'draw' ? 'Remis' : `Wygrywa ${esc(tname(P(g[g.winner])) || '?')} ${tttMark(g.winner)}`)
-    : myTurn ? 'Twój ruch — wybierz pole' : `Ruch: ${esc(tname(P(g[g.turn])) || '?')}`;
+    ? (g.winner === 'draw' ? 'Remis' : `Wygrywa ${esc(gName(g, g[g.winner]))} ${tttMark(g.winner)}`)
+    : myTurn ? 'Twój ruch — wybierz pole' : g[g.turn] === 'cpu' ? 'Komputer myśli…' : `Ruch: ${esc(gName(g, g[g.turn]))}`;
   const cell = (i) => {
     const r = g.rows[Math.floor(i / 3)]; const c = g.cols[i % 3]; const v = g.cells[i];
     if (v) return `<div class="ttt-cell taken ${v.p} ${win?.line.includes(i) ? 'line' : ''}">${tttMark(v.p)}${portrait(byId[v.a] || { name: '?' })}<span class="ttt-name">${esc(prettyName(athInfo(v.a).name).last)}</span></div>`;
@@ -1765,7 +1792,7 @@ function graView(id) {
     return `<button class="ttt-cell pick ${sel === i ? 'sel' : ''}" data-action="tttCell" data-g="${id}" data-i="${i}" title="${esc(countryName(r))} × ${esc(TTT_CATS[c][1])}">＋</button>`;
   };
   const log = (g.log || []).slice().reverse().slice(0, 14).map((e) => {
-    const who = esc(tname(P(g[e.p])) || '?');
+    const who = esc(gName(g, g[e.p]));
     const where = e.cell != null ? `${esc(countryName(g.rows[Math.floor(e.cell / 3)]))} × ${esc(TTT_CATS[g.cols[e.cell % 3]][1])}` : '';
     const ath = e.a ? esc(prettyName(athInfo(e.a).name).first + ' ' + prettyName(athInfo(e.a).name).last) : '';
     const txt = e.k === 'move' ? `${tttMark(e.p)} <b>${who}</b>: ${ath} ✓ <span class="muted">(${where})</span>`
@@ -1774,6 +1801,7 @@ function graView(id) {
     return `<li>${txt}</li>`;
   }).join('');
   const opts = tttPool().filter((a) => !used.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
+  if (solo && g.status === 'play' && g[g.turn] === 'cpu') cpuSchedule();
   return back + `<div class="card ttt-top">${player('x')}<div class="ttt-status">${status}</div>${player('o')}</div>
     <div class="ttt-wrap">
       <div class="ttt-board">
@@ -1791,7 +1819,7 @@ function graView(id) {
             <p class="muted xs">Zła odpowiedź oddaje ruch przeciwnikowi.</p></div>`
           : '<div class="card ttt-ask muted small">Kliknij wolne pole (＋), żeby je zająć.</div>')
           + `<div class="row ttt-actions"><button class="sm" data-action="tttPass" data-g="${id}">Pas</button><button class="sm danger ghost" data-action="tttResign" data-g="${id}">Poddaj się</button></div>` : ''}
-        ${g.status === 'done' ? `<div class="row ttt-actions">${myP ? `<button class="primary" data-action="tttRematch" data-g="${id}">${icon('plus')}Rewanż</button>` : ''}</div>` : ''}
+        ${g.status === 'done' ? `<div class="row ttt-actions">${solo ? `<button class="primary" data-action="tttSolo" data-v="${g.level}">${icon('plus')}Jeszcze raz</button>` : myP ? `<button class="primary" data-action="tttRematch" data-g="${id}">${icon('plus')}Rewanż</button>` : ''}</div>` : ''}
         <div class="card ttt-log"><h3>Przebieg</h3><ol>${log || '<li class="muted">Jeszcze nikt się nie ruszył.</li>'}</ol></div>
       </div>
     </div>
@@ -1801,8 +1829,19 @@ function graView(id) {
     }).join('')}</div></div>` : ''}`;
 }
 
-// Zapis ruchów – w transakcji, z kontrolą kolejki
-function tttUpdate(id, fn) {
+// Zapis ruchów: gra w lidze – transakcja w bazie z kontrolą kolejki; gra z komputerem – w przeglądarce
+async function tttUpdate(id, fn) {
+  if (id === 'solo') {
+    const g = soloGame();
+    try {
+      if (!g || g.status !== 'play') fail('Ta gra już się skończyła');
+      fn(g, g.x === meId() ? 'x' : 'o');
+    } catch (e) { toast(e.message, 'err'); return false; }
+    g.updated = new Date().toISOString();
+    LS.set(SOLO_KEY, g);
+    render();
+    return true;
+  }
   const m = me();
   return save((s) => {
     const g = s.games?.[id];
@@ -1820,17 +1859,65 @@ function tttNextTurn(g) {
   if (g.cells.every(Boolean) || (g.passes || 0) >= 4) { g.status = 'done'; g.winner = 'draw'; return; }
   g.turn = g.turn === 'x' ? 'o' : 'x';
 }
-function tttNew(s, a, b) {
-  const id = randomId(8);
-  const [x, o] = Math.random() < 0.5 ? [a, b] : [b, a];
-  const { rows, cols } = tttGrid(`${id}|${Date.now()}`);
+const tttBlank = (id, x, o) => {
+  const { rows, cols } = tttGrid(`${id}|${Date.now()}|${Math.random()}`);
+  return { id, type: 'ttt', x, o, rows, cols, cells: Array(9).fill(null), turn: 'x', status: 'play', winner: null, passes: 0, log: [],
+    created: new Date().toISOString(), updated: new Date().toISOString() };
+};
+function tttPrune(s) {
   s.games = s.games || {};
-  // trzymamy 40 ostatnich zakończonych gier
+  // trzymamy 40 ostatnich zakończonych gier; porzucone zaproszenia znikają po 3 dniach
   const old = Object.values(s.games).filter((g) => g.status === 'done').sort((p, q) => (q.updated || '').localeCompare(p.updated || '')).slice(40);
   for (const g of old) delete s.games[g.id];
-  s.games[id] = { id, type: 'ttt', x, o, rows, cols, cells: Array(9).fill(null), turn: 'x', status: 'play', winner: null, passes: 0, log: [],
-    created: new Date().toISOString(), updated: new Date().toISOString() };
+  for (const g of Object.values(s.games)) if (g.status === 'lobby' && Date.now() - new Date(g.created) > 3 * 864e5) delete s.games[g.id];
+}
+// rewanż – od razu gra (obaj już grali); nowa gra ze znajomym – poczekalnia z kodem
+function tttNew(s, a, b) {
+  tttPrune(s);
+  const id = randomId(8);
+  const [x, o] = Math.random() < 0.5 ? [a, b] : [b, a];
+  s.games[id] = tttBlank(id, x, o);
   return id;
+}
+function tttNewLobby(s, host) {
+  tttPrune(s);
+  const id = randomId(8);
+  const taken = new Set(Object.values(s.games).map((g) => g.code));
+  let code; do { code = lobbyCode(); } while (taken.has(code));
+  s.games[id] = { ...tttBlank(id, host, null), status: 'lobby', code };
+  return id;
+}
+
+// Komputer: wygrywa, gdy może; blokuje; inaczej środek / narożnik. Poziom = szansa trafnej odpowiedzi.
+let cpuTimer = null;
+function cpuSchedule() {
+  if (cpuTimer) return;
+  cpuTimer = setTimeout(() => {
+    cpuTimer = null;
+    const g = soloGame();
+    if (!g || g.status !== 'play' || g[g.turn] !== 'cpu') return;
+    const p = g.turn; const op = p === 'x' ? 'o' : 'x';
+    const used = new Set(g.cells.filter(Boolean).map((c) => c.a));
+    const free = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((i) => !g.cells[i]);
+    const answers = (i) => tttAnswers(g.rows[Math.floor(i / 3)], g.cols[i % 3]).filter((a) => !used.has(a.id));
+    const playable = free.filter((i) => answers(i).length);
+    const wins = (who) => playable.filter((i) => TTT_LINES.some((l) => l.includes(i) && l.every((k) => k === i || g.cells[k]?.p === who)));
+    const acc = CPU_LEVELS[g.level]?.[1] ?? 0.75;
+    let target = wins(p)[0] ?? (Math.random() < acc ? wins(op)[0] : undefined);
+    if (target == null) target = [4, 0, 2, 6, 8].find((i) => playable.includes(i) && Math.random() < acc) ?? playable[Math.floor(Math.random() * playable.length)];
+    if (target == null) { g.passes = (g.passes || 0) + 1; g.log.push({ k: 'pass', p }); tttNextTurn(g); }
+    else if (Math.random() < acc) {
+      const pick = answers(target)[Math.floor(Math.random() * answers(target).length)];
+      g.cells[target] = { p, a: pick.id }; g.passes = 0; g.log.push({ k: 'move', p, cell: target, a: pick.id }); tttNextTurn(g);
+    } else {
+      const wrong = tttPool().filter((a) => !used.has(a.id) && !tttFits(a, g.rows[Math.floor(target / 3)], g.cols[target % 3]));
+      const w = wrong[Math.floor(Math.random() * wrong.length)];
+      g.log.push({ k: 'miss', p, cell: target, a: w?.id }); tttNextTurn(g);
+    }
+    g.updated = new Date().toISOString();
+    LS.set(SOLO_KEY, g);
+    render();
+  }, 1100);
 }
 
 // ================================================================ zasady
@@ -2595,16 +2682,24 @@ function newParticipant(s, username, passHash, team = '') {
 }
 
 const forms = {
-  async newGame(f, err) {
+  async joinGame(f, err) {
     const m = me();
-    if (!m) return err('Grać mogą gracze ligi');
-    if (!P(f.opp) || f.opp === m.id) return err('Wybierz rywala');
-    if (!Object.keys(profSummary).length) return err('Brak danych zawodników – spróbuj za chwilę');
+    if (!m) return err('Dołączyć mogą gracze ligi');
+    const code = String(f.code || '').trim().toUpperCase();
     let id;
-    if (await save((s) => { id = tttNew(s, m.id, f.opp); return s; })) location.hash = `#gra/${id}`;
+    const ok = await save((s) => {
+      const g = Object.values(s.games || {}).find((x) => x.code === code && x.status === 'lobby');
+      if (!g) fail('Nie ma otwartej gry z takim kodem');
+      if (g.x === m.id) fail('To Twoja gra – wyślij kod komuś innemu');
+      const [x, o] = Math.random() < 0.5 ? [g.x, m.id] : [m.id, g.x];
+      Object.assign(g, { x, o, status: 'play', updated: new Date().toISOString() });
+      id = g.id;
+      return s;
+    });
+    if (ok) location.hash = `#gra/${id}`;
   },
   async tttMove(f, err) {
-    const g = state.games?.[f.g];
+    const g = getGame(f.g);
     const i = Number(f.i);
     if (!g) return err('Nie ma takiej gry');
     const q = skNorm(f.q);
@@ -2750,6 +2845,28 @@ const actions = {
   tttResign: async (el) => {
     if (!await confirmModal('Poddać się?', 'Rywal wygra tę grę.', 'Poddaj się', true)) return;
     tttUpdate(el.dataset.g, (g, p) => { g.log.push({ k: 'resign', p }); g.status = 'done'; g.winner = p === 'x' ? 'o' : 'x'; });
+  },
+  tttLobby: async () => {
+    const m = me();
+    if (!m) return;
+    if (!Object.keys(profSummary).length) return toast('Brak danych zawodników – spróbuj za chwilę', 'err');
+    let id;
+    if (await save((s) => { id = tttNewLobby(s, m.id); return s; })) location.hash = `#gra/${id}`;
+  },
+  tttCancel: async (el) => {
+    const m = me();
+    if (await save((s) => { const g = s.games?.[el.dataset.g]; if (g && g.status === 'lobby' && g.x === m?.id) delete s.games[g.id]; return s; })) location.hash = '#gry';
+  },
+  copyCode: async (el) => {
+    try { await navigator.clipboard.writeText(el.dataset.v); toast('Skopiowano kod', 'ok'); } catch { toast(`Kod: ${el.dataset.v}`); }
+  },
+  tttSolo: (el) => {
+    if (!Object.keys(profSummary).length) return toast('Brak danych zawodników – spróbuj za chwilę', 'err');
+    const g = Math.random() < 0.5 ? tttBlank('solo', meId(), 'cpu') : tttBlank('solo', 'cpu', meId());
+    g.level = el.dataset.v || 'mid';
+    LS.set(SOLO_KEY, g);
+    ui.tttCell = { ...(ui.tttCell || {}), solo: null };
+    if (location.hash === '#gra/solo') render(); else location.hash = '#gra/solo';
   },
   tttRematch: async (el) => {
     const g0 = state.games?.[el.dataset.g];
