@@ -1680,7 +1680,7 @@ const skPool = (day = skDay()) => {
 // skocznie: z kalendarza sezonu, od 19.11.2026 także znane skocznie spoza kalendarza (extra w hills.json)
 const skHills = (day = skDay()) => Object.keys(hills).filter((k) => !hills[k].extra || day >= '2026-11-19').sort();
 // SK_SEED: zmiana = reset Skokdle (nowe zagadki i czysty postęp u wszystkich)
-const SK_SEED = 'v4';
+const SK_SEED = 'v5';
 // Od SK_EPOCH zagadki losujemy dzień po dniu bez powtórek: skoczek nie wraca przez 30 dni, skocznia przez 14
 // (przy małej puli – przez tyle dni, ile się da). Ten sam wynik na każdym urządzeniu.
 const SK_EPOCH = '2026-11-20';
