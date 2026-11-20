@@ -263,7 +263,8 @@ def parse_event(h, season):
         t = text(row)
         # przyszłe: "20 Nov 0315 ...", rozegrane: "21 Nov 2025 10:30 3061 ..."
         # między powtórzeniami konkurencji bywa nazwa skoczni/miejsca: "Individual Large Hill Garmisch-Partenkirschen (GER) Individual Large Hill"
-        m = re.search(r"(\d{1,2}) (\w{3})(?: \d{4})?(?: (\d{1,2}:\d{2}))? (\d{4}) (.+?) (?:.*? )?\5 (\w+) (M|W|A) \6 \7", t)
+        # w dniu zawodów po kodzie jest znacznik „live” (małe litery – konkurencja zaczyna się wielką)
+        m = re.search(r"(\d{1,2}) (\w{3})(?: \d{4})?(?: (\d{1,2}:\d{2}))? (\d{4}) (?:[a-z]+ )*(.+?) (?:.*? )?\5 (\w+) (M|W|A) \6 \7", t)
         if not m:
             continue
         day, mon, time_, codex, disc, cat, gender = m.groups()

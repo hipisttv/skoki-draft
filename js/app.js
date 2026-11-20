@@ -4,7 +4,7 @@ import {
   FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
   snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
   countsForLeague, isMain, recordIds, scoringSettings,
-  raceStart, lockTime, firstRace, canTriple,
+  raceStart, lockTime, lockRace, firstRace, canTriple,
 } from './scoring.js?v=dev';
 import {
   esc, icon, flag, countryName, fold, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -128,7 +128,7 @@ const currentWeekend = () => weekends.find((w) => weekendStatus(w) !== 'past') |
 const lockLabel = (w) => {
   const d = lockTime(w);
   const txt = d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  return firstRace(w)?.time ? txt : `${txt} (FIS nie podał jeszcze godziny startu)`;
+  return lockRace(w)?.time ? txt : `${txt} (FIS nie podał jeszcze godziny startu)`;
 };
 
 async function save(fn, okMsg) {
@@ -2238,7 +2238,7 @@ function zasady() {
         'Można go ustawić lub zmienić <b>do startu wybranego konkursu</b> (zakładka Drużyny). Potem jest wykorzystany.',
       ]))}
       ${sec('Terminy', 'clock', li([
-        'Skład i kapitan blokują się <b>minutę przed startem pierwszych kwalifikacji weekendu</b> (godzina z FIS; dopóki FIS jej nie poda — o północy przed pierwszym dniem).',
+        'Skład i kapitan blokują się <b>minutę przed startem pierwszych kwalifikacji mężczyzn w weekendzie</b> (w weekendzie bez konkursów mężczyzn – przed pierwszym startem) (godzina z FIS; dopóki FIS jej nie poda — o północy przed pierwszym dniem).',
         'Weekend to zawody mężczyzn i kobiet rozgrywane w tych samych dniach (np. Ruka + Hinzenbach).',
         'Mistrzostwa Świata trwają dwa weekendy — to dwie osobne rundy z osobnym kapitanem.',
       ]))}

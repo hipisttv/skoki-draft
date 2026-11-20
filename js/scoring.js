@@ -133,9 +133,16 @@ export function firstRace(weekend) {
   return weekend.races.filter((r) => !r.cancelled).sort((a, b) => raceStart(a) - raceStart(b))[0];
 }
 
-// Skład i kapitan blokują się minutę przed pierwszym startem weekendu.
+// Start, od którego liczy się blokada: pierwsze zawody mężczyzn (kwalifikacje) w weekendzie,
+// a w weekendzie bez konkursów mężczyzn – pierwszy start w ogóle.
+export function lockRace(weekend) {
+  const men = weekend.races.filter((r) => !r.cancelled && r.gender === 'M').sort((a, b) => raceStart(a) - raceStart(b));
+  return men[0] || firstRace(weekend);
+}
+
+// Skład i kapitan blokują się minutę przed pierwszymi kwalifikacjami mężczyzn weekendu.
 export function lockTime(weekend) {
-  const r = firstRace(weekend);
+  const r = lockRace(weekend);
   if (!r) return new Date(new Date(weekend.start + 'T00:00:00').getTime() - 60 * 1000);
   const start = raceStart(r);
   // bez programu zawodów baza FIS potrafi mieć kwalifikacje pod datą konkursu (dzień za późno) –
