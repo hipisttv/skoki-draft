@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-21T18:17:00+00:00",
+ "updated": "2026-11-21T18:32:06+00:00",
  "events": [
   {
    "id": "63024",
@@ -1573,7 +1573,342 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "startlist": {
+      "kind": "Start List Qualification",
+      "list": [
+       {
+        "id": "237718",
+        "name": "ZHEN Weijie",
+        "nation": "CHN"
+       },
+       {
+        "id": "131524",
+        "name": "KALINICHENKO Vitaliy",
+        "nation": "UKR"
+       },
+       {
+        "id": "203240",
+        "name": "TURSUNZHANOV Nurshat",
+        "nation": "KAZ"
+       },
+       {
+        "id": "220608",
+        "name": "RYGL David",
+        "nation": "CZE"
+       },
+       {
+        "id": "252513",
+        "name": "NAZARENKO Svyatoslav",
+        "nation": "KAZ"
+       },
+       {
+        "id": "173399",
+        "name": "BICKNER Kevin",
+        "nation": "USA"
+       },
+       {
+        "id": "104161",
+        "name": "KOUDELKA Roman",
+        "nation": "CZE"
+       },
+       {
+        "id": "239041",
+        "name": "KAPUSTIK Hektor",
+        "nation": "SVK"
+       },
+       {
+        "id": "237825",
+        "name": "NAKAMURA Yuto",
+        "nation": "JPN"
+       },
+       {
+        "id": "228547",
+        "name": "REPELLIN Ari",
+        "nation": "FRA"
+       },
+       {
+        "id": "274961",
+        "name": "VANWIEREN Tarik",
+        "nation": "CAN"
+       },
+       {
+        "id": "229687",
+        "name": "JONIAK Klemens",
+        "nation": "POL"
+       },
+       {
+        "id": "182407",
+        "name": "WASEK Pawel",
+        "nation": "POL"
+       },
+       {
+        "id": "174244",
+        "name": "WELLINGER Andreas",
+        "nation": "GER"
+       },
+       {
+        "id": "221813",
+        "name": "BAYER Ben",
+        "nation": "GER"
+       },
+       {
+        "id": "190011",
+        "name": "MARUSIAK Yevhen",
+        "nation": "UKR"
+       },
+       {
+        "id": "237724",
+        "name": "SONG Qiwu",
+        "nation": "CHN"
+       },
+       {
+        "id": "186516",
+        "name": "PREVC Domen",
+        "nation": "SLO"
+       },
+       {
+        "id": "239926",
+        "name": "MIZERNYKH Ilya",
+        "nation": "KAZ"
+       },
+       {
+        "id": "229689",
+        "name": "UNGLAUBE Max",
+        "nation": "GER"
+       },
+       {
+        "id": "149455",
+        "name": "WOLNY Jakub",
+        "nation": "POL"
+       },
+       {
+        "id": "239625",
+        "name": "TOMASIAK Kacper",
+        "nation": "POL"
+       },
+       {
+        "id": "147549",
+        "name": "FORFANG Johann Andre",
+        "nation": "NOR"
+       },
+       {
+        "id": "212624",
+        "name": "VALTO Kasperi",
+        "nation": "FIN"
+       },
+       {
+        "id": "201641",
+        "name": "CECON Francesco",
+        "nation": "ITA"
+       },
+       {
+        "id": "153777",
+        "name": "PEIER Killian",
+        "nation": "SUI"
+       },
+       {
+        "id": "218366",
+        "name": "CHERVET Jules",
+        "nation": "FRA"
+       },
+       {
+        "id": "261496",
+        "name": "COLBY Jason",
+        "nation": "USA"
+       },
+       {
+        "id": "229759",
+        "name": "KESSELI Juri",
+        "nation": "SUI"
+       },
+       {
+        "id": "136813",
+        "name": "MAATTA Jarkko",
+        "nation": "FIN"
+       },
+       {
+        "id": "194909",
+        "name": "NIKAIDO Ren",
+        "nation": "JPN"
+       },
+       {
+        "id": "180889",
+        "name": "KYTOSAHO Niko",
+        "nation": "FIN"
+       },
+       {
+        "id": "274243",
+        "name": "FRANTZ Tate",
+        "nation": "USA"
+       },
+       {
+        "id": "195981",
+        "name": "BRESADOLA Giovanni",
+        "nation": "ITA"
+       },
+       {
+        "id": "111251",
+        "name": "KUBACKI Dawid",
+        "nation": "POL"
+       },
+       {
+        "id": "118113",
+        "name": "KOT Maciej",
+        "nation": "POL"
+       },
+       {
+        "id": "166436",
+        "name": "HOFFMANN Felix",
+        "nation": "GER"
+       },
+       {
+        "id": "128286",
+        "name": "KRAFT Stefan",
+        "nation": "AUT"
+       },
+       {
+        "id": "188590",
+        "name": "ZAJC Timi",
+        "nation": "SLO"
+       },
+       {
+        "id": "111930",
+        "name": "ZOGRAFSKI Vladimir",
+        "nation": "BUL"
+       },
+       {
+        "id": "280175",
+        "name": "LOHER Henry",
+        "nation": "USA"
+       },
+       {
+        "id": "128447",
+        "name": "AIGNER Clemens",
+        "nation": "AUT"
+       },
+       {
+        "id": "238368",
+        "name": "VAGUL Kaimar",
+        "nation": "EST"
+       },
+       {
+        "id": "149215",
+        "name": "SATO Yukiya",
+        "nation": "JPN"
+       },
+       {
+        "id": "182547",
+        "name": "AALTO Antti",
+        "nation": "FIN"
+       },
+       {
+        "id": "201761",
+        "name": "OBLAK Rok",
+        "nation": "SLO"
+       },
+       {
+        "id": "181027",
+        "name": "AIGRO Artti",
+        "nation": "EST"
+       },
+       {
+        "id": "213180",
+        "name": "VASSILYEV Danil",
+        "nation": "KAZ"
+       },
+       {
+        "id": "99976",
+        "name": "PASCHKE Pius",
+        "nation": "GER"
+       },
+       {
+        "id": "162711",
+        "name": "LANISEK Anze",
+        "nation": "SLO"
+       },
+       {
+        "id": "124118",
+        "name": "DESCHWANDEN Gregor",
+        "nation": "SUI"
+       },
+       {
+        "id": "196090",
+        "name": "RAIMUND Philipp",
+        "nation": "GER"
+       },
+       {
+        "id": "182595",
+        "name": "HAUSWIRTH Sandro",
+        "nation": "SUI"
+       },
+       {
+        "id": "174872",
+        "name": "LINDVIK Marius",
+        "nation": "NOR"
+       },
+       {
+        "id": "212387",
+        "name": "FOUBERT Valentin",
+        "nation": "FRA"
+       },
+       {
+        "id": "160506",
+        "name": "NAKAMURA Naoki",
+        "nation": "JPN"
+       },
+       {
+        "id": "204197",
+        "name": "IMHOF Remo",
+        "nation": "SUI"
+       },
+       {
+        "id": "253455",
+        "name": "LANGMO Isak Andreas",
+        "nation": "NOR"
+       },
+       {
+        "id": "155620",
+        "name": "KOBAYASHI Ryoyu",
+        "nation": "JPN"
+       },
+       {
+        "id": "209633",
+        "name": "ORTNER Maximilian",
+        "nation": "AUT"
+       },
+       {
+        "id": "197640",
+        "name": "HOERL Jan",
+        "nation": "AUT"
+       },
+       {
+        "id": "219184",
+        "name": "SUNDAL Kristoffer Eriksen",
+        "nation": "NOR"
+       },
+       {
+        "id": "196759",
+        "name": "TSCHOFENIG Daniel",
+        "nation": "AUT"
+       },
+       {
+        "id": "204073",
+        "name": "ZIMMERMANN Raffael",
+        "nation": "AUT"
+       },
+       {
+        "id": "180709",
+        "name": "GRANERUD Halvor Egner",
+        "nation": "NOR"
+       },
+       {
+        "id": "229566",
+        "name": "EMBACHER Stephan",
+        "nation": "AUT"
+       }
+      ]
+     }
     },
     {
      "id": "7797",
