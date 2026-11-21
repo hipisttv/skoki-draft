@@ -1143,3 +1143,5 @@ button.ttt-cell.pick:hover, button.ttt-cell.pick.sel { background: var(--accent-
   border: 2px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); color: var(--accent); }
 .lobby-card p { max-width: 460px; color: var(--text-2); }
 .avatar.cpu { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--card-2); border: 1px solid var(--line); font-size: .95rem; }
+.lockmini { display: inline-flex; align-items: center; color: var(--muted); margin-left: .3rem; }
+.lockmini svg { width: 14px; height: 14px; }

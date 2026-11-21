@@ -4,7 +4,7 @@ import {
   FIS_POINTS, DEFAULT_BONUS, DEFAULT_CHAMP, DEFAULT_PENALTY, TRIPLE, TEAM, TEAM_SIZE, buildWeekends, isLocked,
   snakeOrder, teams, canPick, lineupFor, validLineup, computeAll, racePoints, longestJump, wcStandings,
   countsForLeague, isMain, recordIds, scoringSettings,
-  raceStart, lockTime, lockRace, firstRace, canTriple,
+  raceStart, lockTime, lockRace, firstRace, canTriple, genderLockTime, isGenderLocked, SPLIT_LOCK_FROM,
 } from './scoring.js?v=dev';
 import {
   esc, icon, flag, countryName, fold, avatar, toast, modal, confirmModal, choose, hash, randomId, COLORS, LOGO, LOGO_DARK, MOUNTAINS,
@@ -125,10 +125,22 @@ function weekendStatus(w) {
   return 'next';
 }
 const currentWeekend = () => weekends.find((w) => weekendStatus(w) !== 'past') || weekends[weekends.length - 1];
+const fmtLock = (d) => d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+// Od SPLIT_LOCK_FROM kobiety i mężczyźni blokują się osobno – pokazujemy obie godziny (już minione pomijamy)
+// „Zmiany do X” albo przy osobnej blokadzie „Zmiany: kobiety do X · mężczyźni do Y”
+const changesLabel = (w, bold = false) => {
+  const t = lockLabel(w);
+  const b = (x) => (bold ? `<b>${x}</b>` : x);
+  return /kobiety do|mężczyźni do/.test(t) ? `Zmiany: ${b(t)}` : `Zmiany do ${b(t)}`;
+};
 const lockLabel = (w) => {
-  const d = lockTime(w);
-  const txt = d.toLocaleString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  return lockRace(w)?.time ? txt : `${txt} (FIS nie podał jeszcze godziny startu)`;
+  const tbd = lockRace(w)?.time ? '' : ' (FIS nie podał jeszcze godziny startu)';
+  if (w.start >= SPLIT_LOCK_FROM) {
+    const parts = [['W', 'kobiety'], ['M', 'mężczyźni']].map(([g, l]) => [l, genderLockTime(w, g)]).filter(([, t]) => t && t > new Date());
+    if (parts.length > 1 && parts[0][1].getTime() !== parts[1][1].getTime()) return parts.map(([l, t]) => `${l} do ${fmtLock(t)}`).join(' · ') + tbd;
+    if (parts.length === 1) return `${parts[0][0]} do ${fmtLock(parts[0][1])}` + tbd;
+  }
+  return fmtLock(lockTime(w)) + tbd;
 };
 
 async function save(fn, okMsg) {
@@ -548,7 +560,7 @@ function nextWeekendHero() {
     ].join('');
     // otwarte aż do blokady (minuta przed kwalifikacjami mężczyzn) – także gdy weekend już trwa (np. kwalifikacje kobiet)
     cta = !isLocked(w)
-      ? `<div class="todos">${todo}</div><p class="small" style="margin-top:.6rem">Zmiany do <b>${lockLabel(w)}</b></p>
+      ? `<div class="todos">${todo}</div><p class="small" style="margin-top:.6rem">${changesLabel(w, true)}</p>
          <div class="row" style="margin-top:1rem;position:relative;z-index:1"><a class="btn" href="#druzyny" data-week="${w.id}">${icon('team')}${capName ? 'Zmień skład' : 'Ustaw kapitana'}</a></div>`
       : `<div class="todos">${todo}</div><p class="small" style="margin-top:.6rem">${icon('lock')} Składy zablokowane do końca weekendu.</p>`;
   }
@@ -1021,7 +1033,7 @@ function druzyny() {
     ${weekBanner(w)}
     <div class="row" style="margin:.5rem 0 1rem">
       ${locked ? `<span class="tag ${st === 'live' ? 'warn live' : ''}">${icon('lock')}${st === 'live' ? 'Weekend trwa — składy zablokowane' : 'Składy zablokowane'}</span>`
-        : `<span class="tag good">${icon('unlock')}Zmiany do ${lockLabel(w)}</span>`}
+        : `<span class="tag good">${icon('unlock')}${changesLabel(w)}</span>`}
       ${isAdmin() && locked ? '<span class="tag warn">admin może edytować</span>' : ''}
       ${weekendStatus(w) !== 'past' ? (hasStartlist(w) ? `<span class="tag">${icon('check')}Listy startowe FIS pobrane — „nie startuje” = brak na liście</span>` : '<span class="tag muted">Listy startowe FIS pojawią się ok. dzień przed zawodami</span>') : ''}
     </div>
@@ -1066,18 +1078,23 @@ function teamCard(p, w, drafting) {
   for (const r of w.races) for (const a of calc.byRace[r.id]?.[p.id]?.athletes || []) wpts[a.id] = (wpts[a.id] || 0) + a.pts;
   const reserves = ids.filter((id) => !l.starters.includes(id));
 
+  // osobna blokada płci: zablokowanej płci nie można już wstawić ani zrobić kapitanem (ani zdjąć z kapitana)
+  const gLocked = (id) => !isAdmin() && isGenderLocked(w, byId[id]?.gender);
+  const capLocked = l.captain && gLocked(l.captain);
   const line = (id, starter) => {
     const a = byId[id];
     const isCap = l.captain === id;
+    const lockedHere = editable && gLocked(id);
     let ctrl = '';
-    if (editable && starter) {
+    if (editable && starter && !lockedHere && !capLocked) {
       ctrl = `<button class="capbtn ${isCap ? 'on' : ''}" data-action="captain" data-p="${p.id}" data-id="${id}" title="${isCap ? 'Kapitan (×2) — kliknij, by zdjąć' : 'Zrób kapitanem (×2)'}" aria-label="Kapitan">C</button>`;
     } else if (isCap) {
       ctrl = '<span class="cap" title="Kapitan — punkty ×2">C</span>';
     }
-    if (editable && !starter) {
+    if (editable && !starter && !lockedHere) {
       ctrl = `<button class="sm" data-action="swap" data-p="${p.id}" data-id="${id}" title="Wstaw tego zawodnika do składu">${icon('swap')}Wstaw</button>`;
     }
+    if (lockedHere) ctrl += `<span class="lockmini" title="${a?.gender === 'W' ? 'Kobiety' : 'Mężczyźni'} już zablokowani na ten weekend">${icon('lock')}</span>`;
     const v = hasRes ? wpts[id] || 0 : calc.athleteTotals[id] || 0;
     const out = !drafting && notStarting(w, id);
     return `<div class="player ${starter ? '' : 'res'} ${out ? 'isout' : ''}">${ath(id, { gender: false, photo: true })}${out ? OUT_TAG : ''}
@@ -1739,7 +1756,7 @@ function gry() {
   const lobbies = mine.filter((g) => g.status === 'lobby');
   const turn = mine.filter((g) => g.status === 'play' && g[g.turn] === m?.id);
   const wait = mine.filter((g) => g.status === 'play' && g[g.turn] !== m?.id);
-  const done = games.filter((g) => g.status === 'done').slice(0, 12);
+  const done = mine.filter((g) => g.status === 'done').slice(0, 12);
   const solo = soloGame();
   const score = Object.fromEntries(state.participants.map((p) => [p.id, { w: 0, d: 0, l: 0 }]));
   for (const g of games.filter((x) => x.status === 'done')) {
@@ -1776,7 +1793,7 @@ function gry() {
     ${lobbies.length ? `<div class="section"><div class="row"><h2>Twoje zaproszenia</h2></div><div class="card pad0 game-list">${lobbies.map(row).join('')}</div></div>` : ''}
     ${turn.length ? `<div class="section"><div class="row"><h2>Twój ruch</h2><span class="tag acc">${turn.length}</span></div><div class="card pad0 game-list">${turn.map(row).join('')}</div></div>` : ''}
     ${wait.length ? `<div class="section"><div class="row"><h2>Czekasz na rywala</h2></div><div class="card pad0 game-list">${wait.map(row).join('')}</div></div>` : ''}
-    ${done.length ? `<div class="section"><div class="row"><h2>Zakończone w lidze</h2></div><div class="card pad0 game-list">${done.map(row).join('')}</div></div>` : ''}
+    ${done.length ? `<div class="section"><div class="row"><h2>Twoje zakończone gry</h2></div><div class="card pad0 game-list">${done.map(row).join('')}</div></div>` : ''}
     ${games.some((g) => g.status === 'done') ? `<div class="section card pad0"><div class="card-head"><h3>Tabela kółka i krzyżyka</h3></div><div class="tablewrap"><table>
       <thead><tr><th>Gracz</th><th class="num">Wygrane</th><th class="num">Remisy</th><th class="num">Porażki</th></tr></thead>
       <tbody>${state.participants.map((p) => ({ p, ...score[p.id] })).filter((r) => r.w + r.d + r.l).sort((a, b) => b.w - a.w || a.l - b.l)
@@ -1789,6 +1806,8 @@ function graView(id) {
   if (!g) return back + `<div class="card empty">${icon('info')}<b>Nie ma takiej gry</b>${id === 'solo' ? 'Zacznij grę z komputerem w Kąciku gier.' : ''}</div>`;
   const solo = id === 'solo';
   const myP = g.x === meId() ? 'x' : g.o === meId() ? 'o' : null;
+  // cudze gry są prywatne (poczekalnię z kodem widać, żeby dało się dołączyć)
+  if (!solo && !myP && g.status !== 'lobby' && !isAdmin()) return back + `<div class="card empty">${icon('lock')}<b>To nie Twoja gra</b>Widzisz tylko gry, w których bierzesz udział.</div>`;
   if (g.status === 'lobby') {
     return back + `<div class="card lobby-card"><div class="eyebrow">Kod zaproszenia</div><div class="lobby-code">${esc(g.code)}</div>
       <p>Wyślij ten kod znajomemu z ligi. Gdy wpisze go w <b>Kąciku gier → Dołącz</b>, gra ruszy (kto zaczyna — losujemy).</p>
@@ -2558,7 +2577,7 @@ function zasady() {
         'Można go ustawić lub zmienić <b>do startu wybranego konkursu</b> (zakładka Drużyny). Potem jest wykorzystany.',
       ]))}
       ${sec('Terminy', 'clock', li([
-        'Skład i kapitan blokują się <b>minutę przed startem pierwszych kwalifikacji mężczyzn w weekendzie</b> (w weekendzie bez konkursów mężczyzn – przed pierwszym startem) (godzina z FIS; dopóki FIS jej nie poda — o północy przed pierwszym dniem).',
+        'Skład i kapitan blokują się <b>osobno dla każdej płci</b>: kobieta w składzie (i kapitan-kobieta) <b>minutę przed pierwszym startem kobiet</b> w weekendzie, mężczyźni <b>minutę przed pierwszym startem mężczyzn</b> (od weekendu 27–29.11.2026; wcześniej wszystko razem przed kwalifikacjami mężczyzn) (godzina z FIS; dopóki FIS jej nie poda — o północy przed pierwszym dniem).',
         'Weekend to zawody mężczyzn i kobiet rozgrywane w tych samych dniach (np. Ruka + Hinzenbach).',
         'Mistrzostwa Świata trwają dwa weekendy — to dwie osobne rundy z osobnym kapitanem.',
       ]))}
@@ -3199,10 +3218,17 @@ function drawOrder(ids) {
 function setLineup(s, pid, fn) {
   const w = weekends.find((x) => x.id === ui.weekend);
   if (!w) fail('Brak weekendu');
-  if (isLocked(w) && !isAdmin()) fail('Skład na ten weekend jest już zablokowany');
   const ids = teams(s)[pid] || [];
   const cur = lineupFor(s, weekends, w.id, pid, ids, byId);
   const next = fn({ starters: cur.starters, captain: cur.captain });
+  if (!isAdmin()) {
+    // każda zmiana dotyka konkretnych zawodników – ich płeć nie może być już zablokowana
+    const touched = new Set([...cur.starters.filter((x) => !next.starters.includes(x)), ...next.starters.filter((x) => !cur.starters.includes(x))]);
+    if (cur.captain !== next.captain) [cur.captain, next.captain].filter(Boolean).forEach((x) => touched.add(x));
+    for (const x of touched) {
+      if (isGenderLocked(w, byId[x]?.gender)) fail(byId[x]?.gender === 'W' ? 'Kobiety są już zablokowane na ten weekend' : 'Mężczyźni są już zablokowani na ten weekend');
+    }
+  }
   if (!validLineup(next.starters, byId)) fail(`Skład musi mieć ${TEAM.men} mężczyzn i ${TEAM.women} kobietę`);
   if (next.captain && !next.starters.includes(next.captain)) next.captain = null;
   s.lineups[w.id] = { ...(s.lineups[w.id] || {}), [pid]: next };

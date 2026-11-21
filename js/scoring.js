@@ -140,15 +140,35 @@ export function lockRace(weekend) {
   return men[0] || firstRace(weekend);
 }
 
-// Skład i kapitan blokują się minutę przed pierwszymi kwalifikacjami mężczyzn weekendu.
-export function lockTime(weekend) {
-  const r = lockRace(weekend);
+const raceLock = (r, weekend) => {
   if (!r) return new Date(new Date(weekend.start + 'T00:00:00').getTime() - 60 * 1000);
   const start = raceStart(r);
   // bez programu zawodów baza FIS potrafi mieć kwalifikacje pod datą konkursu (dzień za późno) –
   // na wszelki wypadek blokujemy od północy dnia wcześniej
   if (!r.time && r.category === 'QUA') start.setDate(start.getDate() - 1);
   return new Date(start.getTime() - 60 * 1000);
+};
+
+// Od weekendu 27.11.2026 każda płeć blokuje się osobno: kobieta w składzie (i kapitan-kobieta) minutę przed
+// pierwszym startem kobiet, mężczyźni minutę przed pierwszym startem mężczyzn. Wcześniej – wszystko razem
+// przed kwalifikacjami mężczyzn.
+export const SPLIT_LOCK_FROM = '2026-11-27';
+const firstOf = (weekend, g) => weekend.races.filter((r) => !r.cancelled && r.gender === g).sort((a, b) => raceStart(a) - raceStart(b))[0];
+export function genderLockTime(weekend, gender) {
+  if (weekend.start < SPLIT_LOCK_FROM) return raceLock(lockRace(weekend), weekend);
+  const r = firstOf(weekend, gender);
+  return r ? raceLock(r, weekend) : null;
+}
+export function isGenderLocked(weekend, gender, now = new Date()) {
+  const t = genderLockTime(weekend, gender);
+  return now >= (t || lockTime(weekend));
+}
+
+// Pełna blokada składu: gdy zablokowane są wszystkie płcie, które startują w weekendzie.
+export function lockTime(weekend) {
+  if (weekend.start < SPLIT_LOCK_FROM) return raceLock(lockRace(weekend), weekend);
+  const ts = ['M', 'W'].map((g) => genderLockTime(weekend, g)).filter(Boolean);
+  return ts.length ? new Date(Math.max(...ts)) : raceLock(null, weekend);
 }
 
 export function isLocked(weekend, now = new Date()) {
