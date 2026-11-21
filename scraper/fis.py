@@ -818,6 +818,8 @@ def build_results(race, outdir):
     # przyjmujemy wyniki dopiero, gdy każdy sklasyfikowany ma odległość albo notę
     ranked = [r for r in rows if r["rank"]]
     if not ranked or not all(r["jumps"] or r["total"] for r in ranked):
+        print(f"  {race['id']}: brak pełnych wyników ({len(rows)} wierszy, {len(ranked)} z miejscem, "
+              f"{sum(1 for r in ranked if r['jumps'] or r['total'])} z odległością/notą)")
         return old
     record = old.get("hillRecord") if old else None
     if not record:
