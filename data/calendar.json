@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-22T15:56:38+00:00",
+ "updated": "2026-11-22T16:02:27+00:00",
  "events": [
   {
    "id": "63024",
@@ -2471,18 +2471,6 @@
      "gender": "W",
      "team": false,
      "cancelled": false
-    },
-    {
-     "id": "p63029-2026-11-29-W",
-     "date": "2026-11-29",
-     "time": "08:45",
-     "codex": "",
-     "discipline": "Individual Normal Hill Qualification",
-     "category": "QUA",
-     "gender": "W",
-     "team": false,
-     "cancelled": false,
-     "fromProgram": true
     },
     {
      "id": "7820",
