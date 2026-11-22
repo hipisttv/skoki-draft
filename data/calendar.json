@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-22T10:46:18+00:00",
+ "updated": "2026-11-22T11:02:36+00:00",
  "events": [
   {
    "id": "63024",
@@ -1552,7 +1552,7 @@
        }
       ]
      },
-     "hasResults": false
+     "hasResults": true
     },
     {
      "id": "7800",
@@ -1564,6 +1564,211 @@
      "gender": "W",
      "team": false,
      "cancelled": false,
+     "startlist": {
+      "kind": "Start List 1st Round",
+      "list": [
+       {
+        "id": "236278",
+        "name": "BJOERSETH Thea Minyan",
+        "nation": "NOR"
+       },
+       {
+        "id": "188722",
+        "name": "PAGNIER Josephine",
+        "nation": "FRA"
+       },
+       {
+        "id": "245487",
+        "name": "LOUTITT Alexandria",
+        "nation": "CAN"
+       },
+       {
+        "id": "261709",
+        "name": "AIKIA Julia",
+        "nation": "FIN"
+       },
+       {
+        "id": "261055",
+        "name": "KAPUSTIKOVA Kira Maria",
+        "nation": "SVK"
+       },
+       {
+        "id": "276236",
+        "name": "THURE Oosa",
+        "nation": "FIN"
+       },
+       {
+        "id": "172150",
+        "name": "DONG Bing",
+        "nation": "CHN"
+       },
+       {
+        "id": "262527",
+        "name": "KOSNJEK Ajda",
+        "nation": "SLO"
+       },
+       {
+        "id": "221320",
+        "name": "ZANITZER Martina",
+        "nation": "ITA"
+       },
+       {
+        "id": "153102",
+        "name": "TAKANASHI Sara",
+        "nation": "JPN"
+       },
+       {
+        "id": "201394",
+        "name": "WESTMAN Frida",
+        "nation": "SWE"
+       },
+       {
+        "id": "203127",
+        "name": "MAURER Nicole",
+        "nation": "CAN"
+       },
+       {
+        "id": "258828",
+        "name": "JOHNSON Josie",
+        "nation": "USA"
+       },
+       {
+        "id": "212446",
+        "name": "MUEHLBACHER Julia",
+        "nation": "AUT"
+       },
+       {
+        "id": "251757",
+        "name": "BODLAJ Taja",
+        "nation": "SLO"
+       },
+       {
+        "id": "197320",
+        "name": "KOMAR Katra",
+        "nation": "SLO"
+       },
+       {
+        "id": "227480",
+        "name": "ARNET Sina",
+        "nation": "SUI"
+       },
+       {
+        "id": "189072",
+        "name": "FETTNER Lisa",
+        "nation": "AUT"
+       },
+       {
+        "id": "97562",
+        "name": "SEYFARTH Juliane",
+        "nation": "GER"
+       },
+       {
+        "id": "201632",
+        "name": "MALSINER Jessica",
+        "nation": "ITA"
+       },
+       {
+        "id": "270907",
+        "name": "GRAESLI Kjersti",
+        "nation": "NOR"
+       },
+       {
+        "id": "134975",
+        "name": "ITO Yuki",
+        "nation": "JPN"
+       },
+       {
+        "id": "190207",
+        "name": "TWARDOSZ Anna",
+        "nation": "POL"
+       },
+       {
+        "id": "222153",
+        "name": "PREVC Nika",
+        "nation": "SLO"
+       },
+       {
+        "id": "161100",
+        "name": "RAUTIONAHO Jenny",
+        "nation": "FIN"
+       },
+       {
+        "id": "254748",
+        "name": "KOVACIC Maja",
+        "nation": "SLO"
+       },
+       {
+        "id": "159620",
+        "name": "SETO Yuka",
+        "nation": "JPN"
+       },
+       {
+        "id": "203125",
+        "name": "STRATE Abigail",
+        "nation": "CAN"
+       },
+       {
+        "id": "237730",
+        "name": "ZENG Ping",
+        "nation": "CHN"
+       },
+       {
+        "id": "228988",
+        "name": "MIYAJIMA Ringo",
+        "nation": "JPN"
+       },
+       {
+        "id": "183861",
+        "name": "REISCH Agnes",
+        "nation": "GER"
+       },
+       {
+        "id": "174083",
+        "name": "MARUYAMA Nozomi",
+        "nation": "JPN"
+       },
+       {
+        "id": "196441",
+        "name": "FREITAG Selina",
+        "nation": "GER"
+       },
+       {
+        "id": "185807",
+        "name": "VODAN Nika",
+        "nation": "SLO"
+       },
+       {
+        "id": "226380",
+        "name": "WIEGELE Hannah",
+        "nation": "AUT"
+       },
+       {
+        "id": "223150",
+        "name": "TRAASERUD Heidi Dyhre",
+        "nation": "NOR"
+       },
+       {
+        "id": "180411",
+        "name": "STROEM Anna Odine",
+        "nation": "NOR"
+       },
+       {
+        "id": "234928",
+        "name": "HANSEN Gyda Westvold",
+        "nation": "NOR"
+       },
+       {
+        "id": "270906",
+        "name": "MIDTSKOGEN Ingvild Synnoeve",
+        "nation": "NOR"
+       },
+       {
+        "id": "227274",
+        "name": "KVANDAL Eirin Maria",
+        "nation": "NOR"
+       }
+      ]
+     },
      "hasResults": false
     },
     {
