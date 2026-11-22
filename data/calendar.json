@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-22T17:02:19+00:00",
+ "updated": "2026-11-22T17:17:05+00:00",
  "events": [
   {
    "id": "63024",
@@ -2383,7 +2383,7 @@
        }
       ]
      },
-     "hasResults": false
+     "hasResults": true
     }
    ]
   },
