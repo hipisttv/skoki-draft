@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-24T00:02:14+00:00",
+ "updated": "2026-11-24T08:02:29+00:00",
  "events": [
   {
    "id": "63024",
@@ -112,10 +112,21 @@
    "id": "63025",
    "place": "Ruka",
    "nation": "FIN",
-   "start": "2026-11-28",
+   "start": "2026-11-27",
    "end": "2026-11-29",
    "cancelled": false,
    "races": [
+    {
+     "id": "7801",
+     "date": "2026-11-27",
+     "time": "18:15",
+     "codex": "0316",
+     "discipline": "Individual Large Hill Qualification",
+     "category": "QUA",
+     "gender": "M",
+     "team": false,
+     "cancelled": false
+    },
     {
      "id": "7802",
      "date": "2026-11-28",
@@ -128,10 +139,10 @@
      "cancelled": false
     },
     {
-     "id": "7801",
-     "date": "2026-11-28",
-     "time": "18:15",
-     "codex": "0316",
+     "id": "8044",
+     "date": "2026-11-29",
+     "time": "13:45",
+     "codex": "0083",
      "discipline": "Individual Large Hill Qualification",
      "category": "QUA",
      "gender": "M",
@@ -177,6 +188,17 @@
      "codex": "0326",
      "discipline": "Individual Normal Hill",
      "category": "WC",
+     "gender": "W",
+     "team": false,
+     "cancelled": false
+    },
+    {
+     "id": "8045",
+     "date": "2026-11-29",
+     "time": "08:45",
+     "codex": "0084",
+     "discipline": "Individual Normal Hill Qualification",
+     "category": "QUA",
      "gender": "W",
      "team": false,
      "cancelled": false
