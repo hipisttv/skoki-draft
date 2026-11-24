@@ -1,8 +1,8 @@
 {
  "raceId": "8010",
  "date": "2026-11-22",
- "final": false,
- "fetched": "2026-11-23T23:46:38+00:00",
+ "final": true,
+ "fetched": "2026-11-24T00:01:59+00:00",
  "hillRecord": {
   "distance": 146.0,
   "holders": [
