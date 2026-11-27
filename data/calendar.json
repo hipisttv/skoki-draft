@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-27T17:32:17+00:00",
+ "updated": "2026-11-27T17:46:42+00:00",
  "events": [
   {
    "id": "63024",
@@ -824,6 +824,67 @@
    "start": "2026-11-28",
    "end": "2026-11-29",
    "cancelled": false,
+   "startlist": {
+    "W": [
+     "120490",
+     "134975",
+     "153102",
+     "159620",
+     "161100",
+     "172150",
+     "173114",
+     "174083",
+     "180411",
+     "183861",
+     "185807",
+     "188722",
+     "189072",
+     "190131",
+     "190207",
+     "193107",
+     "196441",
+     "197320",
+     "201394",
+     "201632",
+     "203125",
+     "203127",
+     "204149",
+     "209287",
+     "211536",
+     "212446",
+     "221320",
+     "222153",
+     "223150",
+     "226380",
+     "227480",
+     "228988",
+     "229325",
+     "231633",
+     "237719",
+     "237730",
+     "245487",
+     "251757",
+     "254748",
+     "258828",
+     "261055",
+     "261347",
+     "261708",
+     "261709",
+     "262118",
+     "262120",
+     "262527",
+     "262601",
+     "263677",
+     "264697",
+     "270906",
+     "270907",
+     "270960",
+     "273020",
+     "276236",
+     "279222",
+     "97562"
+    ]
+   },
    "races": [
     {
      "id": "7818",
@@ -834,7 +895,297 @@
      "category": "QUA",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "startlist": {
+      "kind": "Start List Qualification",
+      "list": [
+       {
+        "id": "204149",
+        "name": "KOTHBAUER Sophie",
+        "nation": "AUT"
+       },
+       {
+        "id": "273020",
+        "name": "STUETZ Pia",
+        "nation": "AUT"
+       },
+       {
+        "id": "262601",
+        "name": "POKORNY Sara",
+        "nation": "AUT"
+       },
+       {
+        "id": "264697",
+        "name": "TRITSCHER Luise",
+        "nation": "AUT"
+       },
+       {
+        "id": "209287",
+        "name": "AMBROSI Martina",
+        "nation": "ITA"
+       },
+       {
+        "id": "258828",
+        "name": "JOHNSON Josie",
+        "nation": "USA"
+       },
+       {
+        "id": "172150",
+        "name": "DONG Bing",
+        "nation": "CHN"
+       },
+       {
+        "id": "262527",
+        "name": "KOSNJEK Ajda",
+        "nation": "SLO"
+       },
+       {
+        "id": "261709",
+        "name": "AIKIA Julia",
+        "nation": "FIN"
+       },
+       {
+        "id": "120490",
+        "name": "GERAGHTY-MOATS Tara",
+        "nation": "USA"
+       },
+       {
+        "id": "190131",
+        "name": "KARPIEL Kamila",
+        "nation": "POL"
+       },
+       {
+        "id": "270960",
+        "name": "HLUKHOVA Zhanna",
+        "nation": "UKR"
+       },
+       {
+        "id": "231633",
+        "name": "MESIKOVA Tamara",
+        "nation": "SVK"
+       },
+       {
+        "id": "193107",
+        "name": "PINKELNIG Eva",
+        "nation": "AUT"
+       },
+       {
+        "id": "237719",
+        "name": "WANG Liangyao",
+        "nation": "CHN"
+       },
+       {
+        "id": "153102",
+        "name": "TAKANASHI Sara",
+        "nation": "JPN"
+       },
+       {
+        "id": "263677",
+        "name": "THOMAS COUTURAUD Marie",
+        "nation": "FRA"
+       },
+       {
+        "id": "221320",
+        "name": "ZANITZER Martina",
+        "nation": "ITA"
+       },
+       {
+        "id": "262120",
+        "name": "SCHARFENBERG Anna-Fay",
+        "nation": "GER"
+       },
+       {
+        "id": "261347",
+        "name": "NEJEDLOVA Natalie",
+        "nation": "CZE"
+       },
+       {
+        "id": "211536",
+        "name": "ULRICHOVA Klara",
+        "nation": "CZE"
+       },
+       {
+        "id": "229325",
+        "name": "INDRACKOVA Anezka",
+        "nation": "CZE"
+       },
+       {
+        "id": "279222",
+        "name": "WENG Yangning",
+        "nation": "CHN"
+       },
+       {
+        "id": "261708",
+        "name": "MATTILA Sofia",
+        "nation": "FIN"
+       },
+       {
+        "id": "261055",
+        "name": "KAPUSTIKOVA Kira Maria",
+        "nation": "SVK"
+       },
+       {
+        "id": "251757",
+        "name": "BODLAJ Taja",
+        "nation": "SLO"
+       },
+       {
+        "id": "203127",
+        "name": "MAURER Nicole",
+        "nation": "CAN"
+       },
+       {
+        "id": "245487",
+        "name": "LOUTITT Alexandria",
+        "nation": "CAN"
+       },
+       {
+        "id": "262118",
+        "name": "HOLZ Alvine",
+        "nation": "GER"
+       },
+       {
+        "id": "173114",
+        "name": "GOERLICH Luisa",
+        "nation": "GER"
+       },
+       {
+        "id": "227480",
+        "name": "ARNET Sina",
+        "nation": "SUI"
+       },
+       {
+        "id": "197320",
+        "name": "KOMAR Katra",
+        "nation": "SLO"
+       },
+       {
+        "id": "276236",
+        "name": "THURE Oosa",
+        "nation": "FIN"
+       },
+       {
+        "id": "201632",
+        "name": "MALSINER Jessica",
+        "nation": "ITA"
+       },
+       {
+        "id": "270907",
+        "name": "GRAESLI Kjersti",
+        "nation": "NOR"
+       },
+       {
+        "id": "212446",
+        "name": "MUEHLBACHER Julia",
+        "nation": "AUT"
+       },
+       {
+        "id": "97562",
+        "name": "SEYFARTH Juliane",
+        "nation": "GER"
+       },
+       {
+        "id": "190207",
+        "name": "TWARDOSZ Anna",
+        "nation": "POL"
+       },
+       {
+        "id": "161100",
+        "name": "RAUTIONAHO Jenny",
+        "nation": "FIN"
+       },
+       {
+        "id": "254748",
+        "name": "KOVACIC Maja",
+        "nation": "SLO"
+       },
+       {
+        "id": "159620",
+        "name": "SETO Yuka",
+        "nation": "JPN"
+       },
+       {
+        "id": "188722",
+        "name": "PAGNIER Josephine",
+        "nation": "FRA"
+       },
+       {
+        "id": "228988",
+        "name": "MIYAJIMA Ringo",
+        "nation": "JPN"
+       },
+       {
+        "id": "189072",
+        "name": "FETTNER Lisa",
+        "nation": "AUT"
+       },
+       {
+        "id": "203125",
+        "name": "STRATE Abigail",
+        "nation": "CAN"
+       },
+       {
+        "id": "237730",
+        "name": "ZENG Ping",
+        "nation": "CHN"
+       },
+       {
+        "id": "222153",
+        "name": "PREVC Nika",
+        "nation": "SLO"
+       },
+       {
+        "id": "183861",
+        "name": "REISCH Agnes",
+        "nation": "GER"
+       },
+       {
+        "id": "134975",
+        "name": "ITO Yuki",
+        "nation": "JPN"
+       },
+       {
+        "id": "201394",
+        "name": "WESTMAN Frida",
+        "nation": "SWE"
+       },
+       {
+        "id": "196441",
+        "name": "FREITAG Selina",
+        "nation": "GER"
+       },
+       {
+        "id": "226380",
+        "name": "WIEGELE Hannah",
+        "nation": "AUT"
+       },
+       {
+        "id": "223150",
+        "name": "TRAASERUD Heidi Dyhre",
+        "nation": "NOR"
+       },
+       {
+        "id": "185807",
+        "name": "VODAN Nika",
+        "nation": "SLO"
+       },
+       {
+        "id": "174083",
+        "name": "MARUYAMA Nozomi",
+        "nation": "JPN"
+       },
+       {
+        "id": "270906",
+        "name": "MIDTSKOGEN Ingvild Synnoeve",
+        "nation": "NOR"
+       },
+       {
+        "id": "180411",
+        "name": "STROEM Anna Odine",
+        "nation": "NOR"
+       }
+      ]
+     }
     },
     {
      "id": "7819",
