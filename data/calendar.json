@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-26T02:02:02+00:00",
+ "updated": "2026-11-27T00:02:41+00:00",
  "events": [
   {
    "id": "63024",
@@ -125,7 +125,8 @@
      "category": "QUA",
      "gender": "M",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "hasResults": false
     },
     {
      "id": "7802",
