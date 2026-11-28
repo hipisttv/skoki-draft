@@ -1,6 +1,6 @@
 {
  "season": 2027,
- "updated": "2026-11-27T23:46:32+00:00",
+ "updated": "2026-11-28T00:02:43+00:00",
  "events": [
   {
    "id": "63024",
@@ -791,7 +791,8 @@
         "nation": "NOR"
        }
       ]
-     }
+     },
+     "hasResults": false
     },
     {
      "id": "8044",
@@ -1185,7 +1186,8 @@
         "nation": "NOR"
        }
       ]
-     }
+     },
+     "hasResults": false
     },
     {
      "id": "7819",
@@ -1196,7 +1198,8 @@
      "category": "WC",
      "gender": "W",
      "team": false,
-     "cancelled": false
+     "cancelled": false,
+     "hasResults": false
     },
     {
      "id": "8045",
